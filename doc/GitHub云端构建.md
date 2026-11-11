@@ -21,6 +21,8 @@
 sha256sum -c SHA256SUMS
 docker load -i image.tar.gz
 tar -xzf release.tar.gz
+find web -type d -exec chmod 0755 {} +
+find web -type f -exec chmod 0644 {} +
 docker compose -p landlord -f compose.yml config -q
 ```
 
@@ -28,8 +30,10 @@ docker compose -p landlord -f compose.yml config -q
 
 ```sh
 docker compose -p landlord -f compose.yml up -d --no-build --pull never
+docker exec landlord test -r /app/web/index.html
+curl --fail http://127.0.0.1:18930/ >/dev/null
 ```
 
-健康与公网验证通过后再更新 `/opt/landlord/current`。失败时恢复原 release 的 Compose 和前端；有数据库迁移时单独判断兼容性，不能盲目覆盖用户数据。构建工作流不会自行 SSH、重启服务或切换线上版本。
+静态文件仅供公开读取；业务数据和初始化环境文件保持原有受限权限。Python安全解包在受限umask下可能将目录创建为0700，因此必须显式核对web目录权限。容器healthy还需配合真实入口、脚本和样式请求验证。健康与公网验证通过后再更新 `/opt/landlord/current`。失败时恢复原 release 的 Compose 和前端；有数据库迁移时单独判断兼容性，不能盲目覆盖用户数据。构建工作流不会自行 SSH、重启服务或切换线上版本。
 
 依据：[GitHub 托管 runner](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)、[Docker Buildx Action](https://github.com/docker/build-push-action)、[构建制品](https://github.com/actions/upload-artifact)。当前真正运行的构建结果以仓库 Actions 为准。

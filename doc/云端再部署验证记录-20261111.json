@@ -1,0 +1,117 @@
+{
+  "recorded_at": "2026-11-11T19:58:52.283117+08:00",
+  "verification": "SELF-ACCEPT",
+  "independent_acceptance": false,
+  "url": "https://www.zoeng.site/landlord/",
+  "publication": {
+    "published_at": "2026-11-11T19:44:35.668363+08:00",
+    "release": "/opt/landlord/releases/20261111-0.10.0-gh-e1d14c9",
+    "previous_release": "/opt/landlord/releases/20261111-0.10.0-final",
+    "backup": "/var/backups/landlord/pre-github-20261111-194350",
+    "image": "landlord:0.10.0-e1d14c9baf3d-43011871714-1",
+    "image_id": "sha256:453cac95caea2bfe273f83bf57b2a4bd19bb612f09de0b72ee7f6a7cea063da8",
+    "commit": "e1d14c9baf3d6627a0353fcd737be6ee1e31d8aa",
+    "container_id": "e8c20f4a499edeee0535d8fe8c8d276c96f0e46ec5123aa144849266ac45e58c",
+    "health": "healthy",
+    "counts": {
+      "users": 0,
+      "rooms": 0,
+      "tenants": 0,
+      "bills": 0,
+      "payments": 0,
+      "automation_plans": 0,
+      "cycle_tasks": 0
+    },
+    "database_quick_check": "ok",
+    "bootstrap_unchanged": true,
+    "caddy_unchanged": true,
+    "public_health": "PASS"
+  },
+  "github_build_run": 43011871714,
+  "artifact_sha256": "063f6bc8b443558fd33b900e4b31f395fb9b0d7f0b6f73d8106683048d58d92f",
+  "prepared_image": {
+    "release": "/opt/landlord/releases/20261111-0.10.0-gh-e1d14c9",
+    "image": "landlord:0.10.0-e1d14c9baf3d-43011871714-1",
+    "image_id": "sha256:453cac95caea2bfe273f83bf57b2a4bd19bb612f09de0b72ee7f6a7cea063da8",
+    "cloud_image_id": "sha256:44f1dd409e456b056b485080f1c79e9273872cbcda2143dc07e7509485c99e03",
+    "rootfs_layers_match": true,
+    "commit": "e1d14c9baf3d6627a0353fcd737be6ee1e31d8aa",
+    "image_bytes": 907186522,
+    "web_files": 79,
+    "archives": {
+      "build.json": "1891a5fc7cda2535c001319446f6de3e18637ab499d2b936ca6df962f28f95f2",
+      "image.tar.gz": "d49889d795f5fc2935f20f32909b89e8e867a1fc81d97921874e7bc82bac0639",
+      "release.tar.gz": "07be7cd2d929ba197e1a374ba0f84ef4e40c4e8cb41e18bc305586e23844f7a8"
+    },
+    "compose_valid": true
+  },
+  "checks": {
+    "public_passed": 15,
+    "synthetic_pdf": "PASS",
+    "stable_sibling_bodies_unchanged": 6,
+    "sibling_endpoints_200": 7,
+    "caddy_unchanged": true,
+    "database_quick_check": "ok",
+    "full_backend_suite_repeated": false,
+    "native_iphone_push": "UNOBSERVED"
+  },
+  "deployment_fix": {
+    "issue": "Python safe tar extraction under umask 0077 created static directories mode 0700; frontend returned 404",
+    "resolution": "Explicit static directories 0755 and files 0644; non-root read and public pages verified",
+    "data_or_secret_permissions_relaxed": false,
+    "image_rebuilt": false
+  },
+  "resources": {
+    "sample_started": "2026-11-11T19:50:48.342425+08:00",
+    "sample_finished": "2026-11-11T19:51:20.570542+08:00",
+    "final_at": "2026-11-11T19:58:52.283117+08:00",
+    "idle_cpu_one_core_percent": {
+      "average": 0.10349995366546787,
+      "min": 0.0,
+      "max": 0.5963284835000269
+    },
+    "idle_working_set_bytes": {
+      "min": 30568448,
+      "max": 30568448
+    },
+    "final_working_set_bytes": 56889344,
+    "final_cgroup_memory_bytes": 332251136,
+    "pdf": {
+      "success": true,
+      "pdf_bytes": 76517,
+      "seconds": 3.22212120401673,
+      "sample_interval_seconds": 0.1,
+      "sampled_memory_current_peak_bytes": 536612864,
+      "sampled_working_set_peak_bytes": 531361792,
+      "sampled_host_available_min_bytes": 771661824
+    },
+    "memory_peak_bytes": 536940544,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 196,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "project_swap_bytes": 0,
+    "host_available_bytes": 952799232,
+    "host_swap_used_bytes": 220405760,
+    "host_disk_free_bytes": 19748286464,
+    "limits": {
+      "memory_bytes": 536870912,
+      "memory_plus_swap_bytes": 805306368,
+      "nano_cpus": 1000000000,
+      "pids": 160
+    },
+    "scope": "24 second idle sample, one synthetic PDF, and final snapshot; not sustained multi-user load"
+  },
+  "cleanup": {
+    "released_bytes_approximately": 4291719168,
+    "project_build_cache_records_removed": 22,
+    "other_cache_records_preserved": 118,
+    "previous_release_and_image_retained": true,
+    "retained_image_archive": "/opt/landlord/artifacts/github-43011871714/image.tar.gz"
+  },
+  "evidence_directory": ".runtime/redeploy-github-20261111"
+}
