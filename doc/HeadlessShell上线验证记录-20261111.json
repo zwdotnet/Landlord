@@ -1,0 +1,835 @@
+{
+  "scope": "MAIN self-verification; no independent acceptance",
+  "application_commit": "5323d747465d3a0aa4d55b25565108644485a71f",
+  "github": {
+    "run": 43033817431,
+    "url": "https://github.com/zwdotnet/Landlord/actions/runs/43033817431",
+    "conclusion": "success",
+    "frontend_tests": 5
+  },
+  "prepared": {
+    "host": "hcss-ecs-b4e4",
+    "release": "/opt/landlord/releases/20261111-0.10.0-shell-5323d74",
+    "image": "landlord:0.10.0-5323d747465d-43033817431-1",
+    "image_id": "sha256:daace17a0dac1a5e7c3c3d58e9e99bef6975730fc0458d4c423de501a1bf8988",
+    "cloud_image_id": "sha256:cd7959c521572a252203e3f94735c5b6ab4d35dbca4cd766f0c3058f508b5e97",
+    "rootfs_layers_match": true,
+    "commit": "5323d747465d3a0aa4d55b25565108644485a71f",
+    "image_bytes": 768001395,
+    "web_files": 79,
+    "archives": {
+      "build.json": "27806cb3c73750a4ce87cbd174c553e6ae93ce05226db74d435afe7056e1cebc",
+      "image.tar.gz": "ddfc9b38e95c080ba79b5041ef31482c0f6b5c1f2d39460128f926712e3fb381",
+      "release.tar.gz": "d37779b12c34762e69b44eb918088b7a875da88c2945fc2b1f0e5fb2fa91f8d1"
+    },
+    "artifact_sha256": "64e2299cf9356a2c708cb39b46ef1b63c4ac8f7577b37d4c9408293843814120"
+  },
+  "deployment": {
+    "published_at": "2026-11-11T22:10:22.795543+08:00",
+    "release": "/opt/landlord/releases/20261111-0.10.0-shell-5323d74",
+    "previous_release": "/opt/landlord/releases/20261111-0.10.0-gh-e1d14c9",
+    "backup": "/var/backups/landlord/pre-shell-20261111-220921",
+    "image": "landlord:0.10.0-5323d747465d-43033817431-1",
+    "image_id": "sha256:daace17a0dac1a5e7c3c3d58e9e99bef6975730fc0458d4c423de501a1bf8988",
+    "commit": "5323d747465d3a0aa4d55b25565108644485a71f",
+    "container_id": "d7692279b7984f23d78f7447c342f4b80f95b4665cb9731259722b88f6ad59a2",
+    "health": "healthy",
+    "counts": {
+      "users": 0,
+      "rooms": 0,
+      "tenants": 0,
+      "bills": 0,
+      "payments": 0,
+      "automation_plans": 0,
+      "cycle_tasks": 0
+    },
+    "database_quick_check": "ok",
+    "bootstrap_unchanged": true,
+    "caddy_unchanged": true,
+    "public_health": "PASS"
+  },
+  "backup": {
+    "backup": "/var/backups/landlord/pre-shell-20261111-220921",
+    "previous_release": "/opt/landlord/releases/20261111-0.10.0-gh-e1d14c9",
+    "database_quick_check": "ok",
+    "counts": {
+      "users": 0,
+      "rooms": 0,
+      "tenants": 0,
+      "bills": 0,
+      "payments": 0,
+      "automation_plans": 0,
+      "cycle_tasks": 0
+    },
+    "database_sha256": "7a284b21f4da6e33bd5f5086cca2a92ba4b537d3ec4062195411757ae79e5ebb",
+    "bootstrap_sha256": "ae1ba06bd98e7e63f33393a1f32bb579dde69b9ae99b21689780a1128de0a3fc",
+    "bootstrap_secret_copied_to_root_only_backup": true
+  },
+  "business": {
+    "pass": true,
+    "accumulated_checks": 30,
+    "prior_candidate_checks": [
+      {
+        "name": "old-lease archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "Headless Shell installed and full browser absent",
+        "pass": true
+      },
+      {
+        "name": "Old Chromium PDF unchanged after upgrade",
+        "pass": true
+      },
+      {
+        "name": "new-lease-1 archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "Reissuing same key reuses archived original",
+        "pass": true
+      },
+      {
+        "name": "new-lease-2 archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "new-lease-3 archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "renewal archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "Real receipt and reversal balance",
+        "pass": true
+      },
+      {
+        "name": "Reversal preserves original receipt",
+        "pass": true
+      },
+      {
+        "name": "maximum-template archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "Repeated rendering leaves no browser process",
+        "pass": true
+      },
+      {
+        "name": "Repeated rendering leaves no browser process",
+        "pass": true
+      },
+      {
+        "name": "Renderer failure does not save payment",
+        "pass": true
+      }
+    ],
+    "final_candidate_checks": [
+      {
+        "name": "Final image uses Headless Shell without full browser",
+        "pass": true
+      },
+      {
+        "name": "Final candidate preserves all earlier archived PDFs",
+        "pass": true
+      },
+      {
+        "name": "final-lease-1 archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "Final contract request replay reuses PDF",
+        "pass": true
+      },
+      {
+        "name": "final-lease-2 archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "final-lease-3 archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "final-renewal archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "final-receipt archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "final-reversal archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "final-maximum archived PDF SHA and size",
+        "pass": true
+      },
+      {
+        "name": "Final repeated renders leave no browser process",
+        "pass": true
+      },
+      {
+        "name": "Final renderer failure leaves payment count and balance unchanged",
+        "pass": true
+      },
+      {
+        "name": "Final timeout returns error within HTTP write limit",
+        "pass": true
+      },
+      {
+        "name": "Final timeout leaves payment count and balance unchanged",
+        "pass": true
+      },
+      {
+        "name": "Final timeout leaves no child process",
+        "pass": true
+      },
+      {
+        "name": "Final old and new PDFs survive restart",
+        "pass": true
+      }
+    ],
+    "full_browser_baseline": {
+      "label": "old-full-chromium-actual-lease",
+      "seconds": 5.080014969993499,
+      "sampled_total_peak_bytes": 335642624,
+      "sampled_anon_peak_bytes": 253059072,
+      "sampled_working_set_peak_bytes": 335638528,
+      "sampled_swap_peak_bytes": 0,
+      "cgroup_peak_since_start_bytes": 335953920,
+      "events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "sample_interval_seconds": 0.01
+    },
+    "final_candidate_metrics": [
+      {
+        "label": "shell-final-actual-lease-1",
+        "seconds": 1.9664286470069783,
+        "sampled_total_peak_bytes": 232247296,
+        "sampled_anon_peak_bytes": 98783232,
+        "sampled_working_set_peak_bytes": 228429824,
+        "sampled_swap_peak_bytes": 0,
+        "cgroup_peak_since_start_bytes": 235053056,
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "sample_interval_seconds": 0.01
+      },
+      {
+        "label": "shell-final-actual-lease-2",
+        "seconds": 1.1555436120106606,
+        "sampled_total_peak_bytes": 246308864,
+        "sampled_anon_peak_bytes": 106414080,
+        "sampled_working_set_peak_bytes": 242102272,
+        "sampled_swap_peak_bytes": 0,
+        "cgroup_peak_since_start_bytes": 247050240,
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "sample_interval_seconds": 0.01
+      },
+      {
+        "label": "shell-final-actual-lease-3",
+        "seconds": 1.1819167619978543,
+        "sampled_total_peak_bytes": 242651136,
+        "sampled_anon_peak_bytes": 101736448,
+        "sampled_working_set_peak_bytes": 238096384,
+        "sampled_swap_peak_bytes": 0,
+        "cgroup_peak_since_start_bytes": 247050240,
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "sample_interval_seconds": 0.01
+      },
+      {
+        "label": "shell-final-renewal",
+        "seconds": 1.2864871560013853,
+        "sampled_total_peak_bytes": 238981120,
+        "sampled_anon_peak_bytes": 100839424,
+        "sampled_working_set_peak_bytes": 234074112,
+        "sampled_swap_peak_bytes": 0,
+        "cgroup_peak_since_start_bytes": 247050240,
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "sample_interval_seconds": 0.01
+      },
+      {
+        "label": "shell-final-receipt",
+        "seconds": 1.4432682689948706,
+        "sampled_total_peak_bytes": 236060672,
+        "sampled_anon_peak_bytes": 96374784,
+        "sampled_working_set_peak_bytes": 230805504,
+        "sampled_swap_peak_bytes": 0,
+        "cgroup_peak_since_start_bytes": 247050240,
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "sample_interval_seconds": 0.01
+      },
+      {
+        "label": "shell-final-reversal",
+        "seconds": 1.0525163949932903,
+        "sampled_total_peak_bytes": 236105728,
+        "sampled_anon_peak_bytes": 96350208,
+        "sampled_working_set_peak_bytes": 230404096,
+        "sampled_swap_peak_bytes": 0,
+        "cgroup_peak_since_start_bytes": 247050240,
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "sample_interval_seconds": 0.01
+      },
+      {
+        "label": "shell-final-maximum-template",
+        "seconds": 1.7444576980051352,
+        "sampled_total_peak_bytes": 250830848,
+        "sampled_anon_peak_bytes": 111808512,
+        "sampled_working_set_peak_bytes": 244965376,
+        "sampled_swap_peak_bytes": 0,
+        "cgroup_peak_since_start_bytes": 252141568,
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "sample_interval_seconds": 0.01
+      }
+    ],
+    "engine": "Chromium 156.0.8078.79",
+    "timeout_seconds": 20.015277067999705,
+    "synthetic_data_only": true,
+    "full_suite_rerun": false
+  },
+  "focused_backend_tests": [
+    "TestM2PaymentReceiptIdempotencyReversalAndRollback",
+    "TestM2BillEditedWhileRenderingDoesNotCommitStalePayment",
+    "TestPDFQueuedRequestHonorsCallerCancellation"
+  ],
+  "pdf_quality": {
+    "pass": true,
+    "checks": [
+      {
+        "file": "old-lease.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "new-lease-1.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "new-lease-2.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "new-lease-3.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "renewal.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "receipt.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "reversal.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "maximum-template.pdf",
+        "pages": 31,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "final-lease-1.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "final-lease-2.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "final-lease-3.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "final-renewal.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "final-receipt.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "final-reversal.pdf",
+        "pages": 1,
+        "all_expected_text_present": true,
+        "sha_match": true
+      },
+      {
+        "file": "final-maximum.pdf",
+        "pages": 31,
+        "all_expected_text_present": true,
+        "sha_match": true
+      }
+    ],
+    "visual_review": {
+      "pass": true,
+      "pages": [
+        "final-lease-1:1",
+        "final-renewal:1",
+        "final-receipt:1",
+        "final-reversal:1",
+        "final-maximum:1",
+        "final-maximum:16",
+        "final-maximum:31"
+      ],
+      "result": "Chinese text, tables, amounts, long clauses and signature blocks readable without clipping or overlap"
+    }
+  },
+  "public": {
+    "pass": true,
+    "checks": [
+      {
+        "name": "HTTPS health and version",
+        "pass": true
+      },
+      {
+        "name": "Public entry matches cloud image with server gateway flag",
+        "pass": true
+      },
+      {
+        "name": "Public file matches cloud image: sw.js",
+        "pass": true
+      },
+      {
+        "name": "Public file matches cloud image: manifest.webmanifest",
+        "pass": true
+      },
+      {
+        "name": "Public file matches cloud image: assets/index-o5SMfKVJ.js",
+        "pass": true
+      },
+      {
+        "name": "Worker JavaScript and update policy",
+        "pass": true
+      },
+      {
+        "name": "Install identity and application scope",
+        "pass": true
+      },
+      {
+        "name": "Private API authentication and no-store",
+        "pass": true
+      },
+      {
+        "name": "edge initialization page",
+        "pass": true
+      },
+      {
+        "name": "edge layout fits viewport",
+        "pass": true
+      },
+      {
+        "name": "Actual worker scope",
+        "pass": true
+      },
+      {
+        "name": "Offline recovery page",
+        "pass": true
+      },
+      {
+        "name": "webkit-mobile initialization page",
+        "pass": true
+      },
+      {
+        "name": "webkit-mobile layout fits viewport",
+        "pass": true
+      },
+      {
+        "name": "No browser script errors",
+        "pass": true
+      }
+    ],
+    "accounts_created": false,
+    "native_iphone_push": "UNOBSERVED"
+  },
+  "resources": {
+    "started_at": "2026-11-11T22:10:59.764775+08:00",
+    "finished_at": "2026-11-11T22:11:30.180478+08:00",
+    "scope": "one short idle sample and one synthetic PDF, not a load test or long-term maximum",
+    "container": {
+      "id": "d7692279b7984f23d78f7447c342f4b80f95b4665cb9731259722b88f6ad59a2",
+      "image": "landlord:0.10.0-5323d747465d-43033817431-1",
+      "healthy": "healthy",
+      "limits": {
+        "memory_bytes": 536870912,
+        "memory_plus_swap_bytes": 805306368,
+        "nano_cpus": 1000000000,
+        "pids": 160
+      },
+      "idle_seconds": 24.003713191021234,
+      "idle_cpu_one_core_percent": {
+        "average": 0.1273639407010044,
+        "min": 0.0,
+        "max": 0.6290296765270622
+      },
+      "idle_working_set_bytes": {
+        "min": 29597696,
+        "max": 29708288
+      },
+      "after_pdf": {
+        "at": 1823234.509938177,
+        "cpu_usec": 891372,
+        "memory_current_bytes": 203149312,
+        "docker_working_set_bytes": 202473472,
+        "swap_bytes": 0,
+        "pids": 9,
+        "host_available_bytes": 980287488
+      },
+      "memory_stat_after_pdf": {
+        "anon": 7413760,
+        "file": 194609152,
+        "kernel": 1126400,
+        "kernel_stack": 114688,
+        "pagetables": 221184,
+        "sec_pagetables": 0,
+        "percpu": 1424,
+        "sock": 0,
+        "vmalloc": 12288,
+        "shmem": 8192,
+        "zswap": 0,
+        "zswapped": 0,
+        "file_mapped": 18075648,
+        "file_dirty": 4096,
+        "file_writeback": 0,
+        "swapcached": 0,
+        "anon_thp": 0,
+        "file_thp": 0,
+        "shmem_thp": 0,
+        "inactive_anon": 8192,
+        "active_anon": 7413760,
+        "inactive_file": 675840,
+        "active_file": 193925120,
+        "unevictable": 0,
+        "slab_reclaimable": 486656,
+        "slab_unreclaimable": 280992,
+        "slab": 767648,
+        "workingset_refault_anon": 0,
+        "workingset_refault_file": 1342,
+        "workingset_activate_anon": 0,
+        "workingset_activate_file": 0,
+        "workingset_restore_anon": 0,
+        "workingset_restore_file": 0,
+        "workingset_nodereclaim": 0,
+        "pgscan": 0,
+        "pgsteal": 0,
+        "pgscan_kswapd": 0,
+        "pgscan_direct": 0,
+        "pgscan_khugepaged": 0,
+        "pgsteal_kswapd": 0,
+        "pgsteal_direct": 0,
+        "pgsteal_khugepaged": 0,
+        "pgfault": 56509,
+        "pgmajfault": 1482,
+        "pgrefill": 0,
+        "pgactivate": 0,
+        "pgdeactivate": 0,
+        "pglazyfree": 0,
+        "pglazyfreed": 0,
+        "zswpin": 0,
+        "zswpout": 0,
+        "zswpwb": 0,
+        "thp_fault_alloc": 0,
+        "thp_collapse_alloc": 0,
+        "thp_swpout": 0,
+        "thp_swpout_fallback": 0
+      },
+      "memory_peak_since_container_start_bytes": 302129152,
+      "pids_peak_since_start": 75,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "main_process_memory_bytes": {
+        "Rss": 26906624,
+        "Pss": 26902528,
+        "Pss_Anon": 7413760,
+        "Pss_File": 19488768,
+        "Swap": 0
+      },
+      "pdf": {
+        "success": true,
+        "pdf_bytes": 367041,
+        "seconds": 1.4096728330478072,
+        "sample_interval_seconds": 0.1,
+        "sampled_memory_current_peak_bytes": 298262528,
+        "sampled_working_set_peak_bytes": 296501248,
+        "sampled_host_available_min_bytes": 905850880
+      }
+    },
+    "host": {
+      "mem_total_bytes": 1861529600,
+      "available_bytes": 980287488,
+      "swap_total_bytes": 4294963200,
+      "swap_used_bytes": 287064064,
+      "swappiness": 10,
+      "loadavg": "0.13 0.16 0.09 2/424 2791328",
+      "pressure": "some avg10=0.00 avg60=0.02 avg300=0.15 total=3556551136\nfull avg10=0.00 avg60=0.01 avg300=0.12 total=3349579640\n"
+    },
+    "disk": {
+      "image_rootfs_logical_bytes": 768001395,
+      "writable_container_bytes": 4096,
+      "data_allocated_bytes": 1499136,
+      "deployment_allocated_bytes": 2217373696,
+      "backup_allocated_bytes": 7045120,
+      "container_log_bytes": 0,
+      "host_free_bytes": 15644405760
+    },
+    "docker_stats": "{\"BlockIO\":\"195MB / 0B\",\"CPUPerc\":\"0.00%\",\"Container\":\"landlord\",\"ID\":\"d7692279b798\",\"MemPerc\":\"37.71%\",\"MemUsage\":\"193.1MiB / 512MiB\",\"Name\":\"landlord\",\"NetIO\":\"12.6kB / 205kB\",\"PIDs\":\"9\"}\n{\"BlockIO\":\"115MB / 18.3MB\",\"CPUPerc\":\"1.49%\",\"Container\":\"keepup-app-1\",\"ID\":\"5af53bfc8f31\",\"MemPerc\":\"20.22%\",\"MemUsage\":\"77.63MiB / 384MiB\",\"Name\":\"keepup-app-1\",\"NetIO\":\"70.6kB / 1.61MB\",\"PIDs\":\"12\"}"
+  },
+  "final_snapshot": {
+    "at": "2026-11-11T22:13:08.023727+08:00",
+    "container_id": "d7692279b7984f23d78f7447c342f4b80f95b4665cb9731259722b88f6ad59a2",
+    "healthy": true,
+    "public_entry_status": 200,
+    "working_set_bytes": 17371136,
+    "memory_current_bytes": 196915200,
+    "inactive_file_bytes": 179544064,
+    "swap_bytes": 0,
+    "pids": 9,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "host_available_bytes": 1027416064,
+    "host_swap_total_bytes": 4294963200,
+    "host_swap_used_bytes": 318849024,
+    "swappiness": 10,
+    "host_disk_free_bytes": 17992691712,
+    "host_disk_total_bytes": 42157305856,
+    "disk_df": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/vda1        40G   21G   17G  56% /",
+    "data_allocated_bytes": 1499136,
+    "deployment_allocated_bytes": 1174196224,
+    "backup_allocated_bytes": 7045120,
+    "database_quick_check": "ok",
+    "counts": {
+      "users": 0,
+      "rooms": 0,
+      "tenants": 0,
+      "bills": 0,
+      "payments": 0,
+      "automation_plans": 0,
+      "cycle_tasks": 0
+    },
+    "other_containers": [
+      {
+        "name": "roundcube",
+        "id": "e1f596fef0e375068d8ff94d5ba902d8ce8acd3cacd72e8a33789f6092a68500",
+        "status": "running",
+        "health": null,
+        "started_at": "2026-11-10T12:52:01.654236504Z"
+      },
+      {
+        "name": "mailserver",
+        "id": "739265c2af1843d03e93e705ae6f61a727f1d33aed89fa89f13fc2522f73a01b",
+        "status": "running",
+        "health": "healthy",
+        "started_at": "2026-11-10T12:52:01.480272377Z"
+      },
+      {
+        "name": "keepup-app-1",
+        "id": "5af53bfc8f317729e9ae8861cec1e15260a9211f51e412dbd077d85f7dab77ee",
+        "status": "running",
+        "health": "healthy",
+        "started_at": "2026-11-11T09:51:46.596093374Z"
+      }
+    ],
+    "caddy_sha256": "47e1fa711faa085a5c864d0624278ff7743f62d014bfa5fa6e119e8150b05a24",
+    "bootstrap_mode": "0o600",
+    "docker_stats": "{\"BlockIO\":\"196MB / 20.5kB\",\"CPUPerc\":\"0.00%\",\"Container\":\"landlord\",\"ID\":\"d7692279b798\",\"MemPerc\":\"3.23%\",\"MemUsage\":\"16.56MiB / 512MiB\",\"Name\":\"landlord\",\"NetIO\":\"35.6kB / 544kB\",\"PIDs\":\"9\"}\n{\"BlockIO\":\"116MB / 36.3MB\",\"CPUPerc\":\"0.00%\",\"Container\":\"keepup-app-1\",\"ID\":\"5af53bfc8f31\",\"MemPerc\":\"15.71%\",\"MemUsage\":\"60.34MiB / 384MiB\",\"Name\":\"keepup-app-1\",\"NetIO\":\"70.9kB / 1.61MB\",\"PIDs\":\"12\"}",
+    "processes": "PID                 PPID                STAT                COMMAND\n2790384             2790360             Ssl                 landlord"
+  },
+  "siblings": {
+    "endpoints": {
+      "home": {
+        "status": 200,
+        "sha256": "fdc6985aedfe85031c31a9caa0ec4b6a03f1e5cad89fa41be461199236378096",
+        "bytes": 1770
+      },
+      "game": {
+        "status": 200,
+        "sha256": "27493a860bdcb73f92bdc3b79118abcb2e65202281688922b8d08fb2046e55ce",
+        "bytes": 6862
+      },
+      "worksheet": {
+        "status": 200,
+        "sha256": "7f9655b418dad08ca76e8f55f286beba432fab0931d4b91e0ad28dbbc44c45cf",
+        "bytes": 16030
+      },
+      "keepup": {
+        "status": 200,
+        "sha256": "1378caa142f8a834831ffce03350db4803b7d492ecfd480a4e15b8663177f066",
+        "bytes": 942
+      },
+      "keepup_health": {
+        "status": 200,
+        "sha256": "a29ee2b15c494311c52521766e44af56a3ad2248e7a8ab465e5206463c13d288",
+        "bytes": 15
+      },
+      "komari": {
+        "status": 200,
+        "sha256": "352a3bf1b75e976d17e5b638a8b4e2d41e7f510aa2abd77722e4ba01bcbf401b",
+        "bytes": 4804
+      },
+      "mail": {
+        "status": 200,
+        "sha256": "b59077273cac35b78bfca1b8013cf550663b2ca2567cc98c7d2c831db833c8e3",
+        "bytes": 5400
+      }
+    },
+    "stable_hashes_unchanged": true,
+    "other_containers_not_restarted": true
+  },
+  "cleanup": {
+    "vps": {
+      "host": "hcss-ecs-b4e4",
+      "removed_images": [
+        "landlord:0.10.0-598badb8cf4c-43031705851-1"
+      ],
+      "removed_paths": [
+        "/opt/landlord/artifacts/github-43031705851/artifact.zip",
+        "/opt/landlord/artifacts/github-43031705851/image.tar.gz",
+        "/opt/landlord/artifacts/github-43031705851/release.tar.gz",
+        "/opt/landlord/artifacts/github-43033817431/artifact.zip",
+        "/opt/landlord/releases/20261111-0.10.0-shell-598badb"
+      ],
+      "final_archives_sha256_pass": true,
+      "observed_free_disk_increase_bytes": 2348761088
+    },
+    "nas": {
+      "host": "WeisNAS",
+      "removed_images": [
+        "landlord:0.10.0-598badb8cf4c-43031705851-1"
+      ],
+      "removed_paths": [
+        "/vol1/1000/NAS/Docker/builds/landlord-shell-acceptance-20261111/artifacts/artifact.zip",
+        "/vol1/1000/NAS/Docker/builds/landlord-shell-acceptance-20261111/artifacts/image.tar.gz",
+        "/vol1/1000/NAS/Docker/builds/landlord-shell-acceptance-20261111/artifacts/release.tar.gz",
+        "/vol1/1000/NAS/Docker/builds/landlord-shell-acceptance-20261111/artifacts-final/artifact.zip",
+        "/vol1/1000/NAS/Docker/builds/landlord-shell-acceptance-20261111/artifacts/release",
+        "/vol1/1000/NAS/Docker/builds/landlord-shell-acceptance-20261111/state.json",
+        "/vol1/1000/NAS/Docker/builds/landlord-shell-acceptance-20261111/timeout-browser"
+      ],
+      "final_archives_sha256_pass": true,
+      "removed_synthetic_volume": "landlord-shell-acceptance-20261111-data",
+      "observed_free_disk_increase_bytes": 0
+    }
+  },
+  "verification_notes": {
+    "intermediate_engine_commit": "598badb",
+    "preexisting_timeout_issue": {
+      "renderer_seconds": 45,
+      "http_write_seconds": 30,
+      "observed": "client disconnected before error response; no production mutation",
+      "fix": "PDF total deadline including queue reduced to 20 seconds"
+    },
+    "harness_repairs": [
+      "NAS Python tar extraction lacked filter argument; paths and file types validated before extracting",
+      "docker top on NAS requires PID column; switched to pid,comm",
+      "continued completed synthetic checks from persisted state without regenerating prior documents"
+    ],
+    "focused_tests_passed": 3,
+    "full_suite_rerun": false
+  },
+  "native_iphone_push": "UNOBSERVED",
+  "local_evidence_sha256": {
+    "candidate-result.json": "906d2dc60b27981eab292b4d190ed0ec69f14e79e92f807a72feeef794c4d090",
+    "pdf-quality.json": "b9550030a6fe05b5921604adfbb1d83097c00b45339318bfd4e6cc5f45bc05b0",
+    "public/results.json": "6ce75eaf2890080d426ffd834d773065aca8c9b44f7191d356c0425ed9b71843",
+    "focused-backend-final.jsonl": "e172bb17132540018363ffee183602e3d5918096c7dddda0e18557a64dab9766",
+    "resources.json": "45e8bcdb5ab06032b011751579979cc4ff2eaef07f2e18df4929cdb8f2bfd5ac",
+    "final-snapshot.json": "3a054104aea12a21489d6a2f6409e70fb0b794871eb2fd10c0910da9d711f6fa",
+    "prepared.json": "d818a24bb48ace6782b56c584633990a9da8823e5661b183086dc8573983fc6b",
+    "published.json": "dbf8366b5b6e06b4fc140b5c08542d9b2f5c26c73ebc1cba15e9d682d129f713",
+    "backup.json": "6d8ab2395da266ce285bd67ae0805680c3e8653930ba810992e99d73e337ee8e",
+    "build.json": "27806cb3c73750a4ce87cbd174c553e6ae93ce05226db74d435afe7056e1cebc"
+  }
+}

@@ -6,7 +6,7 @@
 
 正式入口：<https://www.zoeng.site/landlord/>。首次管理员需使用部署者提供的初始化邀请链接，自行设置账号密码；日常使用正式入口登录。部署与回退见 [部署记录](doc/部署候选与Safari验收.md)。
 
-当前线上运行GitHub云端构建制品（源码e1d14c9，2026-11-11重新部署）。部署、备份和清理已完成；资源实测见[新加坡VPS资源检查](doc/新加坡VPS资源检查-20261111.md)，单次PDF峰值接近512MiB容器上限，后续保持串行PDF并优先优化该场景。
+当前线上运行 GitHub 云端构建制品（源码 `5323d74`，2026-11-11 22:10 部署），PDF 已改为 Chromium Headless Shell。VPS 单次 PDF 容器峰值约 288 MiB，无内存上限事件或 OOM；最终 Docker 读数约 16.6 MiB。详见 [Headless Shell 上线与资源验证](doc/HeadlessShell上线与资源验证-20261111.md)。
 
 - 当前需求、技术决定、验收及阶段安排：[项目启动与实施计划](doc/项目启动与实施计划.md)
 - 当前事实与验证结果：[STATE.md](STATE.md)
@@ -31,7 +31,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\dev.ps1
 
 在账单登记线下实收后自动生成本次收据，在账单详情或收款记录查看；填原因可整笔冲销，原流水与原 PDF 保留，新增负数流水和冲销凭证。当前账单的打印入口统一显示应缴通知单，逐笔收据读取归档文件。旧流水不会自动伪造历史 PDF。
 
-PDF 和数据快照分别存入 SQLite，现有数据库备份可一起保存；下载会校验文件指纹。Windows 自动查找 Edge/Chrome，也可设置 `LANDLORD_PDF_BROWSER` 为浏览器可执行文件路径。Linux 镜像的 Chromium 与 Noto CJK 已实测，HOME/XDG 位于单次转换临时目录，兼容只读容器；转换器不可用时收款/冲销整体不落库，恢复后用原表单重试。同一实例串行转换 PDF，含排队最长等待 45 秒。
+PDF 和数据快照分别存入 SQLite，现有数据库备份可一起保存；下载会校验文件指纹。Windows 自动查找 Edge/Chrome，也可设置 `LANDLORD_PDF_BROWSER` 为浏览器可执行文件路径。Linux 镜像的 Chromium Headless Shell 与 Noto CJK 已实测，HOME/XDG 位于单次转换临时目录，兼容只读容器；转换器不可用时收款/冲销整体不落库，恢复后用原表单重试。同一实例串行转换 PDF，含排队最长等待 20 秒。
 
 ## 周期任务与提醒
 
