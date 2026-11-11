@@ -18,7 +18,9 @@ var documentPDFRenderer = chromiumPDF
 var pdfRenderSlot = make(chan struct{}, 1)
 
 func chromiumPDF(ctx context.Context, html string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
+	// Leave time to return an error before the HTTP server's 30-second write limit.
+	// This budget includes waiting for the single render slot.
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	select {
 	case pdfRenderSlot <- struct{}{}:
