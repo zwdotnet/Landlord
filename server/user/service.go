@@ -1,0 +1,887 @@
+package user
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+	"unicode/utf8"
+
+	"smallgo/server/auth"
+	"smallgo/server/database"
+	"smallgo/server/sysconfig"
+	"smallgo/server/utils"
+
+	"gorm.io/gorm"
+)
+
+// 账号角色（users.role，v0.6.10 起三种）。
+//
+//   - RoleAdmin  「超级管理员」：账号审核、系统配置、备份、日志；业务数据无特权；
+//   - RoleUser   「出租人」：房东/宿舍管理员，拥有个人台账与业务权限；
+//   - RoleTenant 「租户」：只读门户角色，不是任何台账的成员，只能看本人数据
+//     与提交资料变更申请（见 docs/07-租户登录与角色权限设计.md）。
+//
+// 刻意用常量而不是枚举表：只有三种角色、没有角色自定义需求，建表只会增加维护面。
+const (
+	RoleAdmin  = "admin"
+	RoleUser   = "user"
+	RoleTenant = "tenant"
+
+	// tenantPortalConfigKey 是租户门户总开关的系统配置键。
+	//
+	// 定义在 user 包（而不是 rental 包）：注册流程要对它做判定，而 user 是框架
+	// 实例化文件、不该反向 import 业务包。键名与 rental 侧注册的 ConfigDef
+	// 必须逐字一致，两边都拼这个常量，避免手写字符串写错一处。
+	tenantPortalConfigKey = "rental_tenant_portal_enabled"
+)
+
+// Sentinel errors — handlers map these to the documented API error codes
+// (1001 / 1003 in AGENTS.md). The error message IS the user-facing text.
+var (
+	ErrRegisterDisabled = errors.New("注册功能已关闭")
+	ErrUserExists       = errors.New("用户名已存在")
+	ErrPasswordTooShort = errors.New("密码长度不能少于6位")
+	ErrPasswordTooLong  = errors.New("密码长度不能超过72字节")
+	ErrLastAdmin        = errors.New("不能降级、禁用或删除最后一个管理员")
+	ErrUserNotFound     = errors.New("用户不存在")
+	// ErrTenantPortalDisabled 是「租户门户已关闭」——管理员可通过系统配置
+	// rental_tenant_portal_enabled 关掉租客注册入口（关掉后已有租户账号不受影响）。
+	ErrTenantPortalDisabled = errors.New("本应用未开放租客登录")
+	// ErrUserBoundTenant 是「该账号已关联租户档案，不能改角色」——必须先由房东
+	// 解绑，否则改了角色会让「租户档案 ↔ 登录账号」的关联与角色自相矛盾。
+	ErrUserBoundTenant = errors.New("该账号已关联租户档案，请先在租户管理里解除关联")
+	// ErrUserDeleteBlocked is returned when a registered app guard wants to
+	// keep the user (its business data still references the account).
+	ErrUserDeleteBlocked = errors.New("该用户在应用中已有数据，不能删除；可改为禁用账号")
+	ErrFnOSNotBound      = errors.New("此飞牛 NAS 账号尚未绑定应用账号")
+	ErrFnOSAlreadyBound  = errors.New("此飞牛 NAS 账号已绑定其他应用账号")
+	// ErrPhoneRequired / ErrPhoneInvalid 只在系统配置要求手机号时才会出现。
+	// 手机号仅作联系与认人用途，不做唯一校验（同一家人共用一个号是常见场景）。
+	ErrPhoneRequired = errors.New("请填写手机号")
+	ErrPhoneInvalid  = errors.New("手机号格式不正确")
+)
+
+// FnOSIdentity is the trusted identity context added by the fnOS unified
+// gateway. It deliberately has no token field: gateway API tokens must never
+// be persisted or passed to the browser.
+type FnOSIdentity struct {
+	UserID   uint
+	Username string
+	IsAdmin  bool
+}
+
+func validatePassword(password string) error {
+	if utf8.RuneCountInString(password) < 6 {
+		return ErrPasswordTooShort
+	}
+	if len(password) > 72 {
+		return ErrPasswordTooLong
+	}
+	return nil
+}
+
+func sha256Hex(value string) string {
+	sum := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(sum[:])
+}
+
+// verifyStoredPassword accepts both the current plaintext-over-TLS protocol
+// and the previous browser-side SHA-256 protocol. A successful legacy match is
+// migrated to bcrypt(raw) by callers that can safely update the row.
+func verifyStoredPassword(stored, raw, legacyMD5 string) (bool, bool) {
+	if auth.VerifyPassword(stored, raw) {
+		return true, auth.IsLegacyHash(stored)
+	}
+	for _, candidate := range []string{sha256Hex(raw), legacyMD5} {
+		if candidate != "" && candidate != raw && auth.VerifyPassword(stored, candidate) {
+			return true, true
+		}
+	}
+	return false, false
+}
+
+// loginTokenTTL resolves the configured login lifetime. The login_expiry_days
+// sysconfig (1-365 days, default 7) lets the admin control how often users
+// must re-authenticate.
+func loginTokenTTL(db *gorm.DB) time.Duration {
+	days := 7
+	if value, err := sysconfig.GetConfig(db, "login_expiry_days", 0); err == nil {
+		if parsed, parseErr := strconv.Atoi(value); parseErr == nil && parsed >= 1 && parsed <= 365 {
+			days = parsed
+		}
+	}
+	return time.Duration(days) * 24 * time.Hour
+}
+
+// RegisterPhonePolicy 是注册手机号的两个开关，供注册页与后台配置共用。
+// Enabled=false 时注册页不显示手机号输入框，也不校验；Required=true 时必填。
+type RegisterPhonePolicy struct {
+	Enabled  bool
+	Required bool
+}
+
+// GetRegisterPhonePolicy 读取注册手机号策略。
+// 默认：**显示且必填**（2026-10-11 粉丝需求——管理员要能一眼看出谁是谁）。
+// 超管可在后台「访问控制」里关掉显示、或改成选填。
+// Required 只在 Enabled 为真时有意义：隐藏了就不该再要求填。
+func GetRegisterPhonePolicy(db *gorm.DB) RegisterPhonePolicy {
+	p := RegisterPhonePolicy{Enabled: true, Required: true}
+	if v, err := sysconfig.GetConfig(db, "register_phone_enabled", 0); err == nil && v != "" {
+		p.Enabled = v == "true"
+	}
+	if v, err := sysconfig.GetConfig(db, "register_phone_required", 0); err == nil && v != "" {
+		p.Required = v == "true"
+	}
+	if !p.Enabled {
+		p.Required = false
+	}
+	return p
+}
+
+// normalizePhone 去掉手机号里的空格与常见分隔符（用户常写成 138-1234-5678）。
+func normalizePhone(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch r {
+		case ' ', '\t', '-', '·', '(', ')', '+':
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+// validatePhone 只在「填写了手机号」时校验格式，不在必填判断里；
+// 必填由 GetRegisterPhonePolicy 决定。允许 11 位手机号，也允许带国际区号的
+// 更长号码（如 8613812345678），因为这是联系信息而非账号标识。
+func validatePhone(phone string) error {
+	if phone == "" {
+		return nil
+	}
+	for _, r := range phone {
+		if r < '0' || r > '9' {
+			return ErrPhoneInvalid
+		}
+	}
+	if len(phone) < 7 || len(phone) > 15 {
+		return ErrPhoneInvalid
+	}
+	return nil
+}
+
+// Register 是历史入口（不指定角色），等价于 RegisterWithRole(..., "", ...)。
+func Register(db *gorm.DB, username string, password string, phone string, jwtSecret string) (map[string]interface{}, error) {
+	return RegisterWithRole(db, username, password, phone, "", jwtSecret)
+}
+
+// RegisterWithRole 注册账号并指定角色（v0.6.10 加，见 docs/07-租户登录与角色权限设计.md）。
+//
+// role 取值：
+//   - ""（或非法值）：沿用框架默认——首个账号是 admin，其余是 user（房东/出租人）；
+//   - "tenant"：租户。租户是**只读门户角色**，与房东是两套入口，因此：
+//     1) 状态恒为 2（待关联）——租户注册后必须由房东在租户管理里「关联登录账号」
+//     才生效，这一点**不受** register_need_approval 开关影响（那个开关管的是
+//     房东账号的注册审核）；
+//     2) 不开个人台账——个人台账等价于「自己就是房东」，与租户语义冲突
+//     （跳过逻辑在 rental/ledger.go 的注册钩子里按角色判断）；
+//     3) 受系统配置 rental_tenant_portal_enabled 控制，关闭时直接拒绝注册。
+//
+// 参数 role 之所以是自由字符串而不改成枚举：注册接口是公开的，传入值不可信，
+// 这里一律按白名单归一化，未识别的值退化成默认角色而不是报错（保持向后兼容，
+// 老前端不传该字段时行为与之前完全一致）。
+func RegisterWithRole(db *gorm.DB, username string, password string, phone string, role string, jwtSecret string) (map[string]interface{}, error) {
+	role = strings.TrimSpace(strings.ToLower(role))
+	if role != RoleTenant {
+		role = ""
+	}
+
+	var result map[string]interface{}
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var userCount int64
+		if err := tx.Model(&database.User{}).Count(&userCount).Error; err != nil {
+			return err
+		}
+
+		if userCount > 0 {
+			allowRegister, err := sysconfig.GetConfig(tx, "allow_register", 0)
+			if err != nil {
+				return err
+			}
+			if allowRegister != "true" {
+				return ErrRegisterDisabled
+			}
+		}
+
+		var existing database.User
+		if err := tx.Where("username = ?", username).First(&existing).Error; err == nil {
+			return ErrUserExists
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		if err := validatePassword(password); err != nil {
+			return err
+		}
+
+		// 手机号策略只对「非首个账号」生效：第一个账号是实例初始化的人，
+		// 那时还没有管理员能去后台改配置，强制必填会把人堵在门外。
+		phone = normalizePhone(phone)
+		if userCount > 0 {
+			policy := GetRegisterPhonePolicy(tx)
+			if policy.Enabled && policy.Required && phone == "" {
+				return ErrPhoneRequired
+			}
+		}
+		if err := validatePhone(phone); err != nil {
+			return err
+		}
+
+		hashedPassword, err := auth.HashPassword(password)
+		if err != nil {
+			return err
+		}
+
+		assignedRole := "user"
+		if userCount == 0 {
+			assignedRole = "admin"
+		}
+
+		// v0.6.0：注册审核。开启 register_need_approval 时，新注册账号为
+		// 「待审核」（status=2）——可以登录，但业务接口全部 403，等管理员
+		// 审核通过（见 rental/approval.go 与 rental/ledger_api.go）。
+		// 首个用户是管理员（初始化实例的人），不设待审核，否则没人能审核。
+		status := 1
+		if userCount > 0 {
+			if needApproval, err := sysconfig.GetConfig(tx, "register_need_approval", 0); err == nil && needApproval == "true" {
+				status = 2
+			}
+		}
+		if role == RoleTenant {
+			// 租户门户总开关：关闭时不许注册租户账号（但仍不动老账号）。
+			if enabled, err := sysconfig.GetConfig(tx, tenantPortalConfigKey, 0); err == nil && enabled == "false" {
+				return ErrTenantPortalDisabled
+			}
+			assignedRole = RoleTenant
+			// 租户恒为「待关联」（status=2）：与「注册需管理员审核」无关，
+			// 关联动作由房东在租户管理里完成并顺带把状态置 1。
+			status = 2
+		}
+
+		user := database.User{
+			Username:    username,
+			Password:    hashedPassword,
+			Phone:       phone,
+			Role:        assignedRole,
+			Status:      status,
+			APIKey:      auth.GenerateAPIKey(),
+			AuthVersion: 1,
+		}
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
+
+		// 让应用挂上自己的「用户创建后」元数据（如租房管理的默认台账归属）。
+		// 放在注册事务里：应用侧失败则整个注册回滚，不会留下「注册成功但
+		// 无所属台账」的半残账号。
+		if err := database.RunUserCreateHooks(tx, user.ID); err != nil {
+			return err
+		}
+
+		token, err := auth.GenerateTokenWithTTL(user.ID, user.Username, user.Role, user.AuthVersion, jwtSecret, loginTokenTTL(tx))
+		if err != nil {
+			return err
+		}
+
+		result = map[string]interface{}{
+			"token": token,
+			"user": map[string]interface{}{
+				"id":       user.ID,
+				"username": user.Username,
+				"role":     user.Role,
+				// v0.6.0：新注册账号可能是「待审核」（status=2），前端需据此
+				// 直接显示「等待审核」页，而不是进去一堆 403。
+				"status": user.Status,
+			},
+		}
+		return nil
+	})
+	return result, err
+}
+
+func Login(db *gorm.DB, username string, password string, passwordMd5 string, jwtSecret string) (map[string]interface{}, error) {
+	var user database.User
+	if err := db.Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, fmt.Errorf("用户名或密码错误")
+	}
+
+	// v0.6.0：允许「待审核」（status=2）登录——登录本身不报错，否则用户会
+	// 误以为注册失败而反复重试；业务接口由 middleware.RequireAuth 的待审核
+	// 门禁拦下（403 + 明确提示），前端据 user.status 渲染「等待审核」页。
+	// status=0（停用）仍然一律拒绝。
+	if user.Status != 1 && user.Status != 2 {
+		// Generic error — masking disabled accounts as "wrong credentials"
+		// prevents username enumeration via response inspection.
+		return nil, fmt.Errorf("用户名或密码错误")
+	}
+
+	verified, needsRehash := verifyStoredPassword(user.Password, password, passwordMd5)
+	if !verified {
+		return nil, fmt.Errorf("用户名或密码错误")
+	}
+	if user.AuthVersion == 0 {
+		user.AuthVersion = 1
+		if err := db.Model(&user).Update("auth_version", user.AuthVersion).Error; err != nil {
+			return nil, err
+		}
+	}
+	if needsRehash {
+		hashedPassword, err := auth.HashPassword(password)
+		if err != nil {
+			return nil, err
+		}
+		if err := db.Model(&user).Update("password", hashedPassword).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	token, err := auth.GenerateTokenWithTTL(user.ID, user.Username, user.Role, user.AuthVersion, jwtSecret, loginTokenTTL(db))
+	if err != nil {
+		return nil, err
+	}
+	// 输账号密码登录同样是显式登录：解除网关隐式登录的抑制，让网关域上的
+	// 后续刷新继续靠网关注入身份维持会话。
+	if err := ClearFnOSSessionSuppression(db, user.ID); err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"token": token,
+		"user": map[string]interface{}{
+			"id":       user.ID,
+			"username": user.Username,
+			"role":     user.Role,
+			// v0.6.0：前端据 status 渲染「等待审核」页（2=待审核）。
+			"status": user.Status,
+		},
+	}, nil
+}
+
+// LogoutApplicationSession 记录「用户在应用里主动退出登录」。
+//
+// 直连端口上的会话本来就是应用自己的 JWT，清掉即登出，这里没有额外语义；
+// 网关域上则必须落一条持久化标记，否则服务端下一次请求又能从 X-Trim-Userid
+// 把登录态认回来——那种「退不掉」才是用户报的 bug。标记只抑制**隐式**登录，
+// 用户随后显式点「使用飞牛 NAS 登录」或输账号密码仍然可以正常进来。
+func LogoutApplicationSession(db *gorm.DB, userID uint) error {
+	if userID == 0 {
+		return nil
+	}
+	now := time.Now()
+	return db.Save(&database.UserSession{
+		UserID:       userID,
+		Suppressed:   true,
+		SuppressedAt: now,
+		UpdatedAt:    now,
+	}).Error
+}
+
+// FnOSSessionSuppressed 报告该应用账号是否处于「已主动登出」状态。网关隐式
+// 认人前必须查它，这是「飞牛授权登录也能退出应用」的关键。查询出错时按未抑制
+// 处理：故障不该把所有人锁在登录页外。
+func FnOSSessionSuppressed(db *gorm.DB, userID uint) bool {
+	if userID == 0 {
+		return false
+	}
+	var session database.UserSession
+	if err := db.Where("user_id = ?", userID).First(&session).Error; err != nil {
+		return false
+	}
+	return session.Suppressed
+}
+
+// ClearFnOSSessionSuppression 在用户显式登录成功后解除抑制：从这一刻起，只要
+// 飞牛那侧还登录着，网关身份就可以继续隐式维持应用登录态（刷新不掉线）。
+func ClearFnOSSessionSuppression(db *gorm.DB, userID uint) error {
+	if userID == 0 {
+		return nil
+	}
+	return db.Model(&database.UserSession{}).
+		Where("user_id = ?", userID).
+		Updates(map[string]interface{}{"suppressed": false, "updated_at": time.Now()}).Error
+}
+
+// LoginWithFnOS signs in the application account bound to the gateway's
+// NAS-local UID. The identity must only come from the fnOS Unix-socket gateway.
+func LoginWithFnOS(db *gorm.DB, identity FnOSIdentity, jwtSecret string) (map[string]interface{}, error) {
+	var user database.User
+	if err := db.Where("fn_os_user_id = ?", identity.UserID).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrFnOSNotBound
+		}
+		return nil, err
+	}
+	if user.Status != 1 {
+		return nil, fmt.Errorf("账号已停用")
+	}
+	if user.AuthVersion == 0 {
+		user.AuthVersion = 1
+		if err := db.Model(&user).Update("auth_version", user.AuthVersion).Error; err != nil {
+			return nil, err
+		}
+	}
+	if user.FnOSUsername != identity.Username {
+		if err := db.Model(&user).Update("fn_os_username", identity.Username).Error; err != nil {
+			return nil, err
+		}
+	}
+	// 显式登录成功 = 用户重新要回应用登录态，解除之前的主动登出抑制。
+	if err := ClearFnOSSessionSuppression(db, user.ID); err != nil {
+		return nil, err
+	}
+	return loginResult(db, user, jwtSecret)
+}
+
+// BindFnOSAccount either creates a new application account or verifies an
+// existing account, then atomically binds it to the current fnOS UID.
+func BindFnOSAccount(db *gorm.DB, identity FnOSIdentity, username, password, mode, jwtSecret string) (map[string]interface{}, error) {
+	if identity.UserID == 0 || identity.Username == "" {
+		return nil, fmt.Errorf("飞牛登录信息无效")
+	}
+
+	var result map[string]interface{}
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var user database.User
+		switch mode {
+		case "register":
+			var userCount int64
+			if err := tx.Model(&database.User{}).Count(&userCount).Error; err != nil {
+				return err
+			}
+			if userCount > 0 {
+				allowRegister, err := sysconfig.GetConfig(tx, "allow_register", 0)
+				if err != nil {
+					return err
+				}
+				if allowRegister != "true" {
+					return ErrRegisterDisabled
+				}
+			}
+			if err := validatePassword(password); err != nil {
+				return err
+			}
+			if err := tx.Where("username = ?", username).First(&user).Error; err == nil {
+				return ErrUserExists
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			hashedPassword, err := auth.HashPassword(password)
+			if err != nil {
+				return err
+			}
+			role := "user"
+			if userCount == 0 {
+				role = "admin"
+			}
+			// v0.6.0：飞牛注册通道同样遵守「注册需审核」开关，否则从 NAS 一侧
+			// 注册就能绕过审核直接拿到业务数据（安全口子）。首个用户是管理员
+			// （初始化实例的人），不设待审核。
+			status := 1
+			if userCount > 0 {
+				if needApproval, err := sysconfig.GetConfig(tx, "register_need_approval", 0); err == nil && needApproval == "true" {
+					status = 2
+				}
+			}
+			user = database.User{Username: username, Password: hashedPassword, Role: role, Status: status, APIKey: auth.GenerateAPIKey(), AuthVersion: 1}
+			if err := tx.Create(&user).Error; err != nil {
+				return err
+			}
+			if err := database.RunUserCreateHooks(tx, user.ID); err != nil {
+				return err
+			}
+		case "bind":
+			// v0.6.0：允许「待审核」（2）账号绑定——绑定只是把这个 NAS 身份与
+			// 已有应用账号关联，不等于获得业务权限（待审核仍旧处处 403）。
+			// 只拒停用（0）。若这里只认 1，用户在等待审核期间会发现自己的
+			// NAS 账号「绑不上」，以为是绑定功能坏了。
+			if err := tx.Where("username = ?", username).First(&user).Error; err != nil ||
+				(user.Status != 1 && user.Status != 2) {
+				return fmt.Errorf("用户名或密码错误")
+			}
+			verified, needsRehash := verifyStoredPassword(user.Password, password, "")
+			if !verified {
+				return fmt.Errorf("用户名或密码错误")
+			}
+			if needsRehash {
+				hashedPassword, err := auth.HashPassword(password)
+				if err != nil {
+					return err
+				}
+				if err := tx.Model(&user).Update("password", hashedPassword).Error; err != nil {
+					return err
+				}
+			}
+		default:
+			return fmt.Errorf("无效的绑定方式")
+		}
+
+		// 绑定冲突放在账号就绪之后判定：NAS 身份已绑定别的应用账号时拒绝；
+		// bind 且绑定的恰是当前验证通过的账号视为重新登录放行——用户主动
+		// 退出后（抑制标记只挡隐式认人，绑定关系仍在）凭账密回来是合法路径。
+		var linked database.User
+		if err := tx.Where("fn_os_user_id = ?", identity.UserID).First(&linked).Error; err == nil {
+			if mode != "bind" || linked.ID != user.ID {
+				return ErrFnOSAlreadyBound
+			}
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		if user.FnOSUserID != nil && *user.FnOSUserID != identity.UserID {
+			return fmt.Errorf("该应用账号已绑定其他飞牛 NAS 账号")
+		}
+		updates := map[string]interface{}{
+			"fn_os_user_id":  identity.UserID,
+			"fn_os_username": identity.Username,
+		}
+		if user.AuthVersion == 0 {
+			user.AuthVersion = 1
+			updates["auth_version"] = user.AuthVersion
+		}
+		if err := tx.Model(&user).Updates(updates).Error; err != nil {
+			return err
+		}
+		user.FnOSUserID = &identity.UserID
+		user.FnOSUsername = identity.Username
+		// 绑定同样是显式登录：解除之前的主动登出抑制，否则网关隐式认人仍被
+		// 挡住，用户绑定成功后一刷新就掉回登录页。
+		if err := ClearFnOSSessionSuppression(tx, user.ID); err != nil {
+			return err
+		}
+		var err error
+		result, err = loginResult(tx, user, jwtSecret)
+		return err
+	})
+	return result, err
+}
+
+func loginResult(db *gorm.DB, user database.User, jwtSecret string) (map[string]interface{}, error) {
+	token, err := auth.GenerateTokenWithTTL(user.ID, user.Username, user.Role, user.AuthVersion, jwtSecret, loginTokenTTL(db))
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"token": token,
+		"user":  map[string]interface{}{"id": user.ID, "username": user.Username, "role": user.Role},
+	}, nil
+}
+
+func ChangePassword(db *gorm.DB, userID uint, oldPassword string, oldPasswordMd5 string, newPassword string) error {
+	if err := validatePassword(newPassword); err != nil {
+		return err
+	}
+
+	var user database.User
+	if err := db.First(&user, userID).Error; err != nil {
+		return fmt.Errorf("用户不存在")
+	}
+
+	verified, _ := verifyStoredPassword(user.Password, oldPassword, oldPasswordMd5)
+	if !verified {
+		return fmt.Errorf("原密码不正确")
+	}
+	hashedPassword, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+	nextVersion := user.AuthVersion + 1
+	return db.Model(&user).Updates(map[string]interface{}{
+		"password":     hashedPassword,
+		"auth_version": nextVersion,
+	}).Error
+}
+
+// UserResponse is the admin user-list payload. APIKey is intentionally
+// omitted — bearer tokens must not be enumerable via the list endpoint.
+// Owners read their own key via GET /api/auth/me.
+type UserResponse struct {
+	ID        uint   `json:"id"`
+	Username  string `json:"username"`
+	Role      string `json:"role"`
+	Status    int    `json:"status"`
+	CreatedAt string `json:"created_at"`
+	// Phone 是注册时填的手机号（只作联系/认人用途）。2026-10-11 用户反馈：
+	// 手机号默认必填，却在任何界面都看不到，等于白收——现在随用户列表下发，
+	// 管理后台的用户列表与「等待审核」列表都能看到。
+	Phone string `json:"phone"`
+}
+
+func GetAllUsers(db *gorm.DB, page int, pageSize int, search string) ([]UserResponse, int64, error) {
+	page, pageSize = utils.NormalizePage(page, pageSize)
+
+	query := db.Model(&database.User{})
+	if search != "" {
+		query = query.Where("username LIKE ?", "%"+search+"%")
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var users []database.User
+	if err := query.Order("id ASC").Offset(utils.Offset(page, pageSize)).Limit(pageSize).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	userResponses := make([]UserResponse, 0, len(users))
+	for _, u := range users {
+		userResponses = append(userResponses, UserResponse{
+			ID:        u.ID,
+			Username:  u.Username,
+			Role:      u.Role,
+			Status:    u.Status,
+			CreatedAt: u.CreatedAt.Format("2006-01-02 15:04:05"),
+			Phone:     u.Phone,
+		})
+	}
+
+	return userResponses, total, nil
+}
+
+// UpdateUser updates only the fields an admin is allowed to change (role and
+// status). Sensitive columns (password, api_key, username) are intentionally
+// not updatable here to avoid mass-assignment; use the dedicated endpoints.
+func UpdateUser(db *gorm.DB, userID uint, role *string, status *int) error {
+	updates := map[string]interface{}{}
+	if role != nil {
+		if *role != RoleAdmin && *role != RoleUser && *role != RoleTenant {
+			return fmt.Errorf("无效的角色")
+		}
+		updates["role"] = *role
+	}
+	if status != nil {
+		if *status != 0 && *status != 1 {
+			return fmt.Errorf("无效的状态")
+		}
+		updates["status"] = *status
+	}
+	if len(updates) == 0 {
+		return fmt.Errorf("请提供要更新的角色或状态")
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		var target database.User
+		if err := tx.First(&target, userID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrUserNotFound
+			}
+			return err
+		}
+		if err := ensureAdminRemains(tx, target, role, status); err != nil {
+			return err
+		}
+		// v0.6.10：租户账号若已关联租户档案，禁止改角色。
+		//
+		// 为什么拦而不是顺手解绑：改了角色后，「档案绑着这个账号」与「这个账号
+		// 不再是租户」自相矛盾——档案侧仍显示已关联，账号却进不了门户，房东与
+		// 租户都会困惑。要转角色必须先解绑，让状态转移显式发生。
+		//
+		// 用 Migrator().HasTable 探表：本函数所在的 user 包是**实例化文件**，
+		// 但「tenants 表」是 rental 业务表，非租房实例可能没有它；探不到就跳过
+		// 这条守卫（没有租户概念的应用不受影响）。
+		if role != nil && *role != RoleTenant && tx.Migrator().HasTable("tenants") {
+			var bound int64
+			if err := tx.Table("tenants").Where("account_user_id = ?", userID).Count(&bound).Error; err != nil {
+				return err
+			}
+			if bound > 0 {
+				return ErrUserBoundTenant
+			}
+		}
+		return tx.Model(&target).Updates(updates).Error
+	})
+}
+
+func ensureAdminRemains(db *gorm.DB, target database.User, newRole *string, newStatus *int) error {
+	wasActiveAdmin := target.Role == "admin" && target.Status == 1
+	if !wasActiveAdmin {
+		return nil
+	}
+	stillAdmin := newRole == nil || *newRole == "admin"
+	stillActive := newStatus == nil || *newStatus == 1
+	if stillAdmin && stillActive {
+		return nil
+	}
+	var count int64
+	if err := db.Model(&database.User{}).Where("role = ? AND status = ?", "admin", 1).Count(&count).Error; err != nil {
+		return err
+	}
+	if count <= 1 {
+		return ErrLastAdmin
+	}
+	return nil
+}
+
+func ToggleUserStatus(db *gorm.DB, userID uint) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		var target database.User
+		if err := tx.First(&target, userID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrUserNotFound
+			}
+			return err
+		}
+		newStatus := 1
+		if target.Status == 1 {
+			newStatus = 0
+		}
+		if err := ensureAdminRemains(tx, target, nil, &newStatus); err != nil {
+			return err
+		}
+		return tx.Model(&target).Update("status", newStatus).Error
+	})
+}
+
+func DeleteUser(db *gorm.DB, userID uint) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		var target database.User
+		if err := tx.First(&target, userID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrUserNotFound
+			}
+			return err
+		}
+		disabled := 0
+		if err := ensureAdminRemains(tx, target, nil, &disabled); err != nil {
+			return err
+		}
+		// App guards may retain users their own business data still references.
+		if blocked, err := database.UserDeletionBlocked(tx, userID); err != nil {
+			return err
+		} else if blocked {
+			return ErrUserDeleteBlocked
+		}
+		if err := tx.Where("user_id = ?", userID).Delete(&database.SecurityQuestion{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("user_id = ?", userID).Delete(&database.SystemConfig{}).Error; err != nil {
+			return err
+		}
+		// Let apps drop their per-user metadata before the user row goes away.
+		if err := database.CleanupUserAppData(tx, userID); err != nil {
+			return err
+		}
+		return tx.Delete(&target).Error
+	})
+}
+
+func ResetPassword(db *gorm.DB, userID uint, newPassword string) error {
+	if err := validatePassword(newPassword); err != nil {
+		return err
+	}
+	hashedPassword, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+	result := db.Model(&database.User{}).Where("id = ?", userID).Updates(map[string]interface{}{
+		"password":     hashedPassword,
+		"auth_version": gorm.Expr("auth_version + 1"),
+	})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
+func ResetAdminPassword(db *gorm.DB) error {
+	var user database.User
+	if err := db.Where("role = ?", "admin").First(&user).Error; err != nil {
+		return fmt.Errorf("未找到管理员账号")
+	}
+
+	defaultPassword := "admin123"
+	hashedPassword, err := auth.HashPassword(defaultPassword)
+	if err != nil {
+		return err
+	}
+	if err := db.Model(&user).Updates(map[string]interface{}{
+		"password":     hashedPassword,
+		"auth_version": gorm.Expr("auth_version + 1"),
+	}).Error; err != nil {
+		return err
+	}
+
+	fmt.Printf("Admin password has been reset to: %s\n", defaultPassword)
+	return nil
+}
+
+func CheckAuth(db *gorm.DB, userID uint, requireLogin string) map[string]interface{} {
+	result := map[string]interface{}{
+		"authenticated": false,
+		"require_login": requireLogin,
+		"user":          nil,
+	}
+
+	if userID > 0 {
+		var user database.User
+		// v0.6.0：待审核（status=2）也算「已认证」——他确实拿着有效凭证登录了，
+		// 只是没有业务权限。若这里只认 1，前端刷新时 /auth/check 会返回
+		// authenticated:false，把待审核用户当成未登录而清 token、踢回登录页，
+		// 于是永远看不到「等待审核」页（2026-10-08 实测踩到：前端一度只能靠
+		// 白名单接口自行兜底恢复会话）。业务接口的拦截在
+		// middleware.RequireAuth 的待审核门禁，不在这里。
+		if err := db.First(&user, userID).Error; err == nil && user.Status != 0 {
+			result["authenticated"] = true
+			result["user"] = map[string]interface{}{
+				"id":       user.ID,
+				"username": user.Username,
+				"role":     user.Role,
+				// 前端据 status 判定是否跳「等待审核」页。
+				"status": user.Status,
+			}
+		}
+	}
+
+	return result
+}
+
+func GetCurrentUser(db *gorm.DB, userID uint) (map[string]interface{}, error) {
+	var user database.User
+	if err := db.First(&user, userID).Error; err != nil {
+		return nil, err
+	}
+
+	var sq database.SecurityQuestion
+	hasQuestions := db.Where("user_id = ?", userID).First(&sq).Error == nil
+
+	return map[string]interface{}{
+		"id":                     user.ID,
+		"username":               user.Username,
+		"role":                   user.Role,
+		"api_key":                user.APIKey,
+		"phone":                  user.Phone, // 个人资料页展示自己的手机号（只读）
+		"has_security_questions": hasQuestions,
+	}, nil
+}
+
+func RegenerateAPIKey(db *gorm.DB, userID uint) (string, error) {
+	newKey := auth.GenerateAPIKey()
+	if err := db.Model(&database.User{}).Where("id = ?", userID).Update("api_key", newKey).Error; err != nil {
+		return "", err
+	}
+	return newKey, nil
+}
+
+func getJWTSecret(db *gorm.DB) string {
+	var config database.SystemConfig
+	if err := db.Where("user_id = ? AND key = ?", 0, "jwt_secret").First(&config).Error; err != nil {
+		return ""
+	}
+	return config.Value
+}

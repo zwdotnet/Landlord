@@ -1,0 +1,85 @@
+# Binaries
+server/smallgo
+server/smallgo-*
+server/rental
+!server/rental/
+server/rental-*
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Data
+server/data/
+data/
+data-acc/
+dev/data/
+*.db
+*.db-journal
+
+# Frontend dependencies and build output
+web/node_modules/
+web/dist/
+
+# Compiled frontend served by the backend (run `make build-frontend` to regenerate)
+server/static/dist/
+
+# Agent / IDE side artifacts (kept out of git)
+.omo/
+.playwright-mcp/
+memory/
+.claude/*
+!.claude/skills/
+.opencode/
+
+# Build output
+dev/
+build/
+release/
+dist/
+*.tar.gz
+*.zip
+*.fpk
+
+# ---------- 视频制作产物（兜底忽略） ----------
+# 视频制作与发布的全部文件已统一放子仓库 self-media 的 video/<应用>/<版本>/
+# （2026-10-07 用户定调，跟着当前发版版本走，整目录不入库），本仓库不再放视频文件。
+# 这条规则保留作兜底，防止误把视频产物提交进来；不要用 git add -f 强推。
+release/*/video/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# ---------- 本地临时目录 ----------
+# 临时测试与调试文件统一放这里，目录内内容不入库（仅保留 .gitkeep 占位）
+tmp/*
+!tmp/.gitkeep
+
+# AI 工具本地目录
+.zcode/
+.mimocode/
+
+# Local research, verification and toolchains
+.research/
+.runtime/
+.tools/
+*.db-wal
+*.db-shm
+miniprogram/project.private.config.json
+
