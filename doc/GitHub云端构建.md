@@ -2,6 +2,8 @@
 
 源码仓库：[zwdotnet/Landlord](https://github.com/zwdotnet/Landlord)，公有，沿用上游 MIT 许可。构建入口是 `.github/workflows/cloud-build.yml`，使用 GitHub 托管的 `ubuntu-24.04`，不使用生产 VPS 或 NAS 作为 runner。
 
+2026-11-11 [首次构建成功](https://github.com/zwdotnet/Landlord/actions/runs/43011871714)，对应源码提交 `e1d14c9`，部署制品约376MiB；构建、临时容器与PDF检查、打包及上传全部通过。详见 [云端构建验证记录](云端构建验证记录-20261111.json)。本次没有重新部署线上服务。
+
 `main` 的后端、前端、部署配置或版本变动会触发构建，也可在 Actions → Build Linux deployment → Run workflow 手动触发。工作流只需要读取仓库，不需要 VPS 私钥、业务数据库或初始化邀请。
 
 流水线执行前端类型检查及 `/landlord/` 生产构建、日期/PWA 测试，构建 `linux/amd64` 镜像，再用临时只读容器检查健康接口、版本、前端路径和 Chromium 中文 PDF。容器和数据随检查清理。它不是完整业务验收，也不替代 iPhone 系统推送实测。

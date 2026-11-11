@@ -56,6 +56,6 @@
 
 ## 下一步
 
-用户随后指定新建公有 GitHub 仓库用于云端构建，已创建 `https://github.com/zwdotnet/Landlord`。本地新增 `.github/workflows/cloud-build.yml` 和云端镜像检查/打包脚本，使用 GitHub 托管 runner；正在准备首次上传与运行验证。此前“没有Git提交、推送”仅描述18:58那次部署，后续事实以本段及最终构建记录为准。此工作不切换现有线上版本，不使用生产SSH密钥。
+用户随后指定新建公有 GitHub 仓库用于云端构建，已创建 `https://github.com/zwdotnet/Landlord`，配置origin并上传main。完整改造及云端构建提交 `e1d14c9baf3d6627a0353fcd737be6ee1e31d8aa`；首次Actions运行 `43011871714` 已成功，19:30产出394335033字节部署制品，SHA256 `063f6bc8b443558fd33b900e4b31f395fb9b0d7f0b6f73d8106683048d58d92f`，默认7天保留。`.github/workflows/cloud-build.yml` 使用GitHub托管ubuntu-24.04，BuildKit 3GiB/2CPU/并行1；前端构建与日期/PWA测试、linux/amd64镜像、只读临时容器健康/版本/路径、Chromium中文PDF、镜像与release前端一致性以及制品上传均通过。未重跑全量后端，未使用VPS/NAS构建。上传前397文件的高置信度扫描未发现私钥、GitHub令牌或实际初始化邀请，`.runtime`等本机资料未上传。依据见 `doc/云端构建验证记录-20261111.json` 和 `.runtime/cloud-build-20261111`。此前“没有Git提交、推送”仅描述18:58那次部署。本次没有访问生产SSH、重启服务或切换线上版本，线上仍是NAS构建的原release。
 
 用户打开本机首次初始化链接创建管理员，再添加房源/租客并确认周期计划。Safari按分享→添加到主屏幕→从桌面打开→消息与推送→开启并自测。首个自然账期、真实推送送达、完整签署状态机、押金实际退还/扣费和M5微信小程序仍属后续范围。未安排Codex自动跟进任务；swap与上线已完成，新增云端构建工作以上一段为准，不追加全量业务测试或生产发布。

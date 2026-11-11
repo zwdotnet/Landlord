@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-11",
+  "timezone": "Asia/Hong_Kong",
+  "repository": "https://github.com/zwdotnet/Landlord",
+  "visibility": "public",
+  "source_commit": "e1d14c9baf3d6627a0353fcd737be6ee1e31d8aa",
+  "run": {
+    "id": 43011871714,
+    "url": "https://github.com/zwdotnet/Landlord/actions/runs/43011871714",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "runner": "GitHub-hosted ubuntu-24.04",
+  "buildkit_limits": {
+    "memory_gib": 3,
+    "cpus": 2,
+    "parallelism": 1
+  },
+  "checks": {
+    "actionlint": "1.7.12 PASS; official binary checksum verified",
+    "python_syntax": "PASS",
+    "frontend_typecheck_and_production_build": "PASS",
+    "frontend_date_pwa_tests": "PASS",
+    "linux_amd64_image": "PASS",
+    "read_only_runtime_health_and_version": "PASS",
+    "production_frontend_base": "/landlord/",
+    "chromium_chinese_pdf": "PASS",
+    "image_frontend_matches_release": "PASS",
+    "artifact_upload": "PASS",
+    "full_backend_suite_rerun": false,
+    "iphone_native_push": "UNOBSERVED"
+  },
+  "artifact": {
+    "id": 13850643317,
+    "name": "landlord-0.10.0-e1d14c9baf3d-43011871714-1",
+    "bytes": 394335033,
+    "digest": "sha256:063f6bc8b443558fd33b900e4b31f395fb9b0d7f0b6f73d8106683048d58d92f",
+    "created_at": "2026-11-11T11:30:55Z",
+    "expires_at": "2026-11-18T11:30:52Z",
+    "contents": [
+      "image.tar.gz",
+      "release.tar.gz (matching web, Compose, source and provenance)",
+      "build.json",
+      "SHA256SUMS"
+    ]
+  },
+  "public_source_check": {
+    "files": 397,
+    "high_confidence_findings": 0,
+    "private_runtime_directory_ignored": true
+  },
+  "production_deployment_performed": false,
+  "existing_production": "Unchanged by this cloud build; still the 18:58 NAS-built release",
+  "verification": "SELF-ACCEPT"
+}
