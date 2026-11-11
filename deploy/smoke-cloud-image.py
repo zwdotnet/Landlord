@@ -37,17 +37,26 @@ try:
     assert health["code"] == 0 and health["data"]["version"] == version, health
     with opener.open("http://" + address + "/", timeout=5) as response:
         assert '/landlord/assets/' in response.read().decode(), "Wrong frontend base"
+    engine = docker("exec", name, "/usr/bin/chromium-headless-shell", "--version")
+    docker("exec", name, "/bin/sh", "-ec", "test ! -e /usr/bin/chromium")
+    # Use the same local-file input and Chromium arguments as chromiumPDF.
+    subprocess.run(
+        ["docker", "exec", "-i", name, "/bin/sh", "-ec",
+         "mkdir -p /tmp/ci-pdf; cat > /tmp/ci-pdf/document.html"],
+        input='<meta charset="UTF-8"><p>Landlord 合同与收据</p>', text=True, check=True)
     docker(
-        "exec", name, "/usr/local/bin/landlord-chromium", "--headless",
-        "--disable-gpu", "--user-data-dir=/tmp/ci-pdf-profile",
-        "--print-to-pdf=/tmp/ci.pdf", "--no-pdf-header-footer",
-        'data:text/html,<meta charset="UTF-8"><p>Landlord 合同与收据</p>',
+        "exec", name, "/usr/local/bin/landlord-chromium", "--headless=new",
+        "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+        "--disable-extensions", "--disable-background-networking",
+        "--no-pdf-header-footer", "--user-data-dir=/tmp/ci-pdf/profile",
+        "--print-to-pdf=/tmp/ci-pdf/document.pdf", "file:///tmp/ci-pdf/document.html",
     )
     docker("exec", name, "/bin/bash", "-ec",
-           "test $(stat -c %s /tmp/ci.pdf) -gt 1000; "
-           "test \"$(head -c 5 /tmp/ci.pdf)\" = '%PDF-'")
+           "test $(stat -c %s /tmp/ci-pdf/document.pdf) -gt 1000; "
+           "test \"$(head -c 5 /tmp/ci-pdf/document.pdf)\" = '%PDF-'; rm -rf /tmp/ci-pdf")
     print(json.dumps({"runtime": "PASS", "version": version,
-                      "frontend_base": "/landlord/", "pdf": "PASS"}))
+                      "frontend_base": "/landlord/", "pdf": "PASS", "engine": engine,
+                      "full_browser_absent": True, "business_renderer_arguments": True}))
 finally:
     subprocess.run(["docker", "logs", "--tail=30", name], check=False)
     subprocess.run(["docker", "rm", "-f", name], check=False)

@@ -1,0 +1,84 @@
+{
+  "recorded_at": "2026-11-11T21:28:14.746789+08:00",
+  "recommendation": "Headless Shell first; WeasyPrint second",
+  "status": "research completed; production unchanged",
+  "summary": {
+    "chromium": {
+      "peak_mib_median": 306.40234375,
+      "peak_mib_min": 305.04296875,
+      "peak_mib_max": 308.109375,
+      "anon_mib_median": 222.04296875,
+      "seconds_median": 4.429723580004065,
+      "pdf_kib": 358.62890625
+    },
+    "chromium-sc": {
+      "peak_mib_median": 283.97265625,
+      "peak_mib_min": 276.1875,
+      "peak_mib_max": 286.61328125,
+      "anon_mib_median": 206.28515625,
+      "seconds_median": 4.509791980002774,
+      "pdf_kib": 358.0751953125
+    },
+    "shell": {
+      "peak_mib_median": 104.3515625,
+      "peak_mib_min": 100.40234375,
+      "peak_mib_max": 104.53515625,
+      "anon_mib_median": 84.51171875,
+      "seconds_median": 0.7933949409925845,
+      "pdf_kib": 358.4384765625
+    },
+    "weasy": {
+      "peak_mib_median": 83.8046875,
+      "peak_mib_min": 83.69921875,
+      "peak_mib_max": 84.0078125,
+      "anon_mib_median": 76.66796875,
+      "seconds_median": 0.8213616749999346,
+      "pdf_kib": 257.09765625
+    },
+    "weasy-sc": {
+      "peak_mib_median": 78.0390625,
+      "peak_mib_min": 77.5859375,
+      "peak_mib_max": 78.15625,
+      "anon_mib_median": 73.609375,
+      "seconds_median": 0.7769554809929105,
+      "pdf_kib": 257.103515625
+    }
+  },
+  "normal_lease_peak_reduction_percent": 65.94296204694093,
+  "render_runs": 31,
+  "all_render_runs_passed": true,
+  "no_oom_in_any_run": true,
+  "target_256m_no_swap_cases": 6,
+  "visual_pages_reviewed": 12,
+  "same_raster_pages_with_baseline": 6,
+  "quality": {
+    "lease": {
+      "pages": 2,
+      "same_raster_bytes": true
+    },
+    "long-lease": {
+      "pages": 3,
+      "same_raster_bytes": true
+    },
+    "receipt": {
+      "pages": 1,
+      "same_raster_bytes": true
+    }
+  },
+  "scope": "NAS isolated renderer; actual HTML template with synthetic snapshots; no production HTTP flow; host filesystem cache not flushed",
+  "evidence_sha256": {
+    "results.json": "ef33cfb7a2e2f23362a6ebc05260fb01633c5f30f79e5018520459c8a38718b1",
+    "summary.json": "c373ebca849fd417aa6a9eb1569a1d4b22f3cdc6eee837a192b1ce6ac7608774",
+    "fixture-provenance.json": "ef1857f19f432ec917c5e4ac056833c4bdf24fc939d43bbe5a1eefa523dc7c47",
+    "dependencies.txt": "247176070146c4eca3493eab077e49f676c15f4bfbef945e281dc32d564f04b4",
+    "output/quality.json": "43021083caf5ad71dfbb6b78df2a6c291137a9c35e80f9fe8eedddd8735909f1",
+    "quality-initial-margin-check.json": "4c8c2bde39c42021b2b8cea6374d3b5451ead07c118e0ec6206c5694ea0de62f"
+  },
+  "cleanup": {
+    "research_containers_remaining": 0,
+    "research_image_removed": true
+  },
+  "product_code_changed": false,
+  "deployed": false,
+  "git_committed_or_pushed": false
+}

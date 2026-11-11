@@ -1,5 +1,5 @@
 #!/bin/sh
-# Chromium handles only escaped local HTML in this restricted non-root container.
+# Headless Shell renders escaped local HTML in this restricted non-root container.
 set -eu
 for landlord_chrome_arg in "$@"; do
   case "$landlord_chrome_arg" in
@@ -15,4 +15,4 @@ for landlord_chrome_arg in "$@"; do
       ;;
   esac
 done
-exec /usr/bin/chromium --no-sandbox --disable-dev-shm-usage "$@"
+exec /usr/bin/chromium-headless-shell --no-sandbox --disable-dev-shm-usage "$@"

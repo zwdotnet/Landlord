@@ -11,7 +11,7 @@ FROM debian:bookworm-slim
 COPY --from=backend /landlord /app/landlord
 ARG DEBIAN_MIRROR=http://deb.debian.org/debian
 ARG DEBIAN_SECURITY_MIRROR=http://deb.debian.org/debian-security
-RUN sed -i "s|http://deb.debian.org/debian-security|$DEBIAN_SECURITY_MIRROR|g; s|http://deb.debian.org/debian|$DEBIAN_MIRROR|g" /etc/apt/sources.list.d/debian.sources && apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update && apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 install -y --no-install-recommends ca-certificates tzdata chromium fonts-noto-cjk && rm -rf /var/lib/apt/lists/* && useradd --uid 10001 --create-home app
+RUN sed -i "s|http://deb.debian.org/debian-security|$DEBIAN_SECURITY_MIRROR|g; s|http://deb.debian.org/debian|$DEBIAN_MIRROR|g" /etc/apt/sources.list.d/debian.sources && apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update && apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 install -y --no-install-recommends ca-certificates tzdata chromium-headless-shell fonts-noto-cjk && rm -rf /var/lib/apt/lists/* && useradd --uid 10001 --create-home app
 WORKDIR /app
 COPY web/dist/ /app/web/
 COPY deploy/chromium-container.sh /usr/local/bin/landlord-chromium
