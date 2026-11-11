@@ -41,6 +41,7 @@
             </span>
             {{ item.label }}
           </RouterLink>
+          <RouterLink to="/portal/notifications" class="nav-link">消息与推送</RouterLink>
         </nav>
 
         <div class="p-3 border-t border-border">
@@ -84,6 +85,7 @@
               租客服务{{ status?.tenant_name ? ` · ${status.tenant_name}` : '' }}
             </div>
           </div>
+          <InboxLink />
           <button
             class="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             title="退出登录"
@@ -141,6 +143,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import InboxLink from '../components/InboxLink.vue'
 import { useAuthStore } from '../stores/auth'
 import { useLedgerStore } from '../stores/ledger'
 import { getPortalStatus, type PortalStatus } from '../api/tenant'

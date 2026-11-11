@@ -341,20 +341,25 @@ func handleMeterDelete(db *gorm.DB) gin.HandlerFunc {
 // settleMeterRecord 开票后把当期读数沉淀进台账：该月已有记录时不覆盖
 // （台账是抄表时点的原始记录），失败不影响开票主流程。
 // 记录继承账单的台账（= 房间台账），避免跨台账孤儿记录。
-func settleMeterRecord(db *gorm.DB, bill *Bill) {
+func settleMeterRecord(db *gorm.DB, bill *Bill) error {
 	var n int64
 	q := db.Model(&MeterRecord{}).Where("room_id = ? AND period = ?",
 		bill.RoomID, bill.Period)
 	if ledgerColumnReady(db, "meter_records") {
 		q = q.Where("org_id = ?", bill.LedgerID)
 	}
-	q.Count(&n)
-	if n > 0 {
-		return
+	if err := q.Count(&n).Error; err != nil {
+		return err
 	}
-	db.Create(&MeterRecord{
+	if n > 0 {
+		return notifyBillTenants(db, bill, businessNow())
+	}
+	if err := db.Create(&MeterRecord{
 		UserID: bill.UserID, LedgerID: bill.LedgerID, RoomID: bill.RoomID, Period: bill.Period,
 		Water: bill.WaterNow, Elec: bill.ElecNow, Gas: bill.GasNow,
 		Note: "随账单生成",
-	})
+	}).Error; err != nil {
+		return err
+	}
+	return notifyBillTenants(db, bill, businessNow())
 }

@@ -4,7 +4,7 @@
 
     <div v-if="errorMsg" class="surface rounded-2xl px-5 py-3 text-sm text-destructive">
       {{ errorMsg }}
-    </div>
+  </div>
 
     <!-- 版本与更新：常驻入口（另一处在顶栏版本号按钮）。放在配置列表之前，
          管理员进系统设置第一眼就能看到当前版本、手动检查与一键更新。 -->
@@ -46,11 +46,13 @@
       :items="items"
       @save="handleSave"
     />
+    <ContractTemplateEditor />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import ContractTemplateEditor from '../components/ContractTemplateEditor.vue'
 import PageHeader from '../components/PageHeader.vue'
 import ConfigGroupList from '../components/ConfigGroupList.vue'
 import { getSystemConfigMeta, updateConfig } from '../api/config'

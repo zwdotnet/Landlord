@@ -181,71 +181,11 @@ func portalTenantRequired(db *gorm.DB, c *gin.Context) (*Tenant, bool) {
 // 可见范围（越权防护的核心）
 // ---------------------------------------------------------------------------
 
-// applyPortalBillScope 把「我的账单」条件应用到查询上（账单与缴费记录共用）。
-//
-// 账单表没有 tenant_id（它是**按房按月**出的，宿舍一房多人共用一张账单，加
-// tenant_id 会迫使每张账单选定一个「主租户」，与既有出账/收款/欠缴统计口径
-// 冲突——见设计文档取舍一），所以可见范围用四重收窄：
-//
-//  1. org_id  = 档案所属台账   —— 跨台账数据一律不可见；
-//  2. room_id = 档案所在房源   —— 只可能是本人住的房；
-//  3. tenant_name 命中本人姓名（快照）—— 同房先后住过两个人时，只靠 room_id
-//     会让新租客看到前任的账单。开票时会把在租租户姓名快照进 Bill.TenantName，
-//     姓名字段**租户不可修改**，因此这个匹配长期稳定。
-//     快照为空的历史账单放行：老数据没有快照，不能因此让租户看不到自己的账单。
-//  4. 账期落在 [入住月, 退租月] 窗口内 —— 与 3 互补，堵住「姓名相同/为空」时
-//     把入住前的账单漏给对方的情形。
-//
-// 宿舍一房多人的**联名账单**（TenantName 为「张三、李四」）会被每一位命中姓名的
-// 租户看到——这正是期望行为：那张账单确实是他们共同的。
+// applyPortalBillScope grants access only to explicit, immutable recipient IDs.
+// Legacy unassigned bills fail closed; names and current rooms confer no access.
 func applyPortalBillScope(q *gorm.DB, t *Tenant) *gorm.DB {
-	q = q.Where("org_id = ? AND room_id = ?", t.LedgerID, t.RoomID)
-	name := strings.TrimSpace(t.Name)
-	if name != "" {
-		q = q.Where("(tenant_name = '' OR tenant_name LIKE ?)", "%"+name+"%")
-	}
-	// 下界**一定**要有（见 portalBillFloor 的注释）：姓名快照为空的历史账单要放行，
-	// 但「快照为空」+「入住日期没填」的组合会让同房前任的账单落到新租户眼里。
-	if from := portalBillFloor(q, t, name); from != "" {
-		q = q.Where("period >= ?", from)
-	}
-	if to := periodOfDate(t.MoveOutDate); to != "" {
-		q = q.Where("period <= ?", to)
-	}
-	return q
-}
-
-// portalBillFloor 我的账单可见范围的**下界账期**，三级回退，保证一定有下界：
-//
-//  1. 入住日期所在月——房东填了就用它（最准）；
-//  2. 本房最早一张「姓名快照命中我」的账单所在月——出账会把在租租户姓名快照进
-//     账单，所以那张单子的账期不会早于我的入住月（房东没填日期时的客观证据）；
-//  3. 租户档案的建立月——记录是什么时候录进来的，最后一道兜底。
-//
-// 为什么必须有下界：见 applyPortalBillScope 的说明。没有更准依据时**宁可少显示**
-// （第 2、3 级），也不把前任的账单多显示给新租户；房东补齐「入住日期」即可恢复
-// 精确的可见范围。
-func portalBillFloor(q *gorm.DB, t *Tenant, name string) string {
-	if from := periodOfDate(t.MoveInDate); from != "" {
-		return from
-	}
-	if name != "" {
-		var first string
-		// Session(NewDB) 复用同一个连接但清掉已有的 Where，避免把「我已经加过的
-		// 可见范围条件」带进这条只用于求下界的聚合查询。
-		err := q.Session(&gorm.Session{NewDB: true}).Model(&Bill{}).
-			Where("org_id = ? AND room_id = ? AND tenant_name LIKE ?", t.LedgerID, t.RoomID, "%"+name+"%").
-			Select("MIN(period)").Scan(&first).Error
-		if err == nil {
-			if first = strings.TrimSpace(first); first != "" {
-				return first
-			}
-		}
-	}
-	if !t.CreatedAt.IsZero() {
-		return t.CreatedAt.Format("2006-01")
-	}
-	return ""
+	return q.Where("org_id = ?", t.LedgerID).Where(
+		"EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(recipient_tenant_ids) THEN recipient_tenant_ids ELSE '[]' END) AS recipient WHERE recipient.value = ?)", t.ID)
 }
 
 // portalBillQuery 我的账单查询（模型预设好，调用方继续加过滤/排序）。
@@ -574,10 +514,7 @@ func portalBillDetailPayload(db *gorm.DB, t *Tenant, bill *Bill) gin.H {
 	}
 	payRows := make([]gin.H, 0, len(payments))
 	for _, p := range payments {
-		payRows = append(payRows, gin.H{
-			"id": p.ID, "paid_at": p.PaidAt, "amount": p.Amount,
-			"note": p.Note, "items": paymentItems(p.Items),
-		})
+		payRows = append(payRows, paymentView(p))
 	}
 	name, contact, note := receiptHeaderFor(db, t.LedgerID)
 	return gin.H{

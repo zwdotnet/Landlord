@@ -48,7 +48,7 @@
         续租后到期：<span class="text-foreground font-semibold tabular-nums">{{ previewEnd }}</span>
         <span class="text-muted-foreground">（{{ monthsText }}）</span>
       </p>
-      <p v-else class="text-xs text-destructive">请选择续租时长或填写早于当前的到期日。</p>
+      <p v-else class="text-xs text-destructive">请选择续租时长或填写晚于当前的到期日。</p>
 
       <!-- 调租金：续租最常见的连带动作，留空不动 -->
       <div class="rounded-xl border border-border p-3 space-y-2">
@@ -63,7 +63,7 @@
           </span>
         </div>
         <p class="text-[11px] text-muted-foreground leading-4">
-          改的是<span class="text-foreground">房源默认月租</span>：后续账单按新租金算，已开出的历史账单金额不变。
+          新租金从 <span class="text-foreground">{{ baseDate }}</span> 起生效。跨月中调租的金额按当月实际天数折算，可在出账时核对调整。
         </p>
       </div>
 
@@ -79,6 +79,7 @@
           <li v-for="h in history" :key="h.id" class="text-[11px] text-muted-foreground flex flex-wrap gap-x-2">
             <span class="tabular-nums text-foreground">{{ h.from_end_date || '—' }} → {{ h.to_end_date }}</span>
             <span>{{ h.months }} 个月</span>
+            <span v-if="h.effective_from">生效 {{ h.effective_from }}</span>
             <span v-if="h.rent_before !== h.rent_after">租金 {{ fmtMoney(h.rent_before) }} → {{ fmtMoney(h.rent_after) }}</span>
             <span v-if="h.note" class="truncate max-w-[10rem]">{{ h.note }}</span>
           </li>

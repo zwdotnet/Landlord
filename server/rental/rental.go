@@ -139,16 +139,16 @@ type Room struct {
 // 勾选 = 参与，未勾选的 key 存进这里。存排除而非勾选，是为了让之后新增的
 // 自定义收费项目默认参与全部租户计费，不用逐租户补勾。
 type Tenant struct {
-	ID               uint     `gorm:"primarykey" json:"id"`
-	UserID           uint     `gorm:"index" json:"-"`                                          // 录入人戳，仅溯源
-	LedgerID         uint     `gorm:"column:org_id;index;not null;default:0" json:"ledger_id"` // 归属台账
-	RoomID           uint     `gorm:"index" json:"room_id"`
-	Name             string   `gorm:"not null" json:"name"`
-	Phone            string   `json:"phone"`
-	IDCard           string   `json:"id_card"`                             // 身份证号，选填
-	Address          string   `json:"address"`                             // 身份证住址（v0.6.10：转入登记时从申请带过来，租户可申请修改）
-	EmergencyContact string   `gorm:"default:''" json:"emergency_contact"` // 紧急联系人姓名（v0.6.10）
-	EmergencyPhone   string   `gorm:"default:''" json:"emergency_phone"`   // 紧急联系人电话（v0.6.10）
+	ID               uint   `gorm:"primarykey" json:"id"`
+	UserID           uint   `gorm:"index" json:"-"`                                          // 录入人戳，仅溯源
+	LedgerID         uint   `gorm:"column:org_id;index;not null;default:0" json:"ledger_id"` // 归属台账
+	RoomID           uint   `gorm:"index" json:"room_id"`
+	Name             string `gorm:"not null" json:"name"`
+	Phone            string `json:"phone"`
+	IDCard           string `json:"id_card"`                             // 身份证号，选填
+	Address          string `json:"address"`                             // 身份证住址（v0.6.10：转入登记时从申请带过来，租户可申请修改）
+	EmergencyContact string `gorm:"default:''" json:"emergency_contact"` // 紧急联系人姓名（v0.6.10）
+	EmergencyPhone   string `gorm:"default:''" json:"emergency_phone"`   // 紧急联系人电话（v0.6.10）
 	// Birthday/Gender 由身份证号派生的**快照**（issue #5 需求 1，见 deriveFromIDCard）。
 	//
 	// 与入住成员（TenantMember）同口径：只认 18 位号，15 位老号段不猜
@@ -156,8 +156,8 @@ type Tenant struct {
 	//
 	// 存快照而不是每次读时现算，是为了「列表/导出能直接排序筛选」与
 	// 「换证件号后旧值可追溯」；身份证号一变就整体重算（见 applyDerivedFields）。
-	Birthday string   `gorm:"default:''" json:"birthday"` // YYYY-MM-DD
-	Gender   string   `gorm:"default:''" json:"gender"`   // male / female
+	Birthday string   `gorm:"default:''" json:"birthday"`  // YYYY-MM-DD
+	Gender   string   `gorm:"default:''" json:"gender"`    // male / female
 	Tags     []string `gorm:"serializer:json" json:"tags"` // 标签（如 优质/中介/长租），自定义分组用
 	// AccountUserID 是绑定的**租户登录账号**（users.id），0 = 未关联。
 	// 与 UserID（录入人/房东，仅溯源）语义不同，两个列并存、不可复用。
@@ -183,7 +183,7 @@ type Tenant struct {
 }
 
 // Bill 月度账单（核心实体）。租户名、单价在开票时快照到行内，
-// 历史账单不随房源/租户后续修改而变化；(room, period) 唯一。
+// 历史账单不随房源/租户后续修改而变化；同房同租客集合同账期唯一。
 // UserID 是「录入人」戳：数据全员共享后只作溯源。
 //
 // 水费按开票时的 WaterMode 快照计费：meter（按吨）时 WaterPrice 是元/吨单价、
@@ -195,23 +195,31 @@ type Tenant struct {
 // 见 effectiveRoomExcludedFees）：recalc 对这些项目一律清零，账单不会因
 // 租户后续改动勾选而变化。
 type Bill struct {
-	ID            uint     `gorm:"primarykey" json:"id"`
-	UserID        uint     `gorm:"index" json:"-"`
-	LedgerID      uint     `gorm:"column:org_id;index;not null;default:0" json:"ledger_id"` // 归属台账
-	RoomID        uint     `gorm:"index" json:"room_id"`
-	Period        string   `gorm:"not null;index" json:"period"` // YYYY-MM
-	RoomNo        string   `gorm:"not null" json:"room_no"`
-	TenantName    string   `json:"tenant_name"`
-	Rent          float64  `json:"rent"`
-	WaterLast     float64  `json:"water_last"`
-	WaterNow      float64  `json:"water_now"`
-	ElecLast      float64  `json:"elec_last"`
-	ElecNow       float64  `json:"elec_now"`
-	GasLast       float64  `json:"gas_last"`
-	GasNow        float64  `json:"gas_now"`
-	PayCycle      string   `gorm:"default:monthly" json:"pay_cycle"`     // 开票快照：monthly 月付 / quarterly 季付
-	WaterMode     string   `gorm:"default:meter" json:"water_mode"`      // 开票快照：meter 按吨 / monthly 包月
-	ExcludedFees []string `gorm:"serializer:json" json:"excluded_fees"` // 开票快照：不参与计费的项目 key（租户级勾选）
+	AutomationTaskID uint   `gorm:"index" json:"automation_task_id"`
+	DueDate          string `json:"due_date"`
+	ID               uint   `gorm:"primarykey" json:"id"`
+	UserID           uint   `gorm:"index" json:"-"`
+	LedgerID         uint   `gorm:"column:org_id;index;not null;default:0" json:"ledger_id"` // 归属台账
+	RoomID           uint   `gorm:"index" json:"room_id"`
+	Period           string `gorm:"not null;index" json:"period"` // YYYY-MM
+	// Stable recipients are issued with the bill. Legacy rows stay unassigned.
+	RecipientTenantIDs []uint   `gorm:"serializer:json" json:"recipient_tenant_ids"`
+	TenancyKey         string   `gorm:"not null;default:''" json:"tenancy_key"`
+	RequiresManualRent bool     `gorm:"-" json:"requires_manual_rent,omitempty"`
+	LastPaymentID      uint     `gorm:"-" json:"last_payment_id,omitempty"`
+	LastReceiptID      uint     `gorm:"-" json:"last_receipt_id,omitempty"`
+	RoomNo             string   `gorm:"not null" json:"room_no"`
+	TenantName         string   `json:"tenant_name"`
+	Rent               float64  `json:"rent"`
+	WaterLast          float64  `json:"water_last"`
+	WaterNow           float64  `json:"water_now"`
+	ElecLast           float64  `json:"elec_last"`
+	ElecNow            float64  `json:"elec_now"`
+	GasLast            float64  `json:"gas_last"`
+	GasNow             float64  `json:"gas_now"`
+	PayCycle           string   `gorm:"default:monthly" json:"pay_cycle"`     // 开票快照：monthly 月付 / quarterly 季付
+	WaterMode          string   `gorm:"default:meter" json:"water_mode"`      // 开票快照：meter 按吨 / monthly 包月
+	ExcludedFees       []string `gorm:"serializer:json" json:"excluded_fees"` // 开票快照：不参与计费的项目 key（租户级勾选）
 	// DisabledFees 开票快照：该台账**停用**的收费项目 key（见 fees.go 的
 	// disabledBuiltInFeeKeys）。recalc 对这些项目一律清零，口径与 ExcludedFees
 	// 相同但来源不同：ExcludedFees 是「这个租户不参与某项」，DisabledFees 是
@@ -219,8 +227,8 @@ type Bill struct {
 	//
 	// 为什么不实时读当前的停用列表：账单是快照，历史账单必须能复现开票当时的
 	// 金额——房东今天停用燃气费，不该让去年已开出的账单凭空变数。
-	DisabledFees []string `gorm:"serializer:json" json:"disabled_fees"`
-	WaterPrice   float64  `json:"water_price"` // 按吨=元/吨，包月=元/月
+	DisabledFees  []string `gorm:"serializer:json" json:"disabled_fees"`
+	WaterPrice    float64  `json:"water_price"` // 按吨=元/吨，包月=元/月
 	ElecPrice     float64  `json:"elec_price"`
 	GasPrice      float64  `json:"gas_price"`
 	WaterFee      float64  `json:"water_fee"`
@@ -232,9 +240,9 @@ type Bill struct {
 	// （2026-10-11 粉丝需求：新租户入住第一次，押金和房租要在账单里一起收）。
 	// 金额取开票时该房租户的 Tenant.Deposit，快照进账单——之后改租户押金不影响
 	// 已开出的账单。已有历史账单不会被补收（判定见 isFirstBillForRoom）。
-	DepositFee  float64    `json:"deposit_fee"`
-	ExtraAmount float64    `json:"extra_amount"` // 自定义收费项目（宽带费等）金额合计
-	TotalAmount float64    `json:"total_amount"`
+	DepositFee  float64 `json:"deposit_fee"`
+	ExtraAmount float64 `json:"extra_amount"` // 自定义收费项目（宽带费等）金额合计
+	TotalAmount float64 `json:"total_amount"`
 	// 少交/多交结转（见 carryover.go，issue #5 需求 7）。
 	//
 	// CarryIn = 上期应缴 - 上期实缴（正=上期少交要补，负=上期多交可抵扣）；
@@ -246,15 +254,15 @@ type Bill struct {
 	// 因此那些查询无需改动也不会算错。
 	//
 	// 两列都是开票快照，默认 0；结转关闭时 Payable 恒等于 TotalAmount。
-	CarryIn    float64 `gorm:"default:0" json:"carry_in"`
-	Payable    float64 `gorm:"default:0" json:"payable"`
-	PaidAmount float64 `gorm:"default:0" json:"paid_amount"`
-	Status     string  `gorm:"default:unpaid" json:"status"` // paid / partial / unpaid
-	ReceiptNo   string     `json:"receipt_no"`
-	Remark      string     `json:"remark"`
-	PaidAt      *time.Time `json:"paid_at"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	CarryIn    float64    `gorm:"default:0" json:"carry_in"`
+	Payable    float64    `gorm:"default:0" json:"payable"`
+	PaidAmount float64    `gorm:"default:0" json:"paid_amount"`
+	Status     string     `gorm:"default:unpaid" json:"status"` // paid / partial / unpaid
+	ReceiptNo  string     `json:"receipt_no"`
+	Remark     string     `json:"remark"`
+	PaidAt     *time.Time `json:"paid_at"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }
 
 func init() {
@@ -565,6 +573,11 @@ func init() {
 		Version: "0.6.12",
 		Name:    "rental_bill_carryover_columns",
 		Upgrade: migrateBillCarryover,
+	})
+
+	database.Upgrades = append(database.Upgrades, database.Upgrade{
+		Version: "0.8.0", Name: "landlord_bill_ownership", NoTx: true,
+		Upgrade: migrateBillOwnership,
 	})
 
 	registerConfigs()

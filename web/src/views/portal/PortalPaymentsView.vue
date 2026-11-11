@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <PageHeader title="缴费记录" description="你的每一次缴款流水，金额与对应转账记录一致" />
+    <PageHeader title="缴费记录" description="房东登记的线下实收、原始收据及冲销记录" />
 
     <div class="grid grid-cols-4 gap-2 lg:gap-4">
       <div v-for="s in stats" :key="s.label" class="surface rounded-2xl p-3 lg:p-5 min-w-0">
@@ -19,52 +19,7 @@
       </div>
 
       <template v-else>
-        <!-- 桌面表格 -->
-        <div class="surface rounded-2xl overflow-hidden hidden md:block">
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead class="bg-muted/50">
-                <tr class="text-left text-xs text-muted-foreground">
-                  <th class="py-3 px-4 font-semibold">缴费时间</th>
-                  <th class="py-3 px-4 font-semibold text-right">金额（元）</th>
-                  <th class="py-3 px-4 font-semibold">对应账单</th>
-                  <th class="py-3 px-4 font-semibold">备注</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-border">
-                <tr v-for="p in payments" :key="p.id" class="hover:bg-muted/40 transition-colors">
-                  <td class="py-3 px-4 text-foreground tabular-nums">{{ fmtTime(p.paid_at) }}</td>
-                  <td class="py-3 px-4 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">{{ fmtMoney(p.amount) }}</td>
-                  <td class="py-3 px-4 text-muted-foreground tabular-nums">
-                    {{ billPeriodOf(p.bill_id) }}
-                  </td>
-                  <td class="py-3 px-4 text-muted-foreground text-xs max-w-[240px] truncate">{{ p.note || '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 手机卡片列表 -->
-        <div class="md:hidden surface rounded-2xl p-2 space-y-1.5">
-          <div
-            v-for="p in payments"
-            :key="p.id"
-            class="rounded-xl border border-border bg-surface/80 px-3 py-2.5 space-y-1.5"
-          >
-            <div class="flex items-center justify-between gap-3">
-              <span class="text-xs text-muted-foreground tabular-nums truncate">{{ fmtTime(p.paid_at) }}</span>
-              <span class="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
-                {{ fmtMoney(p.amount) }} 元
-              </span>
-            </div>
-            <div class="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
-              <span class="truncate">账单 {{ billPeriodOf(p.bill_id) }}</span>
-              <span class="truncate">{{ p.note || '—' }}</span>
-            </div>
-          </div>
-        </div>
-
+        <PaymentArchivePanel :payments="payments" :bill-periods="periodByBill" portal />
         <Pagination :page="page" :page-size="pageSize" :total="total" @update:page="changePage" />
       </template>
     </template>
@@ -73,6 +28,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import PaymentArchivePanel from '../../components/PaymentArchivePanel.vue'
 import PageHeader from '../../components/PageHeader.vue'
 import Pagination from '../../components/Pagination.vue'
 import { getPortalPayments, getPortalBills, type PortalPayment } from '../../api/tenant'

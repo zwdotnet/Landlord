@@ -461,7 +461,8 @@
     <!-- 账单详情：全部费用项目逐项列出，附收款流水 -->
     <Modal v-model="showDetail" title="账单详情">
       <div v-if="detailBill">
-        <BillDetail :bill="detailBill" :items="detailItems" :payments="detailPayments" :fee-items="feeItems" />
+        <BillDetail :bill="detailBill" :items="detailItems" :payments="detailPayments" :fee-items="feeItems" :can-reverse="ledgerStore.canEdit('bills')" @changed="refreshArchivedPayments" />
+        <BillRecipientsEditor v-if="ledgerStore.canEdit('bills')" :key="detailBill.id" :bill="detailBill" @assigned="detailBill = $event" />
         <div class="flex justify-end mt-4">
           <button class="btn-ghost" @click="showDetail = false">关闭</button>
         </div>
@@ -505,6 +506,7 @@ import FilePick from '../components/FilePick.vue'
 import FilterPanel from '../components/FilterPanel.vue'
 import MeterReadingModal from '../components/MeterReadingModal.vue'
 import BillDetail from '../components/BillDetail.vue'
+import BillRecipientsEditor from '../components/BillRecipientsEditor.vue'
 import Modal from '../components/Modal.vue'
 import PageHeader from '../components/PageHeader.vue'
 import Pagination from '../components/Pagination.vue'
@@ -567,6 +569,7 @@ const showPay = ref(false)
 const payBillRow = ref<Bill | null>(null)
 const payAmount = ref(0)
 const payNote = ref('')
+const payRequestKey = ref('')
 const payError = ref('')
 
 const showReceipt = ref(false)
@@ -579,6 +582,10 @@ const showDetail = ref(false)
 const detailBill = ref<Bill | null>(null)
 const detailItems = ref<BillItemDetail[]>([])
 interface DetailPayment {
+  receipt_id?: number
+  voided_at?: string | null
+  void_reason?: string
+  reversal_of_id?: number | null
   id: number; paid_at: string; amount: number; note: string
   items: { key: string; name: string; amount: number }[]
 }
@@ -849,6 +856,7 @@ async function openPay(b: Bill) {
   payBillRow.value = { ...b }
   payAmount.value = 0
   payNote.value = ''
+  payRequestKey.value = crypto.randomUUID()
   payError.value = ''
   payItems.value = []
   showPay.value = true
@@ -906,7 +914,7 @@ async function savePay() {
         return
       }
     }
-    const res = await payBill(row.id, payAmount.value, payNote.value, items.length ? items : undefined)
+    const res = await payBill(row.id, payAmount.value, payNote.value, items.length ? items : undefined, payRequestKey.value)
     if (res.data?.code === 0) {
       showPay.value = false
       await load(page.value)
@@ -930,6 +938,15 @@ async function openReceipt(b: Bill) {
     // 打开弹窗就落一次 @page，这样用浏览器菜单「打印 / 另存 PDF」（Ctrl+P）
     // 走的是同一张纸；此前只在点应用按钮时写入，直接 Ctrl+P 会退回兜底的 A5。
     applyReceiptPaper(receiptPaper.value, customPaper.value)
+  }
+}
+
+async function refreshArchivedPayments() {
+  if (!detailBill.value) return
+  const res = await getBillDetail(detailBill.value.id)
+  if (res.data?.code === 0) {
+    detailBill.value = res.data.data.bill; detailItems.value = res.data.data.items || []; detailPayments.value = res.data.data.payments || []
+    await load(page.value)
   }
 }
 

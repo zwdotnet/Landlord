@@ -217,24 +217,7 @@ func TestContractOwnershipIsolated(t *testing.T) {
 	id := uint(field(t, decodeBody(t, w), "data").([]interface{})[0].(map[string]interface{})["id"].(float64))
 
 	// 第二个用户看不到第一个用户的合同。
-	env2token := ""
-	{
-		var buf bytes.Buffer
-		mw := multipart.NewWriter(&buf)
-		_ = mw.WriteField("username", "rival")
-		_ = mw.WriteField("password", "secret123")
-		_ = mw.Close()
-		req := httptest.NewRequest(http.MethodPost, "/api/auth/register", &buf)
-		req.Header.Set("Content-Type", mw.FormDataContentType())
-		rec := httptest.NewRecorder()
-		env.r.ServeHTTP(rec, req)
-		if rec.Code == http.StatusOK {
-			env2token = field(t, decodeBody(t, rec), "data", "token").(string)
-		}
-	}
-	if env2token == "" {
-		t.Skip("second registration not allowed; ownership checked via user_id filter")
-	}
+	_, env2token := registerLandlord(t, env, "rival")
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/rental/contracts/%d/file", id), nil)
 	req.Header.Set("Authorization", "Bearer "+env2token)
 	rec := httptest.NewRecorder()

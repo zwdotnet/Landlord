@@ -1,0 +1,133 @@
+{
+  "date": "2026-11-11",
+  "phase": "M2 contract and payment archive workflow",
+  "verification_mode": "MAIN SELF-ACCEPT",
+  "baseline_commit": "a647d66",
+  "application_version": "0.9.0",
+  "committed": false,
+  "published": false,
+  "final_observed_unique_tests": {
+    "pass": 493,
+    "fail": 0,
+    "test_skip": 0,
+    "method": "non-rental packages from all-packages run; rental complete rerun; latest focused revision overrides by package and test name"
+  },
+  "all_packages_run": {
+    "evidence": ".runtime/m2-all-tests.jsonl",
+    "non_rental_packages_pass": 16,
+    "initial_rental_failure": "TestPayFlow obsolete direct-payment-reset assertion; retained as failure evidence"
+  },
+  "final_rental_run": {
+    "evidence": ".runtime/m2-rental-final-tests.jsonl",
+    "pass": 351,
+    "fail": 0
+  },
+  "final_payment_revision_tests": {
+    "evidence": ".runtime/m2-concurrency-final-tests.jsonl",
+    "pass": 20,
+    "fail": 0
+  },
+  "frontend": {
+    "build": ".runtime/m2-web-final-build.txt",
+    "date_tests": ".runtime/m2-web-date-tests.txt",
+    "date_tests_pass": 2
+  },
+  "live_acceptance": {
+    "evidence": ".runtime/m2-acceptance-20261111-150838/results.json",
+    "pass": true,
+    "checks_pass": 44,
+    "pdf_pages": {
+      "lease": 1,
+      "renewal": 1,
+      "lease-v2": 1,
+      "receipt": 1,
+      "reversal": 1,
+      "long-renewal": 3
+    }
+  },
+  "pdf_visual_review": {
+    "status": "PASS",
+    "method": "final PDFs rendered with pypdfium2 and manually inspected as PNG",
+    "long_contract_pages": 3,
+    "fixed_defect": "orphan footer-only last page"
+  },
+  "upgrade": {
+    "evidence": ".runtime/m2-upgrade-20261111-145426/results.json",
+    "pass": true,
+    "all_existing_values_preserved": true
+  },
+  "preview": {
+    "url": "http://127.0.0.1:18920",
+    "data_dir": ".runtime/dev-m2/data",
+    "exec_session": 65139,
+    "binary_sha256": "ef27bf83d9081f62260e7f58db66a4fcc34eb8a470e7d86031d8505ab3037654"
+  },
+  "limitations": [
+    "no independent verifier",
+    "unsigned print snapshots; no full signed-lease state machine",
+    "Linux/Docker Chromium and fonts not accepted",
+    "headless iframe is not proof of native mobile PDF preview",
+    "PWA push, scheduler, mini program and deployment still pending"
+  ],
+  "source_sha256": {
+    "README.md": "1172f11d6b405860113675d7df97ade7095f04c079d860fe2644b45cca5de7cc",
+    "STATE.md": "023e510bac79242cb7513c337ae51f789eeb232e8f841db2b8d0a632596e49ed",
+    "VERSION": "03627dfd7695e0e68ca0cb329b30582a35c49384d98227536edca14080eea08b",
+    "app.json": "8c910c2650b7609bbd2b2cf816fc54b2f1ecc110b5f97c3aa9131a71d75e0041",
+    "doc/项目启动与实施计划.md": "4e09926f94c34455657626a4a5d6ba0da8bfdcd00815bd50777232480637dc75",
+    "fnpack/manifest": "e5bbc7852c547868d9a023fc87b57bf97a6ed6b90ae36f4e746bccb532e70253",
+    "scripts/dev.ps1": "4a787ee270b825006a9383c8da34c0ab5f047d0f4c0336d2ce7f09b740a835e3",
+    "scripts/use-local-toolchain.ps1": "6b851ead6e43fa6e4f9360c7e9a2360ca3b30b38742179d30d20c76bb9ee4a83",
+    "scripts/verify.ps1": "26fce484650f184560480b3ef59c59c48650b4e50406cfb89575ae61f0a1f2ea",
+    "server/rental/bill_ownership.go": "0faadeae5754221de3786607c626e96df95fe66d53641155a2c457a185b928a2",
+    "server/rental/billing.go": "c7f6c09cdbd20bcc4dd827cc27e2fc3ff9b8b56f34c0a7d1cf5c6208b5144891",
+    "server/rental/bills.go": "d7f01aad35c0a1e97b445b04175e32738274e343d616e6d7bbca1b8c4735573a",
+    "server/rental/carryover.go": "b6bf77ce2a9c7981c1ac97e4eb308969d1f6ef3fb6ff39dde23ed622563cd058",
+    "server/rental/contracts_test.go": "c67ef4d7ea8cb5efd78bf29b5f6c34c3d8714d80384222812163d33bce4bfe7b",
+    "server/rental/fees.go": "05af89169dd4ccbd0fa524d53db65b2d73f0823faaa816b312a73216a2fcf395",
+    "server/rental/importexport.go": "64cbdba7e1dbeb71b7c60dee94a041213093c8250a45c587db049e7f39259075",
+    "server/rental/issued_documents.go": "afddf45dfc1d8b2e2109bb49c2ac33c93b262066dd93ab4a2204b0bbbe0cf08c",
+    "server/rental/issued_documents_test.go": "dfd61eb7bc4524b52b4e951892d1f1829f6d76c987b13c1d3510a426f5284f35",
+    "server/rental/landlord_regression_test.go": "19ca1553e3c51d110dd635f5a9f578f94733e5f970002ce5b5c7ae4f86a42158",
+    "server/rental/lease_rent.go": "4c3399da22ba019af496b198139dea2036ca888696aec8e109e6df8501e198f8",
+    "server/rental/ledger_test.go": "278e7223680a8de3787999a12c461f518af179f85ae3027bbbea1a89268c9776",
+    "server/rental/meters.go": "b4a90999341f6511f0a81c63340b470d2040208667d3306a92fc6809e7f3c440",
+    "server/rental/migrate_ledger.go": "93ee47427061381ac88ddfbe9c6d25be9aae34789aa5b5c51884517ff97d8f6d",
+    "server/rental/payment_documents.go": "f1a191e82eeddd5b4b80732e3f143455a301ed124396c1957af2e26a012db626",
+    "server/rental/pdf_renderer.go": "3fe52956369b5ee53638d886f33f52e56c9653173260e35f746357e8f50c3ba5",
+    "server/rental/renew.go": "44bf5ae34ffa97f5a8c4a14e55d9ca094d5b5f7cdf5816c9967c7be00625e020",
+    "server/rental/renew_test.go": "6ca7be426b6e869fd5aefcba4658c9bbbd3777fb3272cfca065cab0efce11b83",
+    "server/rental/rental.go": "344eebefe6852c282562edba80a6061753efe5d840a3d5d87f3dc303b659994f",
+    "server/rental/rental_test.go": "130c2531dc375d505e82c2cd1badd6d1f53cffd2f839025149c4d119cae2af3a",
+    "server/rental/room_move.go": "5a3f5c262ab954349411ae268f9b439a18e0454c62972ea09f10cc3f755d5364",
+    "server/rental/rooms.go": "7c7bd2b51612e08bb25963cc24854e57600353a227f018bd7bc8195705ff797c",
+    "server/rental/tenant_portal.go": "f5ec324cd4fdb984b213173537e5c67d1e1675375e6eab4cb950fb42e2b28c44",
+    "server/rental/tenant_portal_scope_test.go": "403b65f6b371a7b7cb7f019bdddfceead63b426d7fa320bf6b54870bd04b380e",
+    "server/rental/tenant_portal_test.go": "87bc1c162d02546c0f2f8958b03e0f7440a2c1d3e85eba134676c30b48e69aaf",
+    "server/rental/tenants.go": "eeb9720790bba159b3be87637a7951d60952e97439a35b3adf5dfbbb55e095a7",
+    "server/server/server_test.go": "ff16217f94a1fca1211684d6eba0be8a4a49aca71c018f934779f315a8ae6756",
+    "server/sysconfig/sysconfig_test.go": "2b56ede8f35a59672302b73a0253cee1ae025ded64928d54b10ccc27038775e6",
+    "server/update/apply_test.go": "8bf8d46694e4068a934d5034f8b67b58459dd55193926d14dfc82c50722633e8",
+    "web/src/api/documents.ts": "a94497a4ae332f824c97f19daca02103736355ec34050c85e7d3e84b81336af6",
+    "web/src/api/renew.ts": "88827c2816acb61314d015494ff6fabcd83f97b5ee9398b98cdce69fa4325063",
+    "web/src/api/rental.ts": "9b31669f0cdcedb912970abacc10827823785408cf969c8b9a3f274f61559a07",
+    "web/src/api/tenant.ts": "4377cc93c9c8f1e87fe5e08b446116bca294acae5128377e5b74dc1eb6d42b27",
+    "web/src/components/BillDetail.vue": "808fa9c1032756c5cb948539ef146ba7ddb463bab016dda48f6a1da5e50c4c76",
+    "web/src/components/BillRecipientsEditor.vue": "0e02c03638b795923047806a72f861d21046f6f8025fac475690d607df0f5549",
+    "web/src/components/ContractPrintModal.vue": "42e04b99a9f1ab511523757e87d658cb8888114c39faa934bfab5ea034461876",
+    "web/src/components/ContractTemplateEditor.vue": "9f12e4e82b3b4104ca6c300b11b7345fcc88cb5434590c494c297d73d4513692",
+    "web/src/components/IssuedDocumentList.vue": "18002861ff63ce358b891f62e48fad061b811f43d35e7bbedb329aa2e10e8dbf",
+    "web/src/components/MeterReadingModal.vue": "d036ea355a47ca4c1a1a21ca0a0bad0d44f877220f26319a50b527f24bf6fc83",
+    "web/src/components/PaymentArchivePanel.vue": "8458282a172cdb6e355c8384bab44729af5040eaf3f51edf2ea4a4dfe649fe7e",
+    "web/src/components/RenewModal.vue": "afca9809252374b1fb210a189771e0ada645a2adf731d8c3ae7a916033e919b7",
+    "web/src/components/RentalReceipt.vue": "6d31c1837316b431c17b7595236f77d5d2663a5f255211f9500cb64cc04f03b1",
+    "web/src/utils/lease.ts": "7c9935e94e7cd7f8753483d42bdee791df7e219a27853ff908a700a576844c7a",
+    "web/src/views/AdminConfigView.vue": "607feb26b61cdb443514a6910dfb9b30071cbc238d60743062f28d2fa861ca05",
+    "web/src/views/BillsView.vue": "ae20e8eac77a68a1bfdb1d6ed24eb3b4182ccdd6186877f4a2d49912f18ee02e",
+    "web/src/views/PaymentsView.vue": "18bb8873a20a2810211195f13ad202cc2d5beed3975ba300bd3b428193080e78",
+    "web/src/views/TenantsView.vue": "42bfddc0d52919502a84988414da6d17d915f8681cef477a588890d0fea3ecb5",
+    "web/src/views/portal/PortalContractsView.vue": "20458490c4a13f6addc8ec20fceb825bbf8be6bb8989e2c3d601f282fefb339a",
+    "web/src/views/portal/PortalPaymentsView.vue": "dcb5e345621fb0d06e5ee43836eccc3eaff62698f042225574f7c6ad9a43bbde",
+    "web/tests/lease.test.mjs": "4cd9051494e82a66ee9dcfa863037a313c14a3f9e3ecb46d094680629b703487"
+  }
+}

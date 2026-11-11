@@ -485,12 +485,23 @@ func importRow(db *gorm.DB, c *gin.Context, rec []string, thisMonth string, defE
 		// bill_items，单据只能走「固定列汇总」回退分支）。
 		syncBillItems(db, &bill, nil)
 	} else {
-		if err := db.Save(&bill).Error; err != nil {
-			return false, "更新账单失败"
+		if err := db.Transaction(func(tx *gorm.DB) error {
+			var archived int64
+			if err := tx.Model(&IssuedDocument{}).Where("bill_id = ?", bill.ID).Count(&archived).Error; err != nil {
+				return err
+			}
+			if archived > 0 {
+				return fmt.Errorf("账单已有归档收据，请在账单详情更正，不能用 CSV 覆盖")
+			}
+			if err := tx.Save(&bill).Error; err != nil {
+				return err
+			}
+			return syncBillItemsOnUpdate(tx, &bill)
+		}); err != nil {
+			return false, err.Error()
 		}
 		// 覆盖已有账单后必须重建明细：否则单据里还是上次导入/开票的旧金额，
 		// 合计却已按新金额重算，出现「明细加起来对不上合计」（2026-10-17 审计修复）。
-		syncBillItemsOnUpdate(db, &bill)
 	}
 
 	// 导入带租户名且房内无同名在租租户时，补登一名在租租户，便于后续开票。

@@ -110,13 +110,14 @@ export function leaseRangeText(moveIn: string, leaseEnd: string): string {
 }
 
 /**
- * 续租基准日 = max(当前到期日, 今天)：提前续从原到期日顺延，过期续从今天起算。
+ * 续租基准日 = max(当前到期日次日, 今天)：提前续从次日顺延，过期续从今天起算。
  * 与后端 renewBase 同口径。
  */
 export function renewBaseDate(leaseEnd: string, today = new Date()): Date {
   const end = parseLeaseDate(leaseEnd)
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
   if (!end || end.getTime() < startOfToday.getTime()) return startOfToday
+  end.setDate(end.getDate() + 1)
   return end
 }
 

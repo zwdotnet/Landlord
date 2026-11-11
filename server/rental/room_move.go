@@ -17,6 +17,7 @@
 package rental
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -71,6 +72,10 @@ func handleRoomMove(db *gorm.DB) gin.HandlerFunc {
 
 		counts, err := moveRoomToLedger(db, room, target.ID)
 		if err != nil {
+			if errors.Is(err, errRoomHasIssuedDocuments) {
+				response.ErrorBadRequest(c, err.Error())
+				return
+			}
 			response.ErrorInternal(c, "移动房源失败："+err.Error())
 			return
 		}
@@ -153,6 +158,9 @@ func moveOneFile(oldLedger, newLedger uint, rel string) (string, *movedFile, err
 // moveRoomToLedger 把一间房及其名下全部业务数据迁到目标台账（库 + 盘）。
 // 返回给前端的件数统计。任何一步失败都尽量回到原状。
 func moveRoomToLedger(db *gorm.DB, room *Room, targetLedgerID uint) (map[string]int, error) {
+	if err := protectRoomDocuments(db, room.ID); err != nil {
+		return nil, err
+	}
 	oldLedger := room.LedgerID
 	counts := map[string]int{}
 
@@ -230,6 +238,9 @@ func moveRoomToLedger(db *gorm.DB, room *Room, targetLedgerID uint) (map[string]
 
 	// ---------- 2. 再提交数据库 ----------
 	err := db.Transaction(func(tx *gorm.DB) error {
+		if err := protectRoomDocuments(tx, room.ID); err != nil {
+			return err
+		}
 		move := func(model interface{}, where string, args ...interface{}) error {
 			return tx.Model(model).Where(where, args...).Update("org_id", targetLedgerID).Error
 		}

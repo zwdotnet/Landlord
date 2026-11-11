@@ -1,11 +1,13 @@
 <template>
   <div class="page-container">
-    <PageHeader title="我的合同" description="房东上传的租赁合同，可在线预览或下载留存" />
+    <PageHeader title="我的合同" description="已归档的合同 PDF 与房东上传的签署件，可查看或下载留存" />
+
+    <IssuedDocumentList :documents="agreements" portal />
 
     <div v-if="loading" class="surface rounded-2xl p-4 sm:p-6 text-center text-sm text-muted-foreground">加载中…</div>
     <div v-else-if="loadError" class="surface rounded-2xl p-4 sm:p-6 text-center text-sm text-muted-foreground">{{ loadError }}</div>
 
-    <div v-else-if="contracts.length === 0" class="surface rounded-2xl p-6 text-center text-sm text-muted-foreground">
+    <div v-else-if="contracts.length === 0 && agreements.length === 0" class="surface rounded-2xl p-6 text-center text-sm text-muted-foreground">
       房东还没有上传合同。如需查看，请联系房东上传。
     </div>
 
@@ -97,6 +99,8 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import IssuedDocumentList from '../../components/IssuedDocumentList.vue'
+import { getPortalAgreements, type IssuedDocument } from '../../api/documents'
 import PageHeader from '../../components/PageHeader.vue'
 import Modal from '../../components/Modal.vue'
 import {
@@ -108,6 +112,8 @@ import {
 import { serverErrorMessage } from '../../utils/apiError'
 import { toast } from '../../utils/toast'
 
+const agreements = ref<IssuedDocument[]>([])
+onMounted(async () => { try { agreements.value = (await getPortalAgreements()).data.data || [] } catch { loadError.value = '归档合同加载失败' } })
 const loading = ref(true)
 const loadError = ref('')
 const contracts = ref<PortalContract[]>([])

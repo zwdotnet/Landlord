@@ -1,25 +1,6 @@
-// renew.go — 租约续租：把到期日顺延并留痕（2026-10-20 粉丝需求）。
-//
-// 为什么单独一个文件、自己 apps.Register 一个 App：
-// 续租是「租户 + 房源 + 留痕表」三者的一个新动作，但它的入口只是租户路由上的
-// 一个子路径。改 rental.go 的 setupRoutes 会与别人的改动撞车，因此按
-// room_items.go 的既有约定——本文件自包含注册路由，在 SetupAuth 里补上
-// resolveLedger 与 denyTenantRole 两层中间件，口径与 setupRoutes 逐字一致。
-//
-// 口径（前后端同一套，前端 web/src/utils/lease.ts 是孪生实现）：
-//
-//	新到期日 = 基准日 + N 个月 − 1 天
-//	基准日   = max(当前到期日, 今天)
-//
-// 为什么基准日要取「当前到期日与今天的较大者」：
-//   - 还没到期就续租（提前一年签）：从原到期日往后顺延，不会把租期缩水；
-//   - 已经过期才续租（漏登记）：从今天起算，否则填 3 个月可能得到过去的日期。
-//
-// 为什么到期日要 −1 天：起租 2026-01-15、租 3 个月，行业口径是 2026-04-14 到期
-// （4 月 15 日就已经是下一起租日），与前端租期快捷填充完全一致。
-//
-// 留痕表为什么单独一张而不是塞进租户备注：续租记录要按月数、租金前后值逐条
-// 可查，并且**续租单要能打印**（print-kit 的《续租协议》直接消费本表一行）。
+// renew.go — 续租保留日期与租金快照，新租金在续租起始日生效。
+// 当前到期日按闭区间处理，续租从次日开始；已过期则从今天开始。
+// 与 web/src/utils/lease.ts 使用相同日期算法。
 package rental
 
 import (
@@ -37,22 +18,22 @@ import (
 
 // LeaseRenewal 一次续租的留痕。
 //
-// 金额是**快照**：RentBefore/RentAfter 记录续租当时房源的默认月租金
-// （租金挂在 rooms.default_rent 上，改它只影响之后新开的账单，历史账单
-// 已按开票快照固化，不受影响——与仓储里其它快照口径一致）。
+// RentBefore/RentAfter 与 EffectiveFrom 组成有日期的租金调整记录。
+// 续租不覆盖房源默认租金，历史账单仍使用开票快照。
 type LeaseRenewal struct {
-	ID          uint      `gorm:"primarykey" json:"id"`
-	UserID      uint      `gorm:"index" json:"-"`                                          // 经办人，仅溯源
-	LedgerID    uint      `gorm:"column:org_id;index;not null;default:0" json:"ledger_id"` // 归属台账
-	TenantID    uint      `gorm:"index;not null" json:"tenant_id"`
-	RoomID      uint      `gorm:"index;not null" json:"room_id"`
-	FromEndDate string    `json:"from_end_date"` // 续租前的到期日（空=此前未约定）
-	ToEndDate   string    `json:"to_end_date"`   // 续租后的到期日
-	Months      int       `json:"months"`        // 本次续租时长（月）
-	RentBefore  float64   `json:"rent_before"`   // 续租前月租金快照
-	RentAfter   float64   `json:"rent_after"`    // 续租后月租金快照
-	Note        string    `json:"note"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID            uint      `gorm:"primarykey" json:"id"`
+	UserID        uint      `gorm:"index" json:"-"`                                          // 经办人，仅溯源
+	LedgerID      uint      `gorm:"column:org_id;index;not null;default:0" json:"ledger_id"` // 归属台账
+	TenantID      uint      `gorm:"index;not null" json:"tenant_id"`
+	RoomID        uint      `gorm:"index;not null" json:"room_id"`
+	FromEndDate   string    `json:"from_end_date"` // 续租前的到期日（空=此前未约定）
+	EffectiveFrom string    `gorm:"index;default:''" json:"effective_from"`
+	ToEndDate     string    `json:"to_end_date"` // 续租后的到期日
+	Months        int       `json:"months"`      // 本次续租时长（月）
+	RentBefore    float64   `json:"rent_before"` // 续租前月租金快照
+	RentAfter     float64   `json:"rent_after"`  // 续租后月租金快照
+	Note          string    `json:"note"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 // 续租参数边界：单次最长 10 年（120 个月）——再长就该走新签合同而不是续租；
@@ -120,15 +101,14 @@ func parseLeaseDate(v string) (time.Time, bool) {
 	return t, true
 }
 
-// renewBase 续租基准日 = max(当前到期日, 今天)。到期日为空/脏值时按今天。
-// 基准日归一到今天零点之前先与今天比较，让「今天到期」仍从今天起算。
+// renewBase 续租基准日 = max(当前到期日次日, 今天)。未约定到期日时按今天。
 func renewBase(tenantLeaseEnd string, today time.Time) time.Time {
 	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	end, ok := parseLeaseDate(tenantLeaseEnd)
 	if !ok || end.Before(today) {
 		return today
 	}
-	return end
+	return end.AddDate(0, 0, 1)
 }
 
 // monthsBetweenLease 两个租期日期之间的整月数，口径与 leaseEndAfter 互逆
@@ -221,23 +201,24 @@ func handleTenantRenew(db *gorm.DB) gin.HandlerFunc {
 		if !okRoom {
 			return
 		}
-		rentBefore := room.DefaultRent
+		rentBefore := rentForTenantAt(db, room, tenant, base.AddDate(0, 0, -1).Format("2006-01-02"))
 		rentAfter := rentBefore
 		if req.Rent != nil {
 			rentAfter = round2(*req.Rent)
 		}
 
 		record := LeaseRenewal{
-			UserID:      c.GetUint("userID"),
-			LedgerID:    tenant.LedgerID,
-			TenantID:    tenant.ID,
-			RoomID:      tenant.RoomID,
-			FromEndDate: tenant.LeaseEndDate,
-			ToEndDate:   toEnd.Format("2006-01-02"),
-			Months:      months,
-			RentBefore:  rentBefore,
-			RentAfter:   rentAfter,
-			Note:        strings.TrimSpace(req.Note),
+			UserID:        c.GetUint("userID"),
+			LedgerID:      tenant.LedgerID,
+			TenantID:      tenant.ID,
+			RoomID:        tenant.RoomID,
+			FromEndDate:   tenant.LeaseEndDate,
+			EffectiveFrom: base.Format("2006-01-02"),
+			ToEndDate:     toEnd.Format("2006-01-02"),
+			Months:        months,
+			RentBefore:    rentBefore,
+			RentAfter:     rentAfter,
+			Note:          strings.TrimSpace(req.Note),
 		}
 
 		// 租户到期日与留痕同一事务：不能出现「到期日改了但没记录」的半截状态。
@@ -245,13 +226,6 @@ func handleTenantRenew(db *gorm.DB) gin.HandlerFunc {
 			tenant.LeaseEndDate = record.ToEndDate
 			if err := tx.Save(tenant).Error; err != nil {
 				return err
-			}
-			if req.Rent != nil {
-				// 改租金只动房源默认月租：历史账单是开票快照，不会被追改。
-				room.DefaultRent = rentAfter
-				if err := tx.Model(room).Update("default_rent", rentAfter).Error; err != nil {
-					return err
-				}
 			}
 			return tx.Create(&record).Error
 		})

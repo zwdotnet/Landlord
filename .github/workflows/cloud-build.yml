@@ -1,0 +1,102 @@
+name: Build Linux deployment
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cloud-build.yml
+      - deploy/**
+      - server/**
+      - web/**
+      - VERSION
+      - .dockerignore
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloud-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Identify release
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          landlord_version="$(tr -d '\r\n' < VERSION)"
+          [[ "$landlord_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]
+          landlord_name="landlord-${landlord_version}-${GITHUB_SHA:0:12}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "version=$landlord_version" >> "$GITHUB_OUTPUT"
+          echo "name=$landlord_name" >> "$GITHUB_OUTPUT"
+          echo "image=landlord:${landlord_name#landlord-}" >> "$GITHUB_OUTPUT"
+
+      - name: Build production frontend and check date/PWA behavior
+        working-directory: web
+        env:
+          VITE_BASE_PATH: /landlord/
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          node --test tests/lease.test.mjs tests/pwa.test.mjs
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        with:
+          buildkitd-config: deploy/buildkitd.toml
+          driver-opts: |
+            memory=3g
+            memory-swap=3g
+            cpu-period=100000
+            cpu-quota=200000
+
+      - name: Build Linux image on GitHub
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ steps.release.outputs.image }}
+          build-args: APP_VERSION=${{ steps.release.outputs.version }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.release.outputs.version }}
+          cache-from: type=gha,scope=landlord-linux-amd64
+          cache-to: type=gha,mode=max,scope=landlord-linux-amd64
+
+      - name: Check read-only runtime and Chinese PDF
+        env:
+          LANDLORD_IMAGE: ${{ steps.release.outputs.image }}
+          LANDLORD_VERSION: ${{ steps.release.outputs.version }}
+        run: python3 deploy/smoke-cloud-image.py
+
+      - name: Package image and matching release files
+        env:
+          LANDLORD_IMAGE: ${{ steps.release.outputs.image }}
+        run: python3 deploy/package-cloud-release.py dist/cloud
+
+      - name: Save deployment artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ${{ steps.release.outputs.name }}
+          path: dist/cloud/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7

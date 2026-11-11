@@ -24,6 +24,7 @@ export interface LeaseRenewal {
   room_id: number
   /** 续租前的到期日（空=此前未约定） */
   from_end_date: string
+  effective_from: string
   /** 续租后的到期日 */
   to_end_date: string
   /** 本次续租时长（月） */

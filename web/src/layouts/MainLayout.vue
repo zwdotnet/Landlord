@@ -60,6 +60,8 @@
               >{{ paymentDueCount > 99 ? '99+' : paymentDueCount }}</span>
             </RouterLink>
 
+            <RouterLink v-if="ledgerStore.canView('bills')" to="/admin/automation" class="nav-link" @click="sidebarOpen = false">周期任务</RouterLink>
+            <RouterLink to="/admin/notifications" class="nav-link" @click="sidebarOpen = false">消息与推送</RouterLink>
             <template v-if="authStore.isAdmin">
               <div class="px-3 pt-6 pb-2">
                 <span class="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">系统管理</span>
@@ -176,6 +178,7 @@
               <div class="hidden sm:block">
                 <LedgerSwitcher />
               </div>
+              <InboxLink />
               <UiThemeToggle />
 
               <!-- user dropdown -->
@@ -329,6 +332,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute, RouterLink, RouterView } from 'vue-router'
+import InboxLink from '../components/InboxLink.vue'
 import { useAuthStore } from '../stores/auth'
 import { useThemeStore } from '../stores/theme'
 import { useLedgerStore } from '../stores/ledger'

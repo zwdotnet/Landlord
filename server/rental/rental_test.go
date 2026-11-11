@@ -2,6 +2,7 @@ package rental
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -116,6 +117,12 @@ type testEnv struct {
 
 func setupEnv(t *testing.T) *testEnv {
 	t.Helper()
+	previousRenderer := documentPDFRenderer
+	documentPDFRenderer = func(context.Context, string) ([]byte, error) {
+		return []byte("%PDF-1.4\nunit-test renderer fixture\n%%EOF"), nil
+	}
+	t.Cleanup(func() { documentPDFRenderer = previousRenderer })
+
 	gin.SetMode(gin.TestMode)
 
 	dir := t.TempDir()
@@ -489,6 +496,7 @@ func TestPayFlow(t *testing.T) {
 	if !almostEqual(num(bill["paid_amount"]), 500) {
 		t.Fatalf("paid = %v, want 500", bill["paid_amount"])
 	}
+	firstPayment := uint(num(bill["last_payment_id"]))
 
 	// 再收 620 → paid。
 	w = env.do(http.MethodPost, fmt.Sprintf("/api/rental/bills/%d/pay", billID), map[string]interface{}{"amount": 620})
@@ -503,8 +511,14 @@ func TestPayFlow(t *testing.T) {
 		t.Fatalf("arrears list = %d, want 0", got)
 	}
 
-	// 编辑账单把已收改回 0 → 回到 unpaid。
-	env.updateBillPaid(billID, 0)
+	// 收据归档后通过逐笔冲销更正登记，原收款和收据仍保留。
+	secondPayment := uint(num(bill["last_payment_id"]))
+	for _, id := range []uint{firstPayment, secondPayment} {
+		w = env.do(http.MethodPost, fmt.Sprintf("/api/rental/payments/%d/reverse", id), map[string]interface{}{"reason": "测试登记更正"})
+		if w.Code != http.StatusOK {
+			t.Fatalf("reverse payment: %d %s", w.Code, w.Body.String())
+		}
+	}
 	w = env.do(http.MethodGet, "/api/rental/bills?status=arrears", nil)
 	if got := len(env.items(decodeBody(t, w))); got != 1 {
 		t.Fatalf("arrears list after reset = %d, want 1", got)

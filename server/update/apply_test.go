@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -224,7 +225,7 @@ func TestExtractFPK(t *testing.T) {
 		if err != nil {
 			t.Fatalf("二进制未落地：%v", err)
 		}
-		if fi.Mode().Perm()&0o111 == 0 {
+		if runtime.GOOS != "windows" && fi.Mode().Perm()&0o111 == 0 {
 			t.Fatalf("二进制缺少可执行位：%v", fi.Mode())
 		}
 		if _, err := os.Stat(filepath.Join(pkg.WebPath, "assets", "a.js")); err != nil {

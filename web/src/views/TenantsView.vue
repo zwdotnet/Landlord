@@ -571,7 +571,7 @@
             type="button"
             class="text-brand-600 dark:text-brand-300 hover:underline shrink-0 whitespace-nowrap"
             @click="openContractPrint"
-          >打印合同</button>
+          >合同 PDF</button>
         </div>
         <div v-if="ledgerStore.canEdit('tenants')">
           <span class="text-xs font-semibold text-muted-foreground block mb-1.5">上传合同文件</span>

@@ -16,6 +16,11 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("init db: %v", err)
 	}
+	t.Cleanup(func() {
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Close()
+		}
+	})
 	if err := database.AutoMigrate(db); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}

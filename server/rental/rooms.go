@@ -342,6 +342,10 @@ func handleRoomDelete(db *gorm.DB) gin.HandlerFunc {
 		if !requireLedgerWrite(db, c, room.LedgerID, ModuleRooms, PermFull) {
 			return
 		}
+		if err := protectRoomDocuments(db, room.ID); err != nil {
+			response.ErrorBadRequest(c, err.Error())
+			return
+		}
 		var bills int64
 		// 账单按 room_id 统计：room_id 全局唯一，跨台账孤儿行不可能挂到
 		// 本房源的 id 上，因此不需要再按台账收窄（写权限已在上面按房源

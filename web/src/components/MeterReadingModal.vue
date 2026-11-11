@@ -24,7 +24,7 @@
               于是带出**别的房间**的租户与费用（粉丝报的正是这个现象）。
               加前缀后两种取值不可能相等，配对不再有歧义。
             -->
-            <option v-for="c in readingCandidates" :key="c.bill?.id ?? c.room.id" :value="candidateValue(c)">
+            <option v-for="c in readingCandidates" :key="candidateValue(c)" :value="candidateValue(c)">
               {{ c.bill ? '✓ ' : '' }}{{ c.room.room_no }} · {{ c.bill?.tenant_name || c.room.current_tenants?.map((t) => t.name).join('、') || '—' }}
             </option>
           </select>
@@ -75,7 +75,7 @@
               <label class="block">
                 <span class="text-[11px] text-muted-foreground block sm:hidden">本月（吨，上月 {{ fmtRead(readingForm.water_last) }}）</span>
                 <span class="hidden text-[11px] text-muted-foreground">本月读数（吨）*</span>
-                <input v-model.number="readingForm.water_now" type="number" step="1" class="input-field !px-2 !py-1.5 text-right" />
+                <input v-model.number="readingForm.water_now" @input="readingsEdited = true" type="number" step="1" class="input-field !px-2 !py-1.5 text-right" />
               </label>
               <label class="block">
                 <span class="text-[11px] text-muted-foreground">单价（元/吨）</span>
@@ -113,7 +113,7 @@
               <label class="block">
                 <span class="text-[11px] text-muted-foreground block sm:hidden">本月（{{ m.unit }}，上月 {{ fmtRead(readingForm[m.lastKey]) }}）</span>
                 <span class="hidden text-[11px] text-muted-foreground">本月读数（{{ m.unit }}）*</span>
-                <input v-model.number="readingForm[m.nowKey]" type="number" step="1" class="input-field !px-2 !py-1.5 text-right" />
+                <input v-model.number="readingForm[m.nowKey]" @input="readingsEdited = true" type="number" step="1" class="input-field !px-2 !py-1.5 text-right" />
               </label>
               <label class="block">
                 <span class="text-[11px] text-muted-foreground">单价（元/{{ m.unit }}）</span>
@@ -145,6 +145,7 @@
           <input
             id="mr-rent"
             v-model.number="readingForm.rent"
+            @change="rentConfirmed = true"
             type="number" step="0.01" min="0"
             class="input-field !px-2 !py-1.5 text-right"
             :disabled="feeExcluded('rent')"
@@ -212,7 +213,7 @@ import { useLedgerStore } from '../stores/ledger'
 import { defaultBilling, fetchBillingDefaults, meterUnit, type BillingDefaults } from '../utils/billing'
 import { cycleLabel, cycleMonths, normalizeCycle } from '../utils/cycle'
 import {
-  createBill, fmtMoney, getAllBills, getAllRooms, previewBill, updateBill,
+  createBill, fmtMoney, getAllBills, getAllRooms, getBillDetail, previewBill, updateBill,
   type Bill, type BillItemDetail, type RoomView,
 } from '../api/rental'
 
@@ -263,6 +264,9 @@ const previewError = ref('')
 let previewToken = 0
 // 用户是否手动改过租金/单价：预览返回前就改过的字段不能被服务端预填值覆盖。
 const manualEdit = ref(false)
+const readingsEdited = ref(false)
+const rentConfirmed = ref(false)
+const requiresManualRent = ref(false)
 
 function markEdited() {
   manualEdit.value = true
@@ -300,14 +304,24 @@ function applyServerPrefill(bill: Bill, roomId: number, period: string) {
   const f = readingForm.value
   if (!f || !readingIsNew.value) return
   if (f.room_id !== roomId || f.period !== period) return
-  f.rent = bill.rent
-  f.water_price = bill.water_price
-  f.elec_price = bill.elec_price
-  f.gas_price = bill.gas_price
-  f.sanitation_fee = bill.sanitation_fee
-  f.management_fee = bill.management_fee
-  f.water_mode = bill.water_mode || f.water_mode
-  f.pay_cycle = bill.pay_cycle || f.pay_cycle
+  if (!manualEdit.value) {
+    f.rent = bill.rent
+    f.water_price = bill.water_price
+    f.elec_price = bill.elec_price
+    f.gas_price = bill.gas_price
+    f.sanitation_fee = bill.sanitation_fee
+    f.management_fee = bill.management_fee
+    f.water_mode = bill.water_mode || f.water_mode
+    f.pay_cycle = bill.pay_cycle || f.pay_cycle
+  }
+  if (!readingsEdited.value) {
+    f.water_last = bill.water_last
+    f.water_now = bill.water_now
+    f.elec_last = bill.elec_last
+    f.elec_now = bill.elec_now
+    f.gas_last = bill.gas_last
+    f.gas_now = bill.gas_now
+  }
 }
 
 async function loadPreview(roomId: number, period: string) {
@@ -319,17 +333,24 @@ async function loadPreview(roomId: number, period: string) {
   if (!roomId || !period) return
   previewLoading.value = true
   try {
-    const res = await previewBill(roomId, period)
+    const res = readingIsNew.value
+      ? await previewBill(roomId, period)
+      : await getBillDetail(readingBillId.value)
     if (token !== previewToken) return
     if (res.data?.code === 0) {
       const data = res.data.data as { exists: boolean; bill: Bill; items: BillItemDetail[] }
+      if (!readingIsNew.value) data.exists = true
       previewItems.value = data.items ?? []
       previewCarryIn.value = Number(data.bill?.carry_in || 0)
       previewLoaded.value = true
+      requiresManualRent.value = !!data.bill?.requires_manual_rent
+      if (requiresManualRent.value) {
+        previewError.value = '本期租金条款需要核对，请填写本期租金后保存。'
+      }
       // 待生成账单：用服务端按周期锚点算好的固定费（租金/卫生/管理）与单价
       // 覆盖弹窗本地预填值。否则非锚点月会被本地预填成整期租金，预览与落库
       // 金额对不上（服务端 newBillFromRoom 在非锚点月固定费为 0）。
-      if (!data.exists && !manualEdit.value) applyServerPrefill(data.bill, roomId, period)
+      if (!data.exists) applyServerPrefill(data.bill, roomId, period)
     } else {
       previewError.value = res.data?.message || '费用预览加载失败'
     }
@@ -411,13 +432,22 @@ interface ReadingCandidate {
 }
 
 const readingCandidates = computed<ReadingCandidate[]>(() => {
-  const byRoom = new Map<number, Bill>()
-  for (const b of readingBills.value) byRoom.set(b.room_id, b)
-  return readingRooms.value.map((room) => ({ room, bill: byRoom.get(room.id) ?? null }))
+  const candidates = readingRooms.value.map((room) => {
+    const currentIds = (room.current_tenants ?? []).map((t) => t.id).sort((a, b) => a - b)
+    const bill = readingBills.value.find((b) => b.room_id === room.id &&
+      JSON.stringify([...(b.recipient_tenant_ids ?? [])].sort((a, b) => a - b)) === JSON.stringify(currentIds)) ?? null
+    return { room, bill }
+  })
+  const target = props.initialBill
+  if (target && target.period === readingPeriod.value && !candidates.some((c) => c.bill?.id === target.id)) {
+    const room = readingRooms.value.find((r) => r.id === target.room_id)
+    if (room) candidates.unshift({ room, bill: target })
+  }
+  return candidates
 })
 
 // 该账期"已有账单的房间数"，用于空态提示（一个账单都没有才提示先建账/直接抄表均可）
-const readingBillCount = computed(() => readingBills.value.length)
+const readingBillCount = computed(() => readingCandidates.value.filter((c) => c.bill).length)
 
 async function loadReadingData() {
   readingLoading.value = true
@@ -429,11 +459,11 @@ async function loadReadingData() {
     const [bills, prevBills, rooms] = await Promise.all([
       getAllBills({ period: readingPeriod.value }),
       getAllBills({ period: prevPeriod(readingPeriod.value) }),
-      getAllRooms({ status: 'occupied' }),
+      getAllRooms(props.initialBill ? {} : { status: 'occupied' }),
     ])
     readingBills.value = bills
     readingPrevBills.value = prevBills
-    readingRooms.value = rooms
+    readingRooms.value = rooms.filter((room) => room.current_tenants?.length || room.id === props.initialBill?.room_id)
   } catch {
     readingBills.value = []
     readingPrevBills.value = []
@@ -448,6 +478,9 @@ async function loadReadingData() {
 // 上月读数取上一期账单的本月读数，无历史则房间底数——与后端 prefillReadings 同口径）
 function selectReadingCandidate(c: ReadingCandidate | null) {
   manualEdit.value = false
+  readingsEdited.value = false
+  rentConfirmed.value = false
+  requiresManualRent.value = false
   if (!c) {
     readingForm.value = null
     readingIsNew.value = false
@@ -512,7 +545,7 @@ watch(() => props.modelValue, (open) => {
   if (target) {
     readingPeriod.value = target.period
     loadReadingData().then(() => {
-      const c = readingCandidates.value.find((x) => x.room.id === target.room_id) ?? null
+      const c = readingCandidates.value.find((x) => x.bill?.id === target.id) ?? null
       selectReadingCandidate(c)
     })
   } else {
@@ -593,6 +626,14 @@ function readingTotal(): number {
 async function saveReading() {
   const f = readingForm.value
   if (!f) return
+  if (readingIsNew.value && (!previewLoaded.value || previewLoading.value)) {
+    readingError.value = '请等待费用预览加载成功后保存'
+    return
+  }
+  if (readingIsNew.value && requiresManualRent.value && !rentConfirmed.value) {
+    readingError.value = '本期租金条款需要核对，请填写并确认本期租金'
+    return
+  }
   // v-model.number 在输入框被清空时留下的是空串（不是数字）。直接提交会让后端
   // 的 *float64 绑定失败、只回一句「参数错误」；这里先按各自的语义归一：
   // 数字类字段清空按 0 处理，描述类字段清空按空串处理。

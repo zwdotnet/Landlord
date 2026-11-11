@@ -996,17 +996,17 @@ func TestBillUpdatePartialKeepsUnsentFields(t *testing.T) {
 		map[string]interface{}{
 			"room_id": roomID, "period": "2026-09", "paid_amount": 0,
 		})
-	if w.Code != http.StatusOK {
-		t.Fatalf("explicit zero: %d %s", w.Code, w.Body.String())
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("archived receipt must block direct paid_amount edits: %d %s", w.Code, w.Body.String())
 	}
 	var zeroed Bill
 	if err := env.db.First(&zeroed, billID).Error; err != nil {
 		t.Fatalf("reload: %v", err)
 	}
-	if zeroed.PaidAmount != 0 {
-		t.Fatalf("显式传 0 应清零，实际 %v", zeroed.PaidAmount)
+	if zeroed.PaidAmount != after.PaidAmount {
+		t.Fatalf("rejected edit changed paid amount: %v", zeroed.PaidAmount)
 	}
-	if zeroed.PaidAt != nil {
-		t.Fatal("已收清零后 PaidAt 应为空")
+	if zeroed.PaidAt == nil || after.PaidAt == nil || !zeroed.PaidAt.Equal(*after.PaidAt) {
+		t.Fatal("rejected edit changed PaidAt")
 	}
 }

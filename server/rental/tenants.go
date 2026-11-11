@@ -486,6 +486,16 @@ func handleTenantDelete(db *gorm.DB) gin.HandlerFunc {
 		if !requireLedgerWrite(db, c, tenant.LedgerID, ModuleTenants, PermFull) {
 			return
 		}
+		var archived int64
+		if err := db.Model(&IssuedDocument{}).Where("org_id = ? AND tenant_id = ?", tenant.LedgerID, tenant.ID).Count(&archived).Error; err != nil {
+			response.ErrorInternal(c, "合同校验失败")
+			return
+		}
+		if archived > 0 {
+			response.ErrorBadRequest(c, "租客已有归档合同，请办理退租并保留档案")
+			return
+		}
+
 		// v0.6.10：档案被删除时，把它绑定的登录账号退回「等待关联」态
 		// （账号不删）——否则账号会卡在「已关联」但档案已消失，租户登录后
 		// 门户一片空白也说不清原因。解绑失败不阻断删除（房东的删除意图优先），

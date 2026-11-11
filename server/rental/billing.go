@@ -214,7 +214,11 @@ func normalizeTags(tags []string) []string {
 // 的在租租户（与 effectiveRoomBilling 的"第一个显式设置"同规则），key 排序
 // 返回。没有租户设置过排除（或房间空置）时返回 nil = 全部项目参与。
 func effectiveRoomExcludedFees(db *gorm.DB, room *Room) []string {
-	for _, t := range activeRoomTenants(db, room.ID, roomLedgerRef(room)) {
+	return tenantsExcludedFees(activeRoomTenants(db, room.ID, roomLedgerRef(room)))
+}
+
+func tenantsExcludedFees(tenants []Tenant) []string {
+	for _, t := range tenants {
 		if len(t.ExcludedFees) > 0 {
 			keys := normalizeExcludedFeeKeys(t.ExcludedFees)
 			sort.Strings(keys)
@@ -288,6 +292,10 @@ func effectiveRoomBilling(db *gorm.DB, room *Room) billingConfig {
 	// 只在「本房所属台账」的租户里找生效设置：跨台账的同名房/孤儿租户
 	// 不能影响另一个台账的计费口径。
 	tenants := activeRoomTenants(db, room.ID, roomLedgerRef(room))
+	return effectiveTenantsBilling(db, room, tenants)
+}
+
+func effectiveTenantsBilling(db *gorm.DB, room *Room, tenants []Tenant) billingConfig {
 
 	// 水费计费方式：租户显式设置 → 全局默认（空值与未知值一律按吨）。
 	mode := ""

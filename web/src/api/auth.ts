@@ -1,4 +1,6 @@
 import request from './request'
+let setupInvitation = new URLSearchParams(location.hash.slice(1)).get('setup') || ''
+if(setupInvitation) history.replaceState(null, '', location.pathname + location.search)
 
 export function login(username: string, password: string) {
   return request.post('/api/auth/login', {
@@ -32,7 +34,7 @@ export function register(username: string, password: string, phone = '', role = 
     password,
     phone,
     ...(role ? { role } : {}),
-  })
+  }, { headers: setupInvitation ? { 'X-Landlord-Setup': setupInvitation } : {} }).then(res => { if(res.data?.code === 0) setupInvitation = ''; return res })
 }
 
 export function checkAuth() {

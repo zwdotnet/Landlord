@@ -6,9 +6,9 @@
         <!-- 抬头 -->
         <div class="text-center border-b-2 border-dashed border-border pb-4 mb-5">
           <h2 class="receipt-title text-xl font-bold text-foreground tracking-wide">
-            {{ property.name || '租金收费单据' }}
+            {{ property.name ? `${property.name} · ` : '' }}应缴通知单
           </h2>
-          <p class="text-xs text-muted-foreground mt-1">{{ periodLabel }} 租金及费用收缴凭证</p>
+          <p class="text-xs text-muted-foreground mt-1">{{ periodLabel }} · 请按账单核对并缴费</p>
           <p class="text-xs text-muted-foreground mt-0.5 tabular-nums">单据编号：{{ bill.receipt_no || '—' }}</p>
         </div>
 
@@ -18,7 +18,7 @@
           <div class="receipt-item"><span class="receipt-label">租户</span><span class="receipt-value font-semibold">{{ bill.tenant_name || '—' }}</span></div>
           <div class="receipt-item"><span class="receipt-label">账期</span><span class="receipt-value tabular-nums">{{ bill.period }}</span></div>
           <div class="receipt-item"><span class="receipt-label">缴费周期</span><span class="receipt-value">{{ cycleText }}</span></div>
-          <div class="receipt-item col-span-2"><span class="receipt-label">开票日期</span><span class="receipt-value tabular-nums">{{ today }}</span></div>
+          <div class="receipt-item col-span-2"><span class="receipt-label">出账日期</span><span class="receipt-value tabular-nums">{{ bill.created_at?.slice(0, 10) || today }}</span></div>
         </div>
 
         <!-- 费用明细表：桌面端/打印用表格，窄屏（<640px）改卡片化明细，避免六列挤成一列字 -->
@@ -131,11 +131,12 @@
 
         <!-- 底部 -->
         <div class="text-xs text-muted-foreground space-y-1">
+          <p>本单展示当前应缴和累计实收；逐笔收款凭证请从账单详情查看归档收据。</p>
           <p v-if="bill.remark">备注：{{ bill.remark }}</p>
           <p v-if="property.note">{{ property.note }}</p>
           <div class="flex flex-col sm:flex-row sm:justify-between gap-1 pt-2">
             <span>联系电话：{{ property.contact || '—' }}</span>
-            <span>收款确认（出租方签字）：＿＿＿＿＿＿</span>
+            <span>通知方签字：＿＿＿＿＿＿</span>
           </div>
         </div>
       </div>
@@ -176,6 +177,7 @@ const periodLabel = computed(() => {
   const m = props.bill.period.match(/^(\d{4})-(\d{2})$/)
   return m ? `${m[1]} 年 ${Number(m[2])} 月` : props.bill.period
 })
+
 
 // 缴费周期文案：季付账单覆盖 3 个月，写清覆盖区间便于对账
 const cycleText = computed(() => {

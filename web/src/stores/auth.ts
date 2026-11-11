@@ -1,3 +1,4 @@
+import { detachPush } from '../utils/pwa'
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { checkAuth, checkSetupRequired as apiCheckSetupRequired, getCurrentUser, logout as apiLogout } from '../api/auth'
@@ -238,6 +239,7 @@ export const useAuthStore = defineStore('auth', () => {
   // 只清本地登录态（401 拦截器等同步路径用）。用户主动点退出请用 endSession()：
   // 它会先落服务端抑制标记再走到这里。
   function logout() {
+    void detachPush(token.value).catch(() => null)
     token.value = ''
     user.value = null
     localStorage.removeItem(SK.token)

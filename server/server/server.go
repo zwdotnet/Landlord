@@ -366,6 +366,7 @@ func NewRouter(cfg config.Config, db *gorm.DB, jwtSecret string) *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORS(cfg.CORSOrigin))
 	r.Use(middleware.LimitJSONBody(1 << 20))
+	r.Use(bootstrapGate(db))
 
 	gatewayPrefix := ""
 	appGroup := r.Group("")
@@ -465,7 +466,14 @@ func NewRouter(cfg config.Config, db *gorm.DB, jwtSecret string) *gin.Engine {
 		appGroup.StaticFile("/favicon-192.png", cfg.WebDir+"/favicon-192.png")
 		appGroup.StaticFile("/favicon-512.png", cfg.WebDir+"/favicon-512.png")
 		appGroup.StaticFile("/apple-touch-icon.png", cfg.WebDir+"/apple-touch-icon.png")
+		appGroup.GET("/sw.js", func(c *gin.Context) {
+			c.Header("Cache-Control", "no-cache, no-store")
+			c.Header("Content-Type", "application/javascript")
+			c.File(cfg.WebDir + "/sw.js")
+		})
+		appGroup.StaticFile("/offline.html", cfg.WebDir+"/offline.html")
 		appGroup.GET("/manifest.webmanifest", func(c *gin.Context) {
+			c.Header("Cache-Control", "no-cache")
 			c.Header("Content-Type", "application/manifest+json")
 			c.File(cfg.WebDir + "/manifest.webmanifest")
 		})

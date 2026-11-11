@@ -165,12 +165,13 @@ func setTenantProfile(t *testing.T, env *testEnv, tenantID uint, updates map[str
 }
 
 // createBillWithTenant 直接落库一张账单（绕开出账逻辑，便于精确构造姓名快照与账期）。
-func createBillWithTenant(t *testing.T, env *testEnv, roomID, ledgerID uint, period, tenantName string) uint {
+func createBillWithTenant(t *testing.T, env *testEnv, roomID, ledgerID uint, period, tenantName string, recipientIDs ...uint) uint {
 	t.Helper()
 	bill := Bill{
 		UserID: env.adminID, LedgerID: ledgerID, RoomID: roomID,
 		Period: period, RoomNo: "R-" + period, TenantName: tenantName,
 		Rent: 1000, TotalAmount: 1000, Status: billStatusUnpaid,
+		RecipientTenantIDs: recipientIDs, TenancyKey: tenantKey(recipientIDs),
 	}
 	if err := env.db.Create(&bill).Error; err != nil {
 		t.Fatalf("create bill fixture: %v", err)
@@ -549,11 +550,11 @@ func TestPortalBillsScopedToOwnRoomAndName(t *testing.T) {
 	ledger := f.env.personalLedger
 
 	// 本人账单（姓名命中，账期在入住之后）
-	mine := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-04", "张三")
+	mine := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-04", "张三", f.tenantID)
 	// 自己房间但姓名是别人（前任租客，入住前）
 	before := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-01", "前任")
 	// 自己房间的联名账单（宿舍场景，含本人姓名）
-	shared := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-05", "张三、李四")
+	shared := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-05", "张三、李四", f.tenantID)
 	// 别的房间的账单（姓名恰好也是张三）
 	otherRoom := f.env.seedRoom("899", 1000, 0)
 	otherBill := createBillWithTenant(t, f.env, otherRoom, ledger, "2026-06", "张三")
@@ -582,7 +583,7 @@ func TestPortalBillsScopedToOwnRoomAndName(t *testing.T) {
 
 // TestPortalBillsAllowsEmptyNameSnapshot：姓名快照为空的历史账单要放行
 // （老数据没有快照，不能因此让租户看不到自己的账单）。
-func TestPortalBillsAllowsEmptyNameSnapshot(t *testing.T) {
+func TestPortalBillsRejectsUnassignedLegacySnapshot(t *testing.T) {
 	f := newPortalFixture(t, "802", "王五", "2026-03-01", "")
 	legacy := createBillWithTenant(t, f.env, f.roomID, f.env.personalLedger, "2026-04", "")
 
@@ -591,8 +592,8 @@ func TestPortalBillsAllowsEmptyNameSnapshot(t *testing.T) {
 	for _, it := range f.env.items(decodeBody(t, w)) {
 		ids[uint(it.(map[string]interface{})["id"].(float64))] = true
 	}
-	if !ids[legacy] {
-		t.Fatal("姓名快照为空的历史账单应可见（老库兼容）")
+	if ids[legacy] {
+		t.Fatal("未明确归属的历史账单不得向租客放行")
 	}
 }
 
@@ -618,7 +619,7 @@ func TestPortalPaymentsScopedToVisibleBills(t *testing.T) {
 	f := newPortalFixture(t, "804", "张三", "2026-03-01", "")
 	ledger := f.env.personalLedger
 
-	mine := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-04", "张三")
+	mine := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-04", "张三", f.tenantID)
 	otherRoom := f.env.seedRoom("896", 1000, 0)
 	foreign := createBillWithTenant(t, f.env, otherRoom, ledger, "2026-04", "张三")
 	before := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-01", "前任")
@@ -1132,7 +1133,7 @@ func TestPortalChangePhotoAccessControl(t *testing.T) {
 // TestPortalBillReceiptMatchesBill：单据数据含明细与抬头，且只含本人的账单。
 func TestPortalBillReceiptMatchesBill(t *testing.T) {
 	f := newPortalFixture(t, "913", "张三", "2026-03-01", "")
-	billID := createBillWithTenant(t, f.env, f.roomID, f.env.personalLedger, "2026-04", "张三")
+	billID := createBillWithTenant(t, f.env, f.roomID, f.env.personalLedger, "2026-04", "张三", f.tenantID)
 	if err := f.env.db.Create(&BillItem{
 		UserID: f.env.adminID, LedgerID: f.env.personalLedger, BillID: billID,
 		FeeKey: "rent", Name: "租金", Kind: "fixed", Amount: 1000,

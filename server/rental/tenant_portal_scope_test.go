@@ -15,7 +15,7 @@ func TestPortalBillsHidePreviousTenantWithoutMoveInDate(t *testing.T) {
 	// 前任的账单：姓名快照为空（老库历史数据）
 	legacyOthers := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-01", "")
 	// 自己的账单（姓名快照命中）
-	mine := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-04", "新租客")
+	mine := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-04", "新租客", f.tenantID)
 
 	w := portalGet(f.env, f.tenant, "/api/rental/portal/bills?pageSize=50")
 	if w.Code != http.StatusOK {
@@ -54,16 +54,16 @@ func TestPortalBillsHidePreviousTenantWithoutMoveInDate(t *testing.T) {
 	}
 }
 
-// TestPortalBillsFloorUsesFirstNamedBill：没填入住日期时，下界取「本房最早一张
+// TestPortalBillsWithoutMoveInUseExplicitRecipients：没填入住日期时，下界取「本房最早一张
 // 姓名命中我的账单」——这样早于这条账单、但姓名快照为空的历史账单不会被误认为是
 // 前任的（老库兼容），也不会把更早的前任账单放进来。
-func TestPortalBillsFloorUsesFirstNamedBill(t *testing.T) {
+func TestPortalBillsWithoutMoveInUseExplicitRecipients(t *testing.T) {
 	f := newPortalFixture(t, "804", "李四", "", "")
 	ledger := f.env.personalLedger
 	// 前任（更早的账期，空快照）
 	oldOthers := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-01", "")
 	// 自己最早的一张（姓名命中）
-	firstMine := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-03", "李四")
+	firstMine := createBillWithTenant(t, f.env, f.roomID, ledger, "2026-03", "李四", f.tenantID)
 
 	w := portalGet(f.env, f.tenant, "/api/rental/portal/bills?pageSize=50")
 	ids := map[uint]bool{}

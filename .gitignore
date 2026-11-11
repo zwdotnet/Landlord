@@ -62,6 +62,12 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+bootstrap.env
+*.pem
+*.p12
+*.pfx
+*.sqlite
+*.sqlite3
 
 # Logs
 *.log

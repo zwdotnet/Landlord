@@ -240,6 +240,10 @@ export interface MeterRecord {
 
 export interface Bill {
   id: number
+  created_at?: string
+  recipient_tenant_ids?: number[]
+  tenancy_key?: string
+  requires_manual_rent?: boolean
   room_id: number
   period: string
   room_no: string
@@ -875,6 +879,10 @@ export function getBillDetail(id: number) {
   return request.get(`/api/rental/bills/${id}`, { params: withLedger({}) })
 }
 
+export function assignBillRecipients(id: number, tenantIds: number[]) {
+  return request.put(withLedgerUrl(`/api/rental/bills/${id}/recipients`), { tenant_ids: tenantIds })
+}
+
 /**
  * 开票预览（不写库）：给定房间与账期，返回账单与费用明细。
  * exists=true 表示该账期已有账单（原样返回），false 表示保存时才会生成；
@@ -894,6 +902,7 @@ export function previewBill(roomId: number, period: string) {
 }
 
 export function createBill(roomId: number, period: string, readings?: {
+  tenant_ids?: number[]
   water_now?: number; elec_now?: number; gas_now?: number
   water_mode?: 'meter' | 'monthly'
   water_price?: number; elec_price?: number; gas_price?: number
@@ -918,8 +927,9 @@ export function payBill(
   amount: number,
   note = '',
   items?: { key: string; name: string; amount: number }[],
+  requestKey?: string,
 ) {
-  return request.post(withLedgerUrl(`/api/rental/bills/${id}/pay`), { amount, note, items })
+  return request.post(withLedgerUrl(`/api/rental/bills/${id}/pay`), { amount, note, items, request_key: requestKey }, { timeout: 60000 })
 }
 
 export function deleteBill(id: number) {
@@ -1202,6 +1212,10 @@ export interface BillItemDetail {
 
 /** 收款流水：某笔收款缴了哪些项目、各缴多少 */
 export interface PaymentRecord {
+  receipt_id?: number
+  reversal_of_id?: number | null
+  voided_at?: string | null
+  void_reason?: string
   id: number
   bill_id: number
   paid_at: string

@@ -1,8 +1,8 @@
-.git
-.trae
-data/
-node_modules/
-build/
-*.tar.gz
-*.zip
-*.fpk
+**
+!server/
+!server/**
+!web/
+!web/dist/
+!web/dist/**
+!deploy/
+!deploy/**

@@ -101,28 +101,15 @@
       </p>
     </div>
 
-    <!-- 收款流水 -->
-    <div>
-      <p class="text-xs font-semibold text-muted-foreground mb-1.5">收款流水（{{ payments.length }} 笔）</p>
-      <div v-if="payments.length === 0" class="text-xs text-muted-foreground py-3 text-center rounded-xl bg-muted/40">暂无收款记录</div>
-      <div v-else class="rounded-xl border border-border divide-y divide-border/70">
-        <div v-for="p in payments" :key="p.id" class="px-3 py-2 space-y-1">
-          <div class="flex items-center justify-between gap-3 text-sm">
-            <span class="text-foreground tabular-nums">{{ fmtDate(p.paid_at) }}</span>
-            <span class="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ fmtMoney(p.amount) }} 元</span>
-          </div>
-          <div v-if="p.items && p.items.length" class="text-[11px] text-muted-foreground tabular-nums">
-            {{ p.items.map((s) => `${s.name} ${fmtMoney(s.amount)} 元`).join(' · ') }}
-          </div>
-          <div v-if="p.note" class="text-[11px] text-muted-foreground">{{ p.note }}</div>
-        </div>
-      </div>
-    </div>
+    <PaymentArchivePanel :payments="payments" :portal="portal" :can-reverse="canReverse" @changed="emit('changed')" />
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import PaymentArchivePanel from './PaymentArchivePanel.vue'
+import type { ArchivedPayment } from '../api/documents'
 import MeterPhotoGallery from './MeterPhotoGallery.vue'
 import { arrearsOf, carryInOf, fmtMoney, isArrears, payableOf, type Bill, type BillItemDetail, type FeeItem } from '../api/rental'
 import { coveredPeriodText, cycleLabel, cycleMonths, cycleShort as cycleShortFn } from '../utils/cycle'
@@ -134,10 +121,14 @@ const props = defineProps<{
   /** 账单费用明细（内置 + 自定义收费项目，金额为 0 的项目不生成） */
   items: BillItemDetail[]
   /** 收款流水（按时间倒序） */
-  payments: { id: number; paid_at: string; amount: number; note: string; items: { key: string; name: string; amount: number }[] }[]
+  payments: ArchivedPayment[]
+  portal?: boolean
+  canReverse?: boolean
   /** 收费项目定义：把账单快照的排除 key 翻译成名称 */
   feeItems?: FeeItem[]
 }>()
+
+const emit = defineEmits<{ changed: [] }>()
 
 const statusText = computed(() => {
   if (props.bill.status === 'paid') return '已缴清'

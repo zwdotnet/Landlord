@@ -86,7 +86,7 @@ func TestTenantRenewByMonths(t *testing.T) {
 	base := time.Now().AddDate(1, 0, 0)
 	baseStr := base.Format("2006-01-02")
 	tenantID := env.seedTenantWithLease(roomID, "张三", baseStr)
-	wantEnd := leaseEndAfter(base, 6).Format("2006-01-02")
+	wantEnd := leaseEndAfter(base.AddDate(0, 0, 1), 6).Format("2006-01-02")
 
 	w := env.do(http.MethodPost, fmt.Sprintf("/api/rental/tenants/%d/renew", tenantID),
 		map[string]interface{}{"months": 6, "note": "续半年"})
@@ -180,8 +180,8 @@ func TestTenantRenewWithRentChange(t *testing.T) {
 	if err := env.db.First(&room, roomID).Error; err != nil {
 		t.Fatalf("load room: %v", err)
 	}
-	if room.DefaultRent != 1800 {
-		t.Fatalf("room default_rent = %v, want 1800", room.DefaultRent)
+	if room.DefaultRent != 1500 {
+		t.Fatalf("room default_rent = %v, want 1500 (future rent must not replace room default)", room.DefaultRent)
 	}
 }
 

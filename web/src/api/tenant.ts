@@ -84,6 +84,10 @@ export interface PortalPaymentShare {
 }
 
 export interface PortalPayment {
+  receipt_id?: number
+  voided_at?: string | null
+  reversal_of_id?: number | null
+  void_reason?: string
   id: number
   bill_id: number
   paid_at: string

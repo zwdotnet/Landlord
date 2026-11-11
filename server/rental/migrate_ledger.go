@@ -48,7 +48,7 @@ var legacyOrgIndexes = []string{
 // 不同台账之间互不干扰（两个房东都可以有 A区/101）。索引名与模型标签一致。
 var ledgerIndexes = []string{
 	"CREATE UNIQUE INDEX IF NOT EXISTS idx_rental_room_ledger_location ON rooms(org_id, community, room_no)",
-	"CREATE UNIQUE INDEX IF NOT EXISTS idx_rental_bill_ledger_period ON bills(org_id, room_id, period)",
+	"CREATE UNIQUE INDEX IF NOT EXISTS idx_landlord_bill_tenancy_period ON bills(org_id, room_id, period, tenancy_key)",
 	"CREATE UNIQUE INDEX IF NOT EXISTS idx_meter_record_ledger_period ON meter_records(org_id, room_id, period)",
 	"CREATE UNIQUE INDEX IF NOT EXISTS idx_rental_fee_item_ledger_key ON fee_items(org_id, `key`)",
 	// 非唯一索引：空置分析（vacancy.go）按房间批量取租户时走它，

@@ -74,9 +74,12 @@ func carryoverEnabled(db *gorm.DB, ledgerID uint) bool {
 //
 // 不要求月份连续：季付/半年付/年付房的上一张账单可能在 N 个月前，中间没有账单。
 // 首账（没有上一张）返回 ok=false。
-func prevBillOfRoom(db *gorm.DB, room *Room, period string) (Bill, bool) {
+func prevBillOfRoom(db *gorm.DB, room *Room, period string, tenancyKey ...string) (Bill, bool) {
 	var prev Bill
 	q := db.Where("room_id = ? AND period < ?", room.ID, period)
+	if len(tenancyKey) > 0 {
+		q = q.Where("tenancy_key = ?", tenancyKey[0])
+	}
 	if ledgerColumnReady(db, "bills") {
 		q = q.Where("org_id = ?", room.LedgerID)
 	}
@@ -97,11 +100,11 @@ func prevBillOfRoom(db *gorm.DB, room *Room, period string) (Bill, bool) {
 //
 // 注意用的是上一期的 Payable 而不是 TotalAmount：上一期自己也可能带了结转，
 // 用 Payable 才能一路累加下去（与用户示例的递推一致）。
-func carryInFor(db *gorm.DB, room *Room, period string) float64 {
+func carryInFor(db *gorm.DB, room *Room, period string, tenancyKey ...string) float64 {
 	if !carryoverEnabled(db, room.LedgerID) {
 		return 0
 	}
-	prev, ok := prevBillOfRoom(db, room, period)
+	prev, ok := prevBillOfRoom(db, room, period, tenancyKey...)
 	if !ok {
 		return 0
 	}
@@ -118,7 +121,7 @@ func applyCarryIn(db *gorm.DB, b *Bill, room *Room) {
 		b.Payable = b.TotalAmount
 		return
 	}
-	b.CarryIn = carryInFor(db, room, b.Period)
+	b.CarryIn = carryInFor(db, room, b.Period, b.TenancyKey)
 	b.Payable = round2(b.TotalAmount + b.CarryIn)
 }
 
@@ -153,16 +156,19 @@ func recalcCarryoverFrom(db *gorm.DB, room *Room, fromPeriod string) (int, error
 	}
 
 	updated := 0
+	previousByTenancy := make(map[string]*Bill)
 	for i := range bills {
 		b := &bills[i]
 		var carry float64
-		if i == 0 {
+		previous := previousByTenancy[b.TenancyKey]
+		if previous == nil {
 			// 第一期：按它自己的上一张账单算（可能不在本次范围内）。
-			carry = carryInFor(db, room, b.Period)
+			carry = carryInFor(db, room, b.Period, b.TenancyKey)
 		} else {
 			// 后续期：用上一期**重算后**的 Payable 递推。
-			carry = round2(bills[i-1].Payable - bills[i-1].PaidAmount)
+			carry = round2(previous.Payable - previous.PaidAmount)
 		}
+		previousByTenancy[b.TenancyKey] = b
 		payable := round2(b.TotalAmount + carry)
 		if b.CarryIn == carry && b.Payable == payable {
 			continue // 无变化，不写库

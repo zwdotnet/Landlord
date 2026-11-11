@@ -1,6 +1,6 @@
 <template>
   <div class="page-container animate-fade-in">
-    <PageHeader title="收款记录" description="每笔收款的时间、项目明细与金额；账单是账单、缴费是缴费，欠缴看明细">
+    <PageHeader title="收款记录" description="逐笔线下实收、归档收据与冲销记录">
       <template #actions>
         <RouterLink to="/admin/bills" class="btn-ghost">去账单收款</RouterLink>
       </template>
@@ -46,7 +46,8 @@
                 <th class="py-3 px-4 font-medium whitespace-nowrap">账期</th>
                 <th class="py-3 px-4 font-medium">缴费明细</th>
                 <th class="py-3 px-4 font-medium text-right whitespace-nowrap">金额（元）</th>
-                <th class="py-3 px-4 font-medium">备注</th>
+                <th class="py-3 px-4 font-medium">备注 / 状态</th>
+                <th class="py-3 px-4 font-medium">凭证</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border">
@@ -63,8 +64,9 @@
                   </div>
                   <span v-else class="text-xs text-muted-foreground">未按项目分摊（历史收款）</span>
                 </td>
-                <td class="py-3 px-4 text-right font-bold text-emerald-600 dark:text-emerald-400 tabular-nums whitespace-nowrap">{{ fmt(p.amount) }}</td>
-                <td class="py-3 px-4 text-muted-foreground text-xs max-w-[160px] truncate" :title="p.note">{{ p.note || '—' }}</td>
+                <td class="py-3 px-4 text-right font-bold tabular-nums whitespace-nowrap" :class="p.amount < 0 ? 'text-destructive' : 'text-emerald-600'">{{ p.amount < 0 ? '冲销 ' : '实收 ' }}{{ fmt(Math.abs(p.amount)) }}</td>
+                <td class="py-3 px-4 text-muted-foreground text-xs max-w-[160px]" :title="p.note">{{ p.note || '—' }}<p v-if="p.voided_at" class="text-destructive">已冲销 · {{ p.void_reason }}</p></td>
+                <td class="py-3 px-4"><button class="text-brand-600 text-xs whitespace-nowrap" @click="selected = p">凭证 / 冲销</button></td>
               </tr>
             </tbody>
           </table>
@@ -79,7 +81,7 @@
                 <span class="text-[11px] text-muted-foreground ml-1.5">{{ p.tenant_name || '' }} · {{ p.period || '—' }}</span>
               </div>
               <div class="text-right shrink-0">
-                <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">+{{ fmt(p.amount) }}</div>
+                <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ p.amount < 0 ? '冲销 ' : '实收 ' }}{{ fmt(Math.abs(p.amount)) }}</div>
                 <div class="text-[10px] text-muted-foreground tabular-nums">{{ fmtTime(p.paid_at) }}</div>
               </div>
             </div>
@@ -89,11 +91,16 @@
               </span>
             </div>
             <div v-if="p.note" class="text-[11px] text-muted-foreground truncate" :title="p.note">备注 {{ p.note }}</div>
+            <p v-if="p.voided_at" class="text-xs text-destructive">已冲销 · {{ p.void_reason }}</p>
+            <button class="text-brand-600 text-xs" @click="selected = p">凭证 / 冲销</button>
           </div>
         </div>
       </template>
       <Pagination v-if="total > pageSize" :total="total" :page="page" :page-size="pageSize" @change="load" />
     </div>
+    <Modal :model-value="!!selected" title="收款凭证" wide @update:model-value="(v) => { if (!v) selected = null }">
+      <PaymentArchivePanel v-if="selected" :payments="[selected]" :can-reverse="ledgerStore.canEdit('bills')" @changed="afterReversal" />
+    </Modal>
   </div>
 </template>
 
@@ -101,11 +108,17 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import DateField from '../components/DateField.vue'
+import Modal from '../components/Modal.vue'
+import PaymentArchivePanel from '../components/PaymentArchivePanel.vue'
+import { useLedgerStore } from '../stores/ledger'
 import FilterPanel from '../components/FilterPanel.vue'
 import PageHeader from '../components/PageHeader.vue'
 import Pagination from '../components/Pagination.vue'
 import { getAllRooms, getPayments, getRooms, type PaymentRecord, type RoomView } from '../api/rental'
 
+const ledgerStore = useLedgerStore()
+const selected = ref<PaymentRecord | null>(null)
+async function afterReversal() { selected.value = null; await load() }
 const filterRef = ref<InstanceType<typeof FilterPanel> | null>(null)
 
 // 查询后手机端收起筛选面板，与其他列表页一致

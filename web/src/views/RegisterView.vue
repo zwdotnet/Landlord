@@ -17,9 +17,10 @@
       <div v-if="authStore.setupRequired" class="flex flex-col gap-2 rounded-xl sm:rounded-2xl border border-brand-400/30 bg-brand-400/10 px-3.5 py-2.5 sm:px-5 sm:py-4 text-xs sm:text-sm">
         <div class="flex items-center gap-2 font-semibold text-brand-300">
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          首次使用：使用飞牛 NAS 创建管理员
+          {{ isFnOSBinding ? '首次使用：使用飞牛 NAS 创建管理员' : '首次使用：创建平台管理员' }}
         </div>
-        <p class="text-white/80 leading-5">当前还没有任何用户。创建后该账号将自动成为管理员，并立即绑定当前飞牛 NAS 用户，之后可直接一键登录。</p>
+        <p v-if="isFnOSBinding" class="text-white/80 leading-5">当前还没有任何用户。创建后该账号将自动成为管理员，并立即绑定当前飞牛 NAS 用户，之后可直接一键登录。</p>
+        <p v-else class="text-white/80 leading-5">当前还没有任何用户。首个账号将成为平台管理员，可管理账号与平台合同模板。</p>
       </div>
 
       <!-- 身份选择（v0.6.10）：房东与租客是两套完全不同的入口，注册时就要定下来。
@@ -290,7 +291,7 @@ async function handleRegister() {
       const user = res.data.data?.user
       // 房东路径：注册成功后立刻提交入驻资料（这一步失败不影响账号本身，
       // 留在本页重试即可——账号已建好，token 也已生效）
-      if (token && user && user.role !== 'tenant') {
+      if (token && user && user.role !== 'tenant' && user.role !== 'admin') {
         authStore.setToken(token)
         authStore.setUser(user)
         if (!(await submitApply())) {

@@ -35,6 +35,11 @@ func setupTestRouter(t *testing.T) (*gin.Engine, *gorm.DB, string) {
 	if err != nil {
 		t.Fatalf("init db: %v", err)
 	}
+	t.Cleanup(func() {
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Close()
+		}
+	})
 	if err := database.AutoMigrate(db); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
@@ -68,6 +73,11 @@ func setupFnOSTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	if err != nil {
 		t.Fatalf("init db: %v", err)
 	}
+	t.Cleanup(func() {
+		if sqlDB, err := db.DB(); err == nil {
+			sqlDB.Close()
+		}
+	})
 	if err := database.AutoMigrate(db); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
@@ -1102,4 +1112,35 @@ func loginToken(t *testing.T, r http.Handler, username, password string) string 
 		t.Fatalf("login %s: status %d", username, w.Code)
 	}
 	return decode(t, w)["data"].(map[string]interface{})["token"].(string)
+}
+func TestFirstOwnerInvitationGate(t *testing.T) {
+	t.Setenv("LANDLORD_SETUP_KEY", "test-owner-invitation")
+	r, db, _ := setupTestRouter(t)
+	post := func(name, key string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("POST", "/api/auth/register", strings.NewReader(`{"username":"`+name+`","password":"safe-test-only-pass"}`))
+		req.Header.Set("Content-Type", "application/json")
+		if key != "" {
+			req.Header.Set("X-Landlord-Setup", key)
+		}
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		return w
+	}
+	if w := post("firstowner", ""); w.Code != 403 {
+		t.Fatalf("uninvited first account: %d", w.Code)
+	}
+	if w := post("firstowner", "wrong"); w.Code != 403 {
+		t.Fatalf("wrong invitation: %d", w.Code)
+	}
+	if w := post("firstowner", "test-owner-invitation"); w.Code != 200 {
+		t.Fatalf("invited owner: %d %s", w.Code, w.Body.String())
+	}
+	var owner database.User
+	db.First(&owner)
+	if owner.Role != "admin" {
+		t.Fatalf("first owner role %q", owner.Role)
+	}
+	if w := post("lateruser", ""); w.Code != 200 {
+		t.Fatalf("normal registration after setup: %d %s", w.Code, w.Body.String())
+	}
 }

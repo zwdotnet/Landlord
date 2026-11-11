@@ -1,0 +1,194 @@
+{
+  "date": "2026-11-11",
+  "phase": "M1",
+  "upstream": "TechFunWay/rental v0.7.1",
+  "baseline_commit": "a647d66",
+  "application_version": "0.8.0",
+  "published": false,
+  "full_backend_run": {
+    "counts": {
+      "pass": 427,
+      "skip": 1
+    },
+    "evidence": ".runtime/landlord-all-tests.jsonl",
+    "note": "Full suite before final backfill ownership guard; all other backend packages unchanged afterward."
+  },
+  "final_rental_run": {
+    "counts": {
+      "pass": 324,
+      "skip": 1
+    },
+    "evidence": ".runtime/landlord-rental-final-tests.jsonl"
+  },
+  "final_focused_script": {
+    "counts": {
+      "pass": 23
+    },
+    "evidence": ".runtime\\verification\\20261111-135839",
+    "exit_code": 0
+  },
+  "web": {
+    "production_build": "PASS",
+    "typescript": "PASS",
+    "date_tests": {
+      "pass": 2,
+      "fail": 0
+    },
+    "evidence": [
+      ".runtime/landlord-web-build.txt",
+      ".runtime/landlord-web-tests.txt"
+    ]
+  },
+  "running_app": {
+    "pass": true,
+    "checks": [
+      {
+        "name": "runtime rent prorates September 16-30",
+        "pass": true
+      },
+      {
+        "name": "runtime bill consumes saved meter readings",
+        "pass": true
+      },
+      {
+        "name": "runtime first bill includes deposit",
+        "pass": true
+      },
+      {
+        "name": "renewal starts the day after previous end",
+        "pass": true
+      },
+      {
+        "name": "runtime future renewal keeps old term rent",
+        "pass": true
+      },
+      {
+        "name": "renter reads the exact issued bill",
+        "pass": true
+      },
+      {
+        "name": "offline payment persists separately",
+        "pass": true
+      },
+      {
+        "name": "renewal UI shows effective date and daily proration",
+        "pass": true
+      },
+      {
+        "name": "unpaid bill prints a payment notice",
+        "pass": true
+      },
+      {
+        "name": "recorded offline payment prints a receipt",
+        "pass": true
+      },
+      {
+        "name": "runtime same-month turnover generates separate bill IDs",
+        "pass": true
+      },
+      {
+        "name": "historical meter edit keeps requested bill selected",
+        "pass": true
+      },
+      {
+        "name": "owner browser has no runtime JavaScript errors",
+        "pass": true
+      },
+      {
+        "name": "renter mobile page has no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "restart preserves money and recipient IDs",
+        "pass": true
+      },
+      {
+        "name": "restart preserves renewal effective date",
+        "pass": true
+      }
+    ],
+    "evidence_dir": "F:\\zhangwei\\AI\\Landlord\\.runtime\\acceptance-20261111-135632"
+  },
+  "upgrade_from_actual_upstream_database": {
+    "pass": true,
+    "before": {
+      "rooms": 5,
+      "tenants": 6,
+      "bills": 10,
+      "meter_records": 10,
+      "payments": 2,
+      "lease_renewals": 1,
+      "bill_totals": [
+        22300.0,
+        23260.0,
+        2130.0
+      ]
+    },
+    "after": {
+      "rooms": 5,
+      "tenants": 6,
+      "bills": 10,
+      "meter_records": 10,
+      "payments": 2,
+      "lease_renewals": 1,
+      "bill_totals": [
+        22300.0,
+        23260.0,
+        2130.0
+      ]
+    },
+    "assigned_legacy_bills": 0,
+    "migration_applied": 1,
+    "indexes": [
+      "idx_bills_period",
+      "idx_landlord_bill_tenancy_period"
+    ],
+    "source": "copy of unmodified rental v0.7.1 evaluation database",
+    "evidence_dir": "F:\\zhangwei\\AI\\Landlord\\.runtime\\upgrade-acceptance-20261111-135849"
+  },
+  "known_skip": {
+    "name": "TestContractOwnershipIsolated",
+    "reason": "Upstream test skips after second registration is not allowed; retained and not counted as passed."
+  },
+  "limitations": [
+    "Chromium mobile viewport verification is not physical phone or PWA acceptance.",
+    "Contract PDF snapshots, durable scheduled reminders, Web Push, and WeChat mini program remain unimplemented.",
+    "Generated receipts are cumulative bill print views; immutable per-payment receipts remain M2.",
+    "Upstream release, Docker, update channels and packaging paths are not the Landlord release pipeline."
+  ],
+  "changed_source_sha256": {
+    "VERSION": "9330aed58d10936f589760929172cc76c9d8b14ef40ee8f63f05d822ae2e14d7",
+    "app.json": "214ac842c84c551a7836262157adf8b13ea01861a63d106a9898de49f7c67c19",
+    "fnpack/manifest": "29e3206cd93c02d2c05b60260d9dbc82bdc7288e9ed32836959837b091bb8286",
+    "scripts/dev.ps1": "52e8f3c6ab5de0df0027f74a7346113bdbd89200efc194cee6946da8012cd4ea",
+    "scripts/use-local-toolchain.ps1": "6b851ead6e43fa6e4f9360c7e9a2360ca3b30b38742179d30d20c76bb9ee4a83",
+    "scripts/verify.ps1": "d9df6256c5892c7e3792ba334f2c6757892486d43877986f6161b578847d3fb5",
+    "server/rental/bill_ownership.go": "0faadeae5754221de3786607c626e96df95fe66d53641155a2c457a185b928a2",
+    "server/rental/billing.go": "c7f6c09cdbd20bcc4dd827cc27e2fc3ff9b8b56f34c0a7d1cf5c6208b5144891",
+    "server/rental/bills.go": "def83b4e82df7524893ae4ddb7b27089e9a2d73ecf47613d51f46e690e486807",
+    "server/rental/carryover.go": "b6bf77ce2a9c7981c1ac97e4eb308969d1f6ef3fb6ff39dde23ed622563cd058",
+    "server/rental/fees.go": "b5aecc2ed927388c42d6f9d2d2dd558664f1e32760983e1f35bce0d35f24f8b9",
+    "server/rental/landlord_regression_test.go": "19ca1553e3c51d110dd635f5a9f578f94733e5f970002ce5b5c7ae4f86a42158",
+    "server/rental/lease_rent.go": "4c3399da22ba019af496b198139dea2036ca888696aec8e109e6df8501e198f8",
+    "server/rental/meters.go": "b4a90999341f6511f0a81c63340b470d2040208667d3306a92fc6809e7f3c440",
+    "server/rental/migrate_ledger.go": "93ee47427061381ac88ddfbe9c6d25be9aae34789aa5b5c51884517ff97d8f6d",
+    "server/rental/renew.go": "44bf5ae34ffa97f5a8c4a14e55d9ca094d5b5f7cdf5816c9967c7be00625e020",
+    "server/rental/renew_test.go": "6ca7be426b6e869fd5aefcba4658c9bbbd3777fb3272cfca065cab0efce11b83",
+    "server/rental/rental.go": "0506060ffe73a4baa2dc6a1476e013be3c31026d153b04cb50fb432c3ea9286a",
+    "server/rental/tenant_portal.go": "1a6b9fc756231bb492a87d8b4656b4cb245d58095555fa4f22d6926d9c58f797",
+    "server/rental/tenant_portal_scope_test.go": "403b65f6b371a7b7cb7f019bdddfceead63b426d7fa320bf6b54870bd04b380e",
+    "server/rental/tenant_portal_test.go": "87bc1c162d02546c0f2f8958b03e0f7440a2c1d3e85eba134676c30b48e69aaf",
+    "server/server/server_test.go": "ff16217f94a1fca1211684d6eba0be8a4a49aca71c018f934779f315a8ae6756",
+    "server/sysconfig/sysconfig_test.go": "2b56ede8f35a59672302b73a0253cee1ae025ded64928d54b10ccc27038775e6",
+    "server/update/apply_test.go": "8bf8d46694e4068a934d5034f8b67b58459dd55193926d14dfc82c50722633e8",
+    "web/src/api/renew.ts": "88827c2816acb61314d015494ff6fabcd83f97b5ee9398b98cdce69fa4325063",
+    "web/src/api/rental.ts": "7dd675c603862f27b1c33fd70940be62a4a046f74d86249edc9c8d9b9c9ebb9e",
+    "web/src/components/BillRecipientsEditor.vue": "0e02c03638b795923047806a72f861d21046f6f8025fac475690d607df0f5549",
+    "web/src/components/MeterReadingModal.vue": "d036ea355a47ca4c1a1a21ca0a0bad0d44f877220f26319a50b527f24bf6fc83",
+    "web/src/components/RenewModal.vue": "afca9809252374b1fb210a189771e0ada645a2adf731d8c3ae7a916033e919b7",
+    "web/src/components/RentalReceipt.vue": "0129fb5fa3de47a341dd9b46b560ab60207ae6ff889c221e42010e25ad1a8d84",
+    "web/src/utils/lease.ts": "7c9935e94e7cd7f8753483d42bdee791df7e219a27853ff908a700a576844c7a",
+    "web/src/views/BillsView.vue": "6d1fb519c68ef1b2946450e7783a5f3e1f81c873ad9efaf9905f91e1dfa74447",
+    "web/tests/lease.test.mjs": "4cd9051494e82a66ee9dcfa863037a313c14a3f9e3ecb46d094680629b703487"
+  }
+}

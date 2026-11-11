@@ -66,6 +66,7 @@ const router = createRouter({
       component: () => import('../layouts/TenantLayout.vue'),
       meta: { requiresAuth: true, role: 'tenant' },
       children: [
+        { path: 'notifications', name: 'PortalNotifications', component: () => import('../views/NotificationsView.vue') },
         { path: '', name: 'PortalHome', component: () => import('../views/portal/PortalHomeView.vue') },
         { path: 'bills', name: 'PortalBills', component: () => import('../views/portal/PortalBillsView.vue') },
         { path: 'payments', name: 'PortalPayments', component: () => import('../views/portal/PortalPaymentsView.vue') },
@@ -87,6 +88,8 @@ const router = createRouter({
         { path: 'meters', name: 'RentalMeters', component: () => import('../views/MeterRecordsView.vue'), meta: { requiresAccess: true, module: 'meters' } },
         { path: 'payments', name: 'RentalPayments', component: () => import('../views/PaymentsView.vue'), meta: { requiresAccess: true, module: 'payments' } },
         { path: 'analytics', name: 'RentalAnalytics', component: () => import('../views/AnalyticsView.vue'), meta: { requiresAccess: true, module: 'analytics' } },
+        { path: 'automation', name: 'Automation', component: () => import('../views/AutomationView.vue'), meta: { requiresAccess: true, module: 'bills' } },
+        { path: 'notifications', name: 'Notifications', component: () => import('../views/NotificationsView.vue') },
         { path: 'profile', name: 'Profile', component: () => import('../views/ProfileView.vue') },
         { path: 'settings', name: 'Settings', component: () => import('../views/SettingsView.vue') },
         { path: 'users', name: 'AdminUsers', component: () => import('../views/AdminUsersView.vue'), meta: { requiresAdmin: true } },
