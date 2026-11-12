@@ -17,6 +17,7 @@
 - 当前需求、技术决定、验收及阶段安排：[项目启动与实施计划](doc/项目启动与实施计划.md)
 - 当前事实与验证结果：[STATE.md](STATE.md)
 - 问题复现与测试边界：[系统性测试报告](doc/系统性测试报告-20261112.md)；下一步修复顺序、验收与授权边界见 STATE.md 的“错误修复顺序与验收”。
+- 备案期间已准备的隐私数据清单、审核说明和合成演示流程：[小程序隐私与提审准备](doc/小程序隐私与提审准备.md)。本轮可靠性追加修复/恢复/容量结果见测试报告§11，尚未再次部署。
 - 改造前实机评估：[rental 实机验证与复用建议](doc/rental实机验证与复用建议-20261111.md)
 - 原始上游说明：[upstream-rental-README.md](docs/upstream-rental-README.md)
 
@@ -63,7 +64,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Focused
 powershell -ExecutionPolicy Bypass -File .\scripts\verify.ps1
 ```
 
-默认运行完整后端测试、前端类型检查和生产构建，以及前端租期日期和 Service Worker 测试。`-Focused` 仅缩小后端测试范围。结果写入 `.runtime/verification/<时间>/`，任何步骤失败都会返回失败。
+默认运行完整后端测试、前端类型检查和生产构建、前端租期日期/Service Worker测试及Python发布制品验证测试。`-Focused`仅缩小后端测试范围。结果写入`.runtime/verification/<时间>/`，任何步骤失败都会返回失败。新发布合并工具默认只读验证，使用方式与尚未实演的边界见[云端构建说明](doc/GitHub云端构建.md)末节。
 
 上游 `scripts/test-all.sh` 和打包脚本仍保留历史路径、上游发布渠道与镜像配置，尚未作为 Landlord 的发布入口。当前使用 GitHub Actions 制品保存镜像与匹配的只读前端，没有向公共容器仓库推送镜像。
 

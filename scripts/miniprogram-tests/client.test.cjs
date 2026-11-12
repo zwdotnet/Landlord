@@ -185,3 +185,66 @@ test('cancelled or hidden WeChat login never creates a stale session', async () 
   e.requests[0].success({ statusCode: 200, data: { code: 0, data: identity() } }); await pending
   assert.equal(e.session.token(), '')
 })
+
+test('expired WeChat code can retry with a fresh code and preserved phone', async () => {
+  const e = loginPage(); let codes = 0
+  wx.login = options => options.success({ code: 'attempt-' + (++codes) })
+  wx.switchTab = () => {}
+  e.page.setData({ phoneRequired: true, phone: '138' + '0000' + '9022' })
+  let pending = e.page.submit(); await new Promise(setImmediate)
+  e.requests[0].success({ statusCode: 400, data: { code: 400, message: '微信登录凭证已失效，请重新登录' } }); await pending
+  assert.equal(e.page.data.busy, false); assert.match(e.page.data.error, /已失效/)
+  assert.equal(e.page.data.phone, '138' + '0000' + '9022'); assert.equal(e.session.token(), '')
+  pending = e.page.submit(); await new Promise(setImmediate)
+  assert.equal(e.requests[1].data.code, 'attempt-2')
+  e.requests[1].success({ statusCode: 200, data: { code: 0, data: identity() } }); await pending
+  assert.equal(e.session.token(), identity().token); assert.equal(e.page.data.phone, '')
+})
+
+test('repeated login taps share one in-flight attempt', async () => {
+  const e = loginPage(); let callback, count = 0
+  wx.login = options => { count++; callback = options }
+  const pending = e.page.submit(); await e.page.submit()
+  assert.equal(count, 1); assert.equal(e.page.data.busy, true)
+  callback.fail({ errMsg: 'timeout' }); await pending
+  assert.equal(e.page.data.busy, false); assert.equal(e.requests.length, 0)
+})
+
+test('download network failure removes partial file and allows a fresh retry', async () => {
+  const e = environment(); e.session.start(identity())
+  let pending = e.files.open('/rental/portal/documents/5/file')
+  const partial = e.downloads[0].filePath
+  e.downloads[0].fail({ errMsg: 'downloadFile:fail timeout' })
+  await assert.rejects(pending, /下载失败/)
+  assert.ok(e.removed.includes(partial)); assert.equal(e.opened.length, 0)
+  pending = e.files.open('/rental/portal/documents/5/file')
+  assert.notEqual(e.downloads[1].filePath, partial)
+  e.downloads[1].success({ statusCode: 200, filePath: e.downloads[1].filePath }); await pending
+  assert.equal(e.opened.length, 1)
+})
+
+test('native preview failure rejects and removes the downloaded file', async () => {
+  const e = environment(); e.session.start(identity())
+  wx.openDocument = options => options.fail({ errMsg: 'cannot open document' })
+  const pending = e.files.open('/rental/portal/documents/5/file')
+  const file = e.downloads[0].filePath
+  e.downloads[0].success({ statusCode: 200, filePath: file })
+  await assert.rejects(pending, /无法打开文件/); assert.ok(e.removed.includes(file))
+})
+
+test('file cleanup retains failed removals and retries them on next cleanup', () => {
+  const e = environment(), key = ['landlord', 'tenant', 'files', 'v1'].join('.')
+  e.storage.set(key, ['/test-user-files/private.pdf'])
+  let blocked = true
+  wx.getFileSystemManager = () => ({ unlinkSync() { if (blocked) throw Error('busy') }, accessSync() {} })
+  e.files.clean(); assert.deepEqual(e.storage.get(key), ['/test-user-files/private.pdf'])
+  blocked = false; e.files.clean(); assert.equal(e.storage.has(key), false)
+})
+
+test('supported image signatures are recognized and unsupported HEIF is explicit', () => {
+  const e = environment(), bytes = value => Uint8Array.from(value).buffer
+  for (const signature of [[137,80,78,71,13,10,26,10],[255,216,255],Array.from(Buffer.from('GIF89a')),Array.from(Buffer.from('RIFFxxxxWEBP'))]) {
+    assert.equal(e.files.classify(bytes(signature)), 'image')
+  }
+  assert.equal(e.files.classify(bytes(Array.from(Buffer.from('xxxxftypheic')))), '')
+})

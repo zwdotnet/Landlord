@@ -51,6 +51,8 @@ powershell -ExecutionPolicy Bypass -File scripts/verify-miniprogram.ps1
 
 当前实现/验证事实与未验证项统一见根目录 [STATE.md](../STATE.md)。
 
+备案期间的隐私数据清单、审核说明草稿、合成演示流程和截图索引见[隐私与提审准备](../doc/小程序隐私与提审准备.md)。它们尚未提交平台；个人主体类目、运营联系资料、正式域名和手机验收需按实际账号落实。
+
 独立后端运行期间还可执行 `node scripts/miniprogram-tests/verify-http.cjs`：它使用实际客户端模块和真实 HTTP/SQLite，但以 Node 适配 wx 网络及文件接口，不作为原生微信页面或文件预览验收。
 
 图标源由 `python scripts/generate-miniprogram-icons.py` 生成（仅开发时需 Pillow），产物 `assets/tabs/*.png` 随客户端打包，运行时不需要生成器或外部图片服务。

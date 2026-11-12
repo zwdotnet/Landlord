@@ -764,7 +764,12 @@ const floorOptions = computed(() => [...new Set(allRooms.value.map((r) => r.floo
 async function loadAllRooms() {
   // 跨页拉全：服务端 pageSize 硬上限 100，写死 100 会让第 101 间房以后的小区
   // 从筛选下拉里消失（2026-10-11 审计）。
-  allRooms.value = await getAllRooms()
+  try {
+    allRooms.value = await getAllRooms()
+  } catch {
+    // A failed lookup must not leave an unhandled rejection during logout.
+    allRooms.value = []
+  }
 }
 
 // 房源详情弹窗：吃列表行数据（含 billing/current_tenants），照片与入住人资料
@@ -866,6 +871,8 @@ async function load(p = page.value) {
       total.value = res.data.data.total || 0
       page.value = p
     }
+  } catch {
+    toast('房源加载失败，请检查网络后重试', 'error')
   } finally {
     loading.value = false
   }

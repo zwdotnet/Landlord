@@ -37,3 +37,23 @@ curl --fail http://127.0.0.1:18930/ >/dev/null
 静态文件仅供公开读取；业务数据和初始化环境文件保持原有受限权限。Python安全解包在受限umask下可能将目录创建为0700，因此必须显式核对web目录权限。容器healthy还需配合真实入口、脚本和样式请求验证。健康与公网验证通过后再更新 `/opt/landlord/current`。失败时恢复原 release 的 Compose 和前端；有数据库迁移时单独判断兼容性，不能盲目覆盖用户数据。构建工作流不会自行 SSH、重启服务或切换线上版本。
 
 依据：[GitHub 托管 runner](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)、[Docker Buildx Action](https://github.com/docker/build-push-action)、[构建制品](https://github.com/actions/upload-artifact)。当前真正运行的构建结果以仓库 Actions 为准。
+
+## 2026-11-13 发布流程合并工具
+
+`deploy/release.py`将制品核对、前端准备、镜像核对/按需加载、一致性备份、切换与回执放在同一个服务器进程中，减少逐条SSH往返。默认只读校验与输出具体计划，不构建、导入镜像或重启应用；对包校验、来源不匹配、归档穿越/链接和篡改、迁移凭证等有8个自动用例，已纳入完整`scripts/verify.ps1`。
+
+以当前已发布制品为例，下面仅执行计划检查：
+
+```sh
+python3 deploy/release.py \
+  --artifact-dir /opt/landlord/artifacts/github-43237672099 \
+  --commit 65953074545c28d8ccb6429d099ad69e499af93b \
+  --image landlord:0.10.0-65953074545c-43237672099-1 \
+  --run-id 43237672099
+```
+
+部署者另行获准发布新候选后才加`--apply`，生成独立`run-运行号-commit`目录和published.json，记录分段耗时及备份/旧release。目标Linux服务器须有Python支持的tar数据过滤、Docker Compose与既有current；工具沿用本项目固定容器名、loopback端口和受限环境文件，不负责微信凭据或Caddy修改。切换前停止单个应用并保存最新数据/附件/环境/旧Compose，再启动预构建镜像；直接轮询应用健康，避免等待Docker的30秒健康检查周期。校验精确前端、运行限制、原业务字段/ID和物理文件后才切current；失败切回旧应用，不自动恢复旧库。
+
+涉及模型/数据库结构、依赖或特殊配置变化时，仍先做匹配候选的迁移及旧版兼容预演，再提供`--require-migration-proof --migration-proof 文件路径`。JSON必须带`commit`、`pass:true`和`old_version_startup_compatible:true`；脚本不会凭字段存在自动认定迁移可回退。普通更新复用与候选源码指纹匹配的已通过门禁，不因文档收尾重复运行全部业务测试。
+
+本轮已完成制品验证/默认计划模式及8项自动测试，尚未用新工具执行生产切换，不能将其视为经过生产演练的自动发布器。下一次获授权发布时需先按现场复核并验证实际应用/回退分支。公网页面、其他站点和真机验收仍按实际变更执行并记录；发布提速不代表省略备份或宣称固定总耗时。

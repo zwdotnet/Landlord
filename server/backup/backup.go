@@ -6,7 +6,12 @@
 package backup
 
 import (
+	"bytes"
+	"context"
+	"database/sql"
 	"fmt"
+	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -139,6 +144,11 @@ func Restore(dataDir, backupName string) (preBackup string, err error) {
 	if _, err := os.Stat(src); err != nil {
 		return "", fmt.Errorf("备份不存在")
 	}
+	// Validate read-only before creating a safety snapshot or closing the live DB.
+	// A damaged/foreign SQLite file must never replace a working application DB.
+	if err := validateSnapshot(src); err != nil {
+		return "", fmt.Errorf("备份文件无效，未执行恢复: %w", err)
+	}
 
 	// 1. 恢复前安全备份（复用 Create 的同秒序号逻辑，不覆盖既有文件）。
 	preBackup, err = Create(dbRef, dataDir)
@@ -180,6 +190,43 @@ func Restore(dataDir, backupName string) (preBackup string, err error) {
 	// 4. 异步退出：让 HTTP 响应先写回客户端。
 	go exitHook()
 	return preBackup, nil
+}
+
+func validateSnapshot(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("无法读取备份")
+	}
+	header := make([]byte, 16)
+	_, err = io.ReadFull(file, header)
+	file.Close()
+	if err != nil || !bytes.Equal(header, []byte("SQLite format 3\x00")) {
+		return fmt.Errorf("不是完整的 SQLite 数据库")
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	uri := &url.URL{Scheme: "file", Path: filepath.ToSlash(abs), RawQuery: "mode=ro&_busy_timeout=5000"}
+	if filepath.VolumeName(abs) != "" {
+		uri.Path = "/" + uri.Path
+	}
+	db, err := sql.Open("sqlite3", uri.String())
+	if err != nil {
+		return fmt.Errorf("无法打开备份")
+	}
+	defer db.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var integrity string
+	if err := db.QueryRowContext(ctx, "PRAGMA quick_check").Scan(&integrity); err != nil || integrity != "ok" {
+		return fmt.Errorf("数据库完整性检查未通过")
+	}
+	var tables int
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('users', 'system_configs')").Scan(&tables); err != nil || tables != 2 {
+		return fmt.Errorf("缺少应用数据表")
+	}
+	return nil
 }
 
 // exitHook 恢复成功后的退出动作，测试里替换以拦截 os.Exit。
@@ -265,10 +312,10 @@ func RegisterRoutes(admin *gin.RouterGroup, db *gorm.DB, dataDir string) {
 			return
 		}
 		response.Success(c, gin.H{
-			"items":         items,
-			"dir":           Dir(dataDir),
-			"auto_enabled":  autoEnabled(db),
-			"keep_count":    keepCount(db),
+			"items":        items,
+			"dir":          Dir(dataDir),
+			"auto_enabled": autoEnabled(db),
+			"keep_count":   keepCount(db),
 		})
 	})
 
@@ -340,21 +387,21 @@ func init() {
 	})
 
 	sysconfig.RegisterConfig(sysconfig.ConfigDef{
-		Key:     "backup_auto_enabled",
-		Scope:   sysconfig.ScopeSystem,
-		Type:    sysconfig.TypeBool,
-		Default: "true",
-		Group:   "backup",
-		Label:   "自动备份",
+		Key:         "backup_auto_enabled",
+		Scope:       sysconfig.ScopeSystem,
+		Type:        sysconfig.TypeBool,
+		Default:     "true",
+		Group:       "backup",
+		Label:       "自动备份",
 		Description: "每天 03:00 自动创建一次数据库快照，存放于数据目录 backups/ 下",
 	})
 	sysconfig.RegisterConfig(sysconfig.ConfigDef{
-		Key:     "backup_keep_count",
-		Scope:   sysconfig.ScopeSystem,
-		Type:    sysconfig.TypeInt,
-		Default: "7",
-		Group:   "backup",
-		Label:   "备份保留数量",
+		Key:         "backup_keep_count",
+		Scope:       sysconfig.ScopeSystem,
+		Type:        sysconfig.TypeInt,
+		Default:     "7",
+		Group:       "backup",
+		Label:       "备份保留数量",
 		Description: "自动/手动备份超出该数量时自动清理最旧的备份",
 	})
 }

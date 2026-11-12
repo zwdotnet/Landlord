@@ -19,4 +19,9 @@ try {
     & node --test tests/lease.test.mjs tests/pwa.test.mjs
     if ($LASTEXITCODE -ne 0) { throw 'Frontend lease date tests failed.' }
 } finally { Pop-Location }
+Push-Location $landlordRoot
+try {
+    & python -m unittest discover -s deploy -p 'test_*.py' 2>&1 | Tee-Object -FilePath (Join-Path $landlordEvidence 'deploy-tests.txt')
+    if ($LASTEXITCODE -ne 0) { throw 'Release artifact validation tests failed.' }
+} finally { Pop-Location }
 Write-Host "Verification passed. Evidence: $landlordEvidence"

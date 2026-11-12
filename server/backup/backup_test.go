@@ -276,3 +276,48 @@ func TestRestoreRejectsBadName(t *testing.T) {
 		t.Fatalf("status = %d, want 400", resp.Code)
 	}
 }
+
+func TestRestoreRejectsCorruptSnapshotWithoutClosingDatabase(t *testing.T) {
+	for _, contents := range [][]byte{[]byte("not a SQLite backup"), []byte("SQLite format 3\x00truncated")} {
+		t.Run(fmt.Sprint(len(contents)), func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(dir, "db"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			db, err := database.InitDB(filepath.Join(dir, "db", "rental.db"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { database.CloseDB(db) })
+			if err := database.AutoMigrate(db); err != nil {
+				t.Fatal(err)
+			}
+			if err := sysconfig.InitDefaultConfigs(db); err != nil {
+				t.Fatal(err)
+			}
+			if err := sysconfig.UpdateConfig(db, "site_title", "preserved-marker", 0); err != nil {
+				t.Fatal(err)
+			}
+			previousExit := exitHook
+			exitHook = func() {}
+			t.Cleanup(func() { exitHook = previousExit })
+			r := gin.New()
+			RegisterRoutes(r.Group("/api"), db, dir)
+			name := "backup_20261112_010203.db"
+			if err := os.WriteFile(filepath.Join(Dir(dir), name), contents, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := Restore(dir, name); err == nil {
+				t.Error("corrupt backup was accepted")
+			}
+			marker, err := sysconfig.GetConfig(db, "site_title", 0)
+			if err != nil || marker != "preserved-marker" {
+				t.Errorf("rejected restore must leave current database usable: %q %v", marker, err)
+			}
+			items, err := List(dir)
+			if err != nil || len(items) != 1 {
+				t.Errorf("invalid input should not create a pre-restore snapshot: %v %v", items, err)
+			}
+		})
+	}
+}

@@ -823,7 +823,9 @@ func handleAnalytics(db *gorm.DB) gin.HandlerFunc {
 		if months > 24 {
 			months = 24
 		}
-		start := addMonths(currentPeriodStr(), -(months-1)) + "-01"
+		endPeriod := currentPeriodStr()
+		start := addMonths(endPeriod, -(months-1)) + "-01"
+		endExclusive := addMonths(endPeriod, 1) + "-01"
 
 		// v0.6.0：统计分析按台账隔离，所有聚合都限定在本次请求的可见台账内。
 		ledgerIDs := visibleLedgerIDs(c)
@@ -842,7 +844,7 @@ func handleAnalytics(db *gorm.DB) gin.HandlerFunc {
 		}
 		billedRows := make([]monthRow, 0)
 		db.Model(&Bill{}).Select("period, SUM(total_amount) as billed").
-			Where("period >= ?", start[:7]).
+			Where("period >= ? AND period <= ?", start[:7], endPeriod).
 			Where("org_id IN ?", ledgerIDs).
 			Group("period").Order("period ASC").Scan(&billedRows)
 
@@ -852,7 +854,7 @@ func handleAnalytics(db *gorm.DB) gin.HandlerFunc {
 		}
 		paidRows := make([]paidRow, 0)
 		db.Model(&Payment{}).Select("strftime('%Y-%m', paid_at) as month, SUM(amount) as paid").
-			Where("paid_at >= ?", start).
+			Where("paid_at >= ? AND paid_at < ?", start, endExclusive).
 			Where("org_id IN ?", ledgerIDs).
 			Group("month").Order("month ASC").Scan(&paidRows)
 
@@ -868,7 +870,7 @@ func handleAnalytics(db *gorm.DB) gin.HandlerFunc {
 		series := make([]gin.H, 0, months)
 		var sumBilled, sumReceived float64
 		for i := months - 1; i >= 0; i-- {
-			period := addMonths(currentPeriodStr(), -i)
+			period := addMonths(endPeriod, -i)
 			billed := round2(billedByMonth[period])
 			received := round2(paidByMonth[period])
 			sumBilled = round2(sumBilled + billed)
@@ -883,7 +885,7 @@ func handleAnalytics(db *gorm.DB) gin.HandlerFunc {
 		}
 		itemRows := make([]itemRow, 0)
 		db.Table("bill_items").Select("name, SUM(amount) as amount").
-			Where("bill_id IN (SELECT id FROM bills WHERE period >= ? AND org_id IN ?)", start[:7], ledgerIDs).
+			Where("bill_id IN (SELECT id FROM bills WHERE period >= ? AND period <= ? AND org_id IN ?)", start[:7], endPeriod, ledgerIDs).
 			Group("name").Order("amount DESC").Scan(&itemRows)
 
 		// 同总览：预收只抵扣同一明确承租关系，跨期不重复计入 carry_in。
