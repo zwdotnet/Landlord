@@ -886,22 +886,13 @@ func handleAnalytics(db *gorm.DB) gin.HandlerFunc {
 			Where("bill_id IN (SELECT id FROM bills WHERE period >= ? AND org_id IN ?)", start[:7], ledgerIDs).
 			Group("name").Order("amount DESC").Scan(&itemRows)
 
-		// 当前欠缴总额（可见台账内的未结净额）。
-		//
-		// 口径与总览一致（见 stats.go 的说明）：对**全部账单**求和再相减，
-		// 让「多交顺延」的超收能冲减前面的欠缴。若按 status<>paid 过滤，
-		// 多收的那张单会被排除，导致明明已抵扣完还显示欠款。
-		//
-		// 未开启结转的台账没有超收，两种算法等价，对老用户零影响。
-		var billedAll, paidAll float64
-		db.Model(&Bill{}).Where("org_id IN ?", ledgerIDs).
-			Select("COALESCE(SUM(total_amount), 0)").Scan(&billedAll)
-		db.Model(&Bill{}).Where("org_id IN ?", ledgerIDs).
-			Select("COALESCE(SUM(paid_amount), 0)").Scan(&paidAll)
-		arrears := round2(billedAll - paidAll)
-		if arrears < 0 {
-			arrears = 0 // 净多收：欠缴额最小为 0，不显示负数欠款
+		// 同总览：预收只抵扣同一明确承租关系，跨期不重复计入 carry_in。
+		var balanceBills []Bill
+		if err := db.Where("org_id IN ?", ledgerIDs).Find(&balanceBills).Error; err != nil {
+			response.ErrorInternal(c, "读取欠缴统计失败")
+			return
 		}
+		arrears := outstandingByTenancy(balanceBills, false)
 
 		rate := 0.0
 		if sumBilled > 0 {

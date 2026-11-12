@@ -1,0 +1,9 @@
+<view class="page login">
+  <view class="brand">Landlord · 租住</view>
+  <view class="title">{{phoneRequired ? '填写入住手机号' : '欢迎回家'}}</view>
+  <view class="subtitle">{{phoneRequired ? '填写登记给房东的手机号，方便房东核对并关联你的租住档案。' : '使用微信登录，查看你的房屋、合同与每一笔账单。'}}</view>
+  <label wx:if="{{phoneRequired}}" class="label-input">入住手机号<input aria-label="入住手机号" type="number" value="{{phone}}" bindinput="input" maxlength="11" placeholder="填写入住时登记的手机号" disabled="{{busy}}" /></label>
+  <view wx:if="{{error}}" class="login-error">{{error}}</view>
+  <button class="primary gap" bindtap="submit" loading="{{busy}}" disabled="{{busy}}">{{phoneRequired ? '确认手机号并继续' : '微信登录'}}</button>
+  <view class="footer-note">首次登录需由房东确认关联，之后可直接使用微信登录。</view>
+</view>

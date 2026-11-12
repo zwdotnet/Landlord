@@ -68,38 +68,20 @@ func handleStats(db *gorm.DB) gin.HandlerFunc {
 		db.Model(&Bill{}).Where("period = ? AND status <> ? AND org_id IN ?", period, "paid", ledgerIDs).
 			Count(&monthArrearsCount)
 
-		// 历史累计欠缴（可见台账的全部月份）。
-		//
-		// 口径（2026-10-16 随结转引入修正）：
-		//
-		//	未结净额 = Σ(total_amount) - Σ(paid_amount)
-		//
-		// 早先这里是 `SUM(total_amount - paid_amount) WHERE status <> 'paid'`，
-		// 即「只把未缴清的账单加起来」。那在**不允许超收**的年代是对的，但现在
-		// 允许「多交顺延」（issue #5 需求 7）后它会算错：
-		//
-		//	1月 应缴500 收450 → partial，欠 50   ← 被统计
-		//	2月 应缴600 收700 → paid，多 100     ← 被 status<>paid 排除掉了！
-		//
-		// 于是总览显示「欠 50」，可实际上 2 月多交的 100 早已把 1 月的 50 抵平，
-		// 房东净多收 50。过滤掉多收的那张单，等于永远看不到抵扣。
-		//
-		// 改成对**全部账单**求和（不再按 status 过滤），多收自然冲减欠缴：
-		// 上例 = (500+600+350) - (450+700+350) = -50 → 下方夹到 0（不欠）。
-		// 未开启结转的台账两种算法完全等价（没有超收就没有冲减），
-		// 因此这个修正对老用户零影响。
-		var overallSum float64
-		var overallPaidSum float64
-		db.Model(&Bill{}).Where("org_id IN ?", ledgerIDs).
-			Select("COALESCE(SUM(total_amount), 0)").Scan(&overallSum)
-		db.Model(&Bill{}).Where("org_id IN ?", ledgerIDs).
-			Select("COALESCE(SUM(paid_amount), 0)").Scan(&overallPaidSum)
-		overallArrears := round2(overallSum - overallPaidSum)
-		if overallArrears < 0 {
-			// 净多收：欠缴额最小为 0（“多收”不在这里体现为负数欠款，
-			// 否则总览会出现「欠 -50 元」这种看不懂的显示）。
-			overallArrears = 0
+		// 按明确承租关系净额汇总；跨期只用本期费用，避免重复结转。
+		var balanceBills []Bill
+		if err := db.Where("org_id IN ?", ledgerIDs).Find(&balanceBills).Error; err != nil {
+			response.ErrorInternal(c, "读取欠缴统计失败")
+			return
 		}
+		overallArrears := outstandingByTenancy(balanceBills, false)
+		var monthBills []Bill
+		for _, bill := range balanceBills {
+			if bill.Period == period {
+				monthBills = append(monthBills, bill)
+			}
+		}
+		monthOutstanding := outstandingByTenancy(monthBills, true)
 		// 欠缴账单数仍按「未缴清」统计——它是“有几张单还没结”，
 		// 与金额口径（净额）是两件事，不随上面的改动而变。
 		var overallArrearsCount int64
@@ -190,7 +172,7 @@ func handleStats(db *gorm.DB) gin.HandlerFunc {
 				"period":        period,
 				"total":         monthTotal,
 				"paid":          monthPaid,
-				"outstanding":   monthTotal - monthPaid,
+				"outstanding":   monthOutstanding,
 				"bill_count":    monthBillCount,
 				"arrears_count": monthArrearsCount,
 			},

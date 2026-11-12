@@ -20,7 +20,7 @@
 
       <template v-else>
         <PaymentArchivePanel :payments="payments" :bill-periods="periodByBill" portal />
-        <Pagination :page="page" :page-size="pageSize" :total="total" @update:page="changePage" />
+        <Pagination :page="page" :page-size="pageSize" :total="total" @change="changePage" />
       </template>
     </template>
   </div>

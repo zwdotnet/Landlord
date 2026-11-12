@@ -1,0 +1,23 @@
+{
+  "pages": [
+    "pages/home/index", "pages/login/index", "pages/pending/index",
+    "pages/bills/index", "pages/bill/index", "pages/contracts/index",
+    "pages/profile/index", "pages/payments/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "我的租住", "navigationBarBackgroundColor": "#f5f7f5",
+    "navigationBarTextStyle": "black", "backgroundColor": "#f5f7f5",
+    "backgroundTextStyle": "dark", "enablePullDownRefresh": true
+  },
+  "tabBar": {
+    "color": "#68766d", "selectedColor": "#245c45", "backgroundColor": "#ffffff", "borderStyle": "white",
+    "list": [
+      {"pagePath": "pages/home/index", "text": "租住", "iconPath": "assets/tabs/home.png", "selectedIconPath": "assets/tabs/home-active.png"},
+      {"pagePath": "pages/bills/index", "text": "账单", "iconPath": "assets/tabs/bills.png", "selectedIconPath": "assets/tabs/bills-active.png"},
+      {"pagePath": "pages/contracts/index", "text": "合同", "iconPath": "assets/tabs/contracts.png", "selectedIconPath": "assets/tabs/contracts-active.png"},
+      {"pagePath": "pages/profile/index", "text": "我的", "iconPath": "assets/tabs/profile.png", "selectedIconPath": "assets/tabs/profile-active.png"}
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

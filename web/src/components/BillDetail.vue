@@ -12,10 +12,11 @@
       <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
         <div class="flex justify-between gap-2"><span class="text-muted-foreground shrink-0">租户</span><span class="text-foreground truncate" :title="bill.tenant_name">{{ bill.tenant_name || '—' }}</span></div>
         <div class="flex justify-between gap-2"><span class="text-muted-foreground shrink-0">账期</span><span class="text-foreground tabular-nums">{{ bill.period }}</span></div>
-        <div class="flex justify-between gap-2"><span class="text-muted-foreground shrink-0">缴费周期</span><span class="text-foreground">{{ cycleText }}</span></div>
+        <div class="flex justify-between gap-2 col-span-2"><span class="text-muted-foreground shrink-0">缴费周期</span><span class="text-foreground text-right">{{ cycleText }}<span class="block tabular-nums whitespace-nowrap">起 {{ calendarDates.start }}</span><span class="block tabular-nums whitespace-nowrap">止 {{ calendarDates.end }}</span></span></div>
         <div class="flex justify-between gap-2"><span class="text-muted-foreground shrink-0">单据编号</span><span class="text-foreground tabular-nums truncate">{{ bill.receipt_no || '—' }}</span></div>
         <div v-if="bill.remark" class="flex justify-between gap-2 col-span-2"><span class="text-muted-foreground shrink-0">备注</span><span class="text-foreground truncate" :title="bill.remark">{{ bill.remark }}</span></div>
       </div>
+      <RentBasis :bill="bill" />
     </div>
 
     <!-- 抄表照片：本期读数凭证（只看不传，上传在抄表入口）。没拍过就不占地方。 -->
@@ -23,10 +24,10 @@
       <MeterPhotoGallery :room-id="bill.room_id" :period="bill.period" :water-mixed="bill.water_mode === 'monthly'" />
     </div>
 
-    <!-- 费用项目：桌面表格 / 手机卡片 -->
-    <div>
+    <!-- 按容器宽度切换：窄弹窗也使用卡片，避免表格挤出内容区。 -->
+    <div class="bill-items">
       <p class="text-xs font-semibold text-muted-foreground mb-1.5">费用项目（{{ items.length }} 项）</p>
-      <table class="hidden sm:table w-full text-sm border border-border rounded-xl overflow-hidden">
+      <table class="bill-item-table w-full text-sm border border-border rounded-xl overflow-hidden">
         <thead>
           <tr class="bg-muted/60 text-muted-foreground text-xs">
             <th class="py-2 px-2.5 text-left font-medium whitespace-nowrap">项目</th>
@@ -40,7 +41,7 @@
         <tbody class="divide-y divide-border/70">
           <tr v-for="it in items" :key="it.key" class="text-foreground">
             <td class="py-2 px-2.5 font-medium whitespace-nowrap">{{ it.name }}</td>
-            <td class="py-2 px-2.5 text-xs text-muted-foreground">{{ it.detail || '—' }}</td>
+            <td class="py-2 px-2.5 text-xs text-muted-foreground"><span v-for="(line, i) in itemLines(it)" :key="i" class="block whitespace-nowrap">{{ line }}</span></td>
             <td class="py-2 px-2.5 text-right text-muted-foreground whitespace-nowrap">{{ cycleShort(it.cycle) }}</td>
             <td class="py-2 px-2.5 text-right tabular-nums">{{ fmtMoney(it.amount) }}</td>
             <td class="py-2 px-2.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{{ fmtMoney(it.paid) }}</td>
@@ -65,13 +66,13 @@
         </tfoot>
       </table>
       <!-- 手机端卡片化 -->
-      <div class="sm:hidden rounded-xl border border-border overflow-hidden">
+      <div class="bill-item-cards rounded-xl border border-border overflow-hidden">
         <div class="divide-y divide-border/70">
           <div v-for="it in items" :key="it.key" class="px-3 py-2 space-y-1">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="text-sm font-medium text-foreground">{{ it.name }}<span class="text-[11px] text-muted-foreground ml-1.5">{{ cycleShort(it.cycle) }}</span></div>
-                <div v-if="it.detail" class="text-[11px] text-muted-foreground tabular-nums mt-0.5">{{ it.detail }}</div>
+                <div v-if="it.detail" class="text-[11px] text-muted-foreground tabular-nums mt-0.5"><span v-for="(line, i) in itemLines(it)" :key="i" class="block whitespace-nowrap">{{ line }}</span></div>
               </div>
               <div class="text-sm font-semibold text-foreground tabular-nums shrink-0">{{ fmtMoney(it.amount) }}</div>
             </div>
@@ -109,6 +110,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import PaymentArchivePanel from './PaymentArchivePanel.vue'
+import RentBasis from './RentBasis.vue'
+import { calendarRange, detailDateLines, rentRange } from '../utils/bill-dates'
 import type { ArchivedPayment } from '../api/documents'
 import MeterPhotoGallery from './MeterPhotoGallery.vue'
 import { arrearsOf, carryInOf, fmtMoney, isArrears, payableOf, type Bill, type BillItemDetail, type FeeItem } from '../api/rental'
@@ -142,6 +145,14 @@ const statusClass = computed(() => {
 })
 
 const coveredText = computed(() => coveredPeriodText(props.bill.period, props.bill.pay_cycle))
+const calendarDates = computed(() => calendarRange(props.bill.period, cycleMonths(props.bill.pay_cycle)))
+function itemLines(item: BillItemDetail) {
+  if (item.key === 'rent') {
+    const dates = rentRange(props.bill)
+    if (dates.start) return [`起 ${dates.start}`, `止 ${dates.end}`]
+  }
+  return detailDateLines(item.detail || '—')
+}
 // 角标 title：显示文字只有周期名，而年付房在非到期月出的水电账单同样带「年付」
 // 角标，所以 title 要说清「周期只管固定费，本单水电仍按月」，避免被误读成整单
 // 收了 N 个月租金。
@@ -154,7 +165,7 @@ const cycleBadgeTitle = computed(() => {
 const cycleText = computed(() => {
   const months = cycleMonths(props.bill.pay_cycle)
   const label = cycleLabel(props.bill.pay_cycle)
-  return months > 1 ? `${label}（${coveredText.value}，共 ${months} 个月）` : label
+  return months > 1 ? `${label} · ${months} 个月` : label
 })
 
 // 明细行的周期缩写统一走 cycleShort（月/季/半/年）。
@@ -171,3 +182,12 @@ function fmtDate(s: string): string {
   return (s || '').slice(0, 10)
 }
 </script>
+
+<style scoped>
+.bill-items { container-type: inline-size; }
+.bill-item-table { display: none; }
+@container (min-width: 640px) {
+  .bill-item-table { display: table; }
+  .bill-item-cards { display: none; }
+}
+</style>

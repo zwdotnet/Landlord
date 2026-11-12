@@ -1,0 +1,487 @@
+{
+  "date": "2026-11-12",
+  "timezone": "Asia/Hong_Kong",
+  "scope": "Repair tenant registration links, QR rendering, regeneration and image download",
+  "root_causes": [
+    "Missing /landlord/ in registration base",
+    "Global homepage CSP overrode app CSP and blocked blob images",
+    "Regenerate rotated token twice",
+    "Direct QR download bypassed authenticated request and application base"
+  ],
+  "config_fix": {
+    "pass": true,
+    "applied_at": "2026-11-12T13:19:01.457333+08:00",
+    "backup": "/var/backups/landlord/apply-fix-20261112-131859",
+    "caddy_before_sha256": "47e1fa711faa085a5c864d0624278ff7743f62d014bfa5fa6e119e8150b05a24",
+    "caddy_after_sha256": "31bc98fc5356bc66a170e9ad493da041c5742de72c990fd0b75149ebd9762f5c",
+    "apply_base_before": "",
+    "apply_base_after": "https://www.zoeng.site/landlord",
+    "database_quick_check": "ok",
+    "business_content_unchanged": true,
+    "registration_tokens_unchanged": true,
+    "container_unchanged": true,
+    "app_restarted": false,
+    "caddy_reloaded": true,
+    "homepage_policy_unchanged": true,
+    "landlord_policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+  },
+  "supplied_old_token_still_current": false,
+  "expired_tokens_restored": false,
+  "application_fix": {
+    "commit": "ef3cbee57268b134fee7b13dd15a1695fb7e6ade",
+    "files": [
+      "web/src/views/RoomsView.vue",
+      "web/src/api/rental.ts"
+    ],
+    "workflow": {
+      "id": 43161630747,
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "ef3cbee57268b134fee7b13dd15a1695fb7e6ade",
+      "url": "https://github.com/zwdotnet/Landlord/actions/runs/43161630747",
+      "run_attempt": 1,
+      "created_at": "2026-11-12T05:28:37Z",
+      "updated_at": "2026-11-12T05:30:37Z"
+    },
+    "deployment": {
+      "published_at": "2026-11-12T13:36:30.548156+08:00",
+      "release": "/opt/landlord/releases/20261112-0.10.0-apply-ef3cbee",
+      "previous_release": "/opt/landlord/releases/20261112-0.10.0-cleanup-a38fa95",
+      "backup": "/var/backups/landlord/pre-apply-20261112-133545",
+      "image": "landlord:0.10.0-ef3cbee57268-43161630747-1",
+      "image_id": "sha256:97f570e7dd4179923eba3712ee0c944665db6d08303f5ae9fa7244b2d62c7d47",
+      "commit": "ef3cbee57268b134fee7b13dd15a1695fb7e6ade",
+      "container_id": "6c1e5e207cdb74cf0ae6e1de05412ab135ea8a085041fd230db3745cf52e0d84",
+      "health": "healthy",
+      "counts": {
+        "users": 1,
+        "rooms": 1,
+        "tenants": 0,
+        "bills": 0,
+        "payments": 0,
+        "automation_plans": 0,
+        "cycle_tasks": 0
+      },
+      "database_quick_check": "ok",
+      "bootstrap_unchanged": true,
+      "caddy_unchanged": true,
+      "public_health": "PASS",
+      "removed_endpoints_404": [
+        "/api/donate/support",
+        "/api/version/check",
+        "/api/update/apply",
+        "/api/update/apply/status"
+      ]
+    },
+    "artifact": {
+      "downloaded": true,
+      "bytes": 344885496,
+      "sha256": "263c0af7339e869fb154483e88bc339cd4338e3682a89f046d86e8e6ed2f108f",
+      "github_digest_matches": true,
+      "artifact_id": 13918286517,
+      "run_id": 43161630747
+    },
+    "provenance": {
+      "release": "/opt/landlord/releases/20261112-0.10.0-apply-ef3cbee",
+      "image": "landlord:0.10.0-ef3cbee57268-43161630747-1",
+      "image_id": "sha256:97f570e7dd4179923eba3712ee0c944665db6d08303f5ae9fa7244b2d62c7d47",
+      "cloud_image_id": "sha256:2e6a58665cc6b0158f726b0c2a5a1313b95fa35a607d90b07f28cf890ee490ed",
+      "rootfs_layers_match": true,
+      "commit": "ef3cbee57268b134fee7b13dd15a1695fb7e6ade",
+      "image_bytes": 767693647,
+      "web_files": 76,
+      "archives": {
+        "build.json": "5f923cec6f20de1b4bdadb07cf9b01b7651c67b70cdc4b25eb9ccdf176d6d34e",
+        "image.tar.gz": "a7bdec5a7c2156ca85174d079b36138b7791376b8c503c54ba10c2a17c5f6f59",
+        "release.tar.gz": "243bc12cab27e55079aa9bf363f03a9052522a63e421487659012e6475f29419"
+      },
+      "compose_valid": true
+    }
+  },
+  "validation": {
+    "installed_caddy_isolated_checks": 4,
+    "local_real_browser_checks": {
+      "checks": [
+        {
+          "name": "desktop actual authenticated QR PNG displays under live CSP",
+          "pass": true
+        },
+        {
+          "name": "desktop registration URL includes application path",
+          "pass": true
+        },
+        {
+          "name": "desktop PNG download succeeds without separate unauthenticated API navigation",
+          "pass": true
+        },
+        {
+          "name": "desktop PNG download has named file",
+          "pass": true
+        },
+        {
+          "name": "desktop regenerating changes the displayed token once",
+          "pass": true
+        },
+        {
+          "name": "desktop regenerated displayed link remains valid",
+          "pass": true
+        },
+        {
+          "name": "desktop refreshing QR keeps displayed link",
+          "pass": true
+        },
+        {
+          "name": "desktop regenerated link opens anonymous registration form",
+          "pass": true
+        },
+        {
+          "name": "mobile actual authenticated QR PNG displays under live CSP",
+          "pass": true
+        },
+        {
+          "name": "mobile registration URL includes application path",
+          "pass": true
+        },
+        {
+          "name": "mobile PNG download succeeds without separate unauthenticated API navigation",
+          "pass": true
+        },
+        {
+          "name": "mobile PNG download has named file",
+          "pass": true
+        },
+        {
+          "name": "mobile regenerating changes the displayed token once",
+          "pass": true
+        },
+        {
+          "name": "mobile regenerated displayed link remains valid",
+          "pass": true
+        },
+        {
+          "name": "mobile refreshing QR keeps displayed link",
+          "pass": true
+        },
+        {
+          "name": "mobile regenerated link opens anonymous registration form",
+          "pass": true
+        },
+        {
+          "name": "QR requests never rotate token again",
+          "pass": true
+        },
+        {
+          "name": "no runtime script errors",
+          "pass": true
+        }
+      ],
+      "errors": [],
+      "passed": 18,
+      "failed": 0,
+      "production_data_used": false
+    },
+    "public_registration_checks": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "existing shared link redirects to application path",
+          "pass": true
+        },
+        {
+          "name": "existing registration token resolves without login",
+          "pass": true
+        },
+        {
+          "name": "edge old shared link opens correct page",
+          "pass": true
+        },
+        {
+          "name": "edge registration form visible",
+          "pass": true
+        },
+        {
+          "name": "edge no invalid-link message",
+          "pass": true
+        },
+        {
+          "name": "edge layout fits",
+          "pass": true
+        },
+        {
+          "name": "edge actual browser permits blob PNG image",
+          "pass": true
+        },
+        {
+          "name": "webkit-mobile old shared link opens correct page",
+          "pass": true
+        },
+        {
+          "name": "webkit-mobile registration form visible",
+          "pass": true
+        },
+        {
+          "name": "webkit-mobile no invalid-link message",
+          "pass": true
+        },
+        {
+          "name": "webkit-mobile layout fits",
+          "pass": true
+        },
+        {
+          "name": "webkit-mobile actual browser permits blob PNG image",
+          "pass": true
+        },
+        {
+          "name": "no browser script errors",
+          "pass": true
+        },
+        {
+          "name": "original main-site CSP retained: /",
+          "pass": true
+        },
+        {
+          "name": "original main-site CSP retained: /2048/",
+          "pass": true
+        },
+        {
+          "name": "original main-site CSP retained: /math-worksheet/",
+          "pass": true
+        }
+      ],
+      "errors": [],
+      "production_forms_submitted": false,
+      "test_accounts_created": false,
+      "registration_token_rotated": false,
+      "logged_in_qr_modal_inspected": false,
+      "blob_image_policy_verified": true
+    },
+    "public_release_checks": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "public HTTPS health",
+          "pass": true
+        },
+        {
+          "name": "public index exactly matches release",
+          "pass": true
+        },
+        {
+          "name": "public file matches release: web/assets/index-DE4MShfU.js",
+          "pass": true
+        },
+        {
+          "name": "no promotion/update entry in web/assets/index-DE4MShfU.js",
+          "pass": true
+        },
+        {
+          "name": "public file matches release: web/sw.js",
+          "pass": true
+        },
+        {
+          "name": "public file matches release: web/manifest.webmanifest",
+          "pass": true
+        },
+        {
+          "name": "public file matches release: web/assets/MainLayout-ccGI1TCX.js",
+          "pass": true
+        },
+        {
+          "name": "no promotion/update entry in web/assets/MainLayout-ccGI1TCX.js",
+          "pass": true
+        },
+        {
+          "name": "public file matches release: web/assets/SettingsView-C2Ws5oTN.js",
+          "pass": true
+        },
+        {
+          "name": "no promotion/update entry in web/assets/SettingsView-C2Ws5oTN.js",
+          "pass": true
+        },
+        {
+          "name": "public file matches release: web/assets/AdminConfigView-C231H1X3.js",
+          "pass": true
+        },
+        {
+          "name": "no promotion/update entry in web/assets/AdminConfigView-C231H1X3.js",
+          "pass": true
+        },
+        {
+          "name": "public file matches release: web/assets/RoomsView-BAS_Wsb6.js",
+          "pass": true
+        },
+        {
+          "name": "no promotion/update entry in web/assets/RoomsView-BAS_Wsb6.js",
+          "pass": true
+        },
+        {
+          "name": "removed public endpoint POST api/donate/support",
+          "pass": true
+        },
+        {
+          "name": "removed public endpoint GET api/version/check",
+          "pass": true
+        },
+        {
+          "name": "removed public endpoint POST api/update/apply",
+          "pass": true
+        },
+        {
+          "name": "removed public endpoint GET api/update/apply/status",
+          "pass": true
+        },
+        {
+          "name": "private portal authentication/no-store",
+          "pass": true
+        },
+        {
+          "name": "edge login rendered",
+          "pass": true
+        },
+        {
+          "name": "edge viewport fits",
+          "pass": true
+        },
+        {
+          "name": "edge login has no donation content",
+          "pass": true
+        },
+        {
+          "name": "worker scope",
+          "pass": true
+        },
+        {
+          "name": "webkit-mobile login rendered",
+          "pass": true
+        },
+        {
+          "name": "webkit-mobile viewport fits",
+          "pass": true
+        },
+        {
+          "name": "webkit-mobile login has no donation content",
+          "pass": true
+        },
+        {
+          "name": "no public browser script errors",
+          "pass": true
+        }
+      ],
+      "errors": [],
+      "production_accounts_created": false,
+      "production_business_writes": false,
+      "phone_acceptance": "UNOBSERVED"
+    },
+    "server": {
+      "pass": true,
+      "time_utc": "2026-11-12T05:38:38.520035+00:00",
+      "release": "/opt/landlord/releases/20261112-0.10.0-apply-ef3cbee",
+      "image": "landlord:0.10.0-ef3cbee57268-43161630747-1",
+      "image_id": "sha256:97f570e7dd4179923eba3712ee0c944665db6d08303f5ae9fa7244b2d62c7d47",
+      "commit": "ef3cbee57268b134fee7b13dd15a1695fb7e6ade",
+      "container_id": "6c1e5e207cdb74cf0ae6e1de05412ab135ea8a085041fd230db3745cf52e0d84",
+      "health": "healthy",
+      "database_quick_check": "ok",
+      "counts": {
+        "users": 1,
+        "rooms": 1,
+        "tenants": 0,
+        "bills": 0,
+        "payments": 0,
+        "automation_plans": 0,
+        "cycle_tasks": 0
+      },
+      "business_content_matches_backup": {
+        "users": true,
+        "rooms": true,
+        "tenants": true,
+        "bills": true,
+        "payments": true,
+        "automation_plans": true,
+        "cycle_tasks": true
+      },
+      "backup": "/var/backups/landlord/pre-apply-20261112-133545",
+      "previous_release": "/opt/landlord/releases/20261112-0.10.0-cleanup-a38fa95",
+      "bootstrap_unchanged": true,
+      "caddy_unchanged": true,
+      "resource_limits_unchanged": true,
+      "other_containers": {
+        "roundcube": {
+          "unchanged_id": true,
+          "not_restarted": true,
+          "running": true
+        },
+        "mailserver": {
+          "unchanged_id": true,
+          "not_restarted": true,
+          "running": true
+        },
+        "keepup-app-1": {
+          "unchanged_id": true,
+          "not_restarted": true,
+          "running": true
+        }
+      },
+      "siblings": {
+        "home": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "game": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "worksheet": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "keepup": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "keepup_health": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "komari": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "mail": {
+          "status": 200,
+          "same_content_sha256": false
+        }
+      },
+      "docker_stats": {
+        "BlockIO": "0B / 0B",
+        "CPUPerc": "0.07%",
+        "Container": "landlord",
+        "ID": "6c1e5e207cdb",
+        "MemPerc": "1.58%",
+        "MemUsage": "8.07MiB / 512MiB",
+        "Name": "landlord",
+        "NetIO": "35.9kB / 689kB",
+        "PIDs": "8"
+      }
+    },
+    "backend_source_tree_unchanged": "a8ee52298ce6dcc5e2e33c5291d869bef30be43c",
+    "backend_tests_repeated": false
+  },
+  "limitations": {
+    "logged_in_production_qr_modal_inspected": false,
+    "physical_phone": "UNOBSERVED",
+    "production_application_form_submitted": false,
+    "production_test_accounts_created": false,
+    "independent_acceptance": false
+  },
+  "evidence_directories": [
+    ".runtime/apply-fix-20261112",
+    ".runtime/deploy-apply-20261112"
+  ],
+  "rollback": {
+    "config_backup": "/var/backups/landlord/apply-fix-20261112-131859",
+    "application_backup": "/var/backups/landlord/pre-apply-20261112-133545",
+    "previous_release": "/opt/landlord/releases/20261112-0.10.0-cleanup-a38fa95",
+    "automatic_database_restore": false
+  }
+}

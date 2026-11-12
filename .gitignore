@@ -88,4 +88,7 @@ tmp/*
 *.db-wal
 *.db-shm
 miniprogram/project.private.config.json
+miniprogram/project.config.json
+miniprogram/config.local.js
+__pycache__/
 

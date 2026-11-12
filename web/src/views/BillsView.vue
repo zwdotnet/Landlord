@@ -55,19 +55,19 @@
       <template v-else>
       <!-- 桌面端：全字段表格 -->
       <div class="hidden md:block overflow-x-auto">
-        <table class="w-full text-sm min-w-[1200px]">
+        <table class="w-full text-sm min-w-[1600px] whitespace-nowrap">
           <thead>
             <tr class="text-left text-muted-foreground border-b border-border bg-muted/40">
               <th rowspan="2" class="py-2.5 px-3 font-medium align-bottom">月份</th>
               <th rowspan="2" class="py-2.5 px-3 font-medium align-bottom">房号</th>
               <th rowspan="2" class="py-2.5 px-3 font-medium align-bottom">租户</th>
-              <th colspan="6" class="py-2 px-3 font-medium text-center border-b border-border/60">抄数（上月 → 本月）</th>
+              <th colspan="3" class="py-2 px-3 font-medium text-center border-b border-border/60">抄数（上月 → 本月）</th>
               <th colspan="3" class="py-2 px-3 font-medium text-center border-b border-border/60">抄表费用</th>
               <th rowspan="2" class="py-2.5 px-3 font-medium text-right align-bottom">卫生费（元）</th>
               <!-- 房东口语叫「物业费」，与收费项目「管理费」是同一项，表头带说明避免对不上 -->
               <th rowspan="2" class="py-2.5 px-3 font-medium text-right align-bottom" title="即房东常说的物业费，按房源设置的默认金额计入账单">管理费／物业费（元）</th>
               <th rowspan="2" class="py-2.5 px-3 font-medium text-right align-bottom" title="入住押金：只在租户首张账单上收一次">押金（元）</th>
-              <th rowspan="2" class="py-2.5 px-3 font-medium text-right align-bottom">本月租金（元）</th>
+              <th rowspan="2" class="py-2.5 px-3 font-medium text-right align-bottom">本期应缴（元）</th>
               <th rowspan="2" class="py-2.5 px-3 font-medium text-right align-bottom">已收（元）</th>
               <th rowspan="2" class="py-2.5 px-3 font-medium text-right align-bottom">欠缴额（元）</th>
               <th rowspan="2" class="py-2.5 px-3 font-medium align-bottom">状态</th>
@@ -459,7 +459,7 @@
     </Modal>
 
     <!-- 账单详情：全部费用项目逐项列出，附收款流水 -->
-    <Modal v-model="showDetail" title="账单详情">
+    <Modal v-model="showDetail" title="账单详情" wide>
       <div v-if="detailBill">
         <BillDetail :bill="detailBill" :items="detailItems" :payments="detailPayments" :fee-items="feeItems" :can-reverse="ledgerStore.canEdit('bills')" @changed="refreshArchivedPayments" />
         <BillRecipientsEditor v-if="ledgerStore.canEdit('bills')" :key="detailBill.id" :bill="detailBill" @assigned="detailBill = $event" />
@@ -828,6 +828,11 @@ async function openEdit(b: Bill) {
 async function saveEdit() {
   const f = editForm.value
   if (!f) return
+  if ([f.rent, f.water_price, f.elec_price, f.gas_price, f.sanitation_fee, f.management_fee, f.deposit_fee]
+    .some(v => typeof v === 'number' && v < 0)) {
+    editError.value = '租金、单价和固定费用不能为负数，请核对后再保存'
+    return
+  }
   if (!/^\d{4}-\d{2}$/.test(f.period)) {
     editError.value = '账期格式应为 YYYY-MM'
     return

@@ -1,0 +1,6 @@
+{
+  "description": "Landlord 租客小程序", "projectname": "landlord-tenant",
+  "appid": "touristappid", "compileType": "miniprogram", "miniprogramRoot": "./",
+  "setting": {"es6": true, "minified": true, "urlCheck": true, "enhance": true},
+  "packOptions": {"ignore": [{"type": "file", "value": "README.md"}, {"type": "file", "value": "project.config.example.json"}]}
+}

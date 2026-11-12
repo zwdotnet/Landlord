@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"smallgo/server/audit"
 	"smallgo/server/config"
 	"smallgo/server/database"
 	"smallgo/server/middleware"
@@ -217,6 +218,11 @@ func handleRoomApplyLink(db *gorm.DB) gin.HandlerFunc {
 			}
 		}
 		base, viaGateway, configured := applyLinkBase(c, db)
+		action := "获取租客登记链接"
+		if c.Query("regenerate") == "1" {
+			action = "重新生成租客登记链接（旧链接失效）"
+		}
+		audit.Log(db, c, "post_api_rental_rooms_:id_apply-link", "room", room.ID, action+"：房源 "+room.RoomNo)
 		response.Success(c, gin.H{
 			"token":       room.ApplyToken,
 			"base":        base,

@@ -239,6 +239,11 @@ export interface MeterRecord {
 }
 
 export interface Bill {
+  rent_start_date?: string
+  rent_end_date?: string
+  rent_calculation?: string
+  rent_basis_amount?: number
+  rent_basis_source?: string
   id: number
   created_at?: string
   recipient_tenant_ids?: number[]

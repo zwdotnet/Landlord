@@ -335,9 +335,9 @@ function fmt(v: number): string {
 }
 
 function pct(amount: number): number {
-  const max = items.value[0]?.amount || 0
-  if (max <= 0) return 0
-  return Math.round((amount / max) * 100)
+  const total = items.value.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+  if (total <= 0) return 0
+  return Math.round((amount / total) * 10000) / 100
 }
 
 // ---------- 空置分析（issue #2） ----------

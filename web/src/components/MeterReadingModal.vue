@@ -154,13 +154,14 @@
           <p v-if="feeExcluded('rent')" class="text-[11px] text-muted-foreground">
             {{ feeDisabledByLedger('rent') ? '「租金」已在收费项目里停用' : '本租户不参与租金收费' }}，出账费用为 0。
           </p>
+          <RentBasis v-if="previewRentBill && previewLoaded" :bill="{ ...previewRentBill, rent: readingForm.rent }" />
           <label class="block" for="mr-remark">
             <span class="text-[11px] text-muted-foreground">备注</span>
             <input
               id="mr-remark"
               v-model="readingForm.remark"
               class="input-field !px-2 !py-1.5 mt-1"
-              placeholder="如：租金对应租期 2026-01 ~ 2026-06"
+              placeholder="如：租金对应租期 2026-01-01 ~ 2026-06-30"
             />
           </label>
         </div>
@@ -208,6 +209,7 @@ import { computed, ref, watch } from 'vue'
 import DateField from './DateField.vue'
 import MeterPhotoPicker from './MeterPhotoPicker.vue'
 import Modal from './Modal.vue'
+import RentBasis from './RentBasis.vue'
 import { toast } from '../utils/toast'
 import { useLedgerStore } from '../stores/ledger'
 import { defaultBilling, fetchBillingDefaults, meterUnit, type BillingDefaults } from '../utils/billing'
@@ -257,6 +259,7 @@ const readingError = ref('')
 // 内置的水电等仍按弹窗里的输入实时算，所以改读数时合计立刻跟着变。
 const BUILTIN_FEE_KEYS = new Set(['rent', 'water', 'elec', 'gas', 'sanitation', 'management'])
 const previewItems = ref<BillItemDetail[]>([])
+const previewRentBill = ref<Bill | null>(null)
 const previewCarryIn = ref(0)
 const previewLoaded = ref(false)
 const previewLoading = ref(false)
@@ -327,6 +330,7 @@ function applyServerPrefill(bill: Bill, roomId: number, period: string) {
 async function loadPreview(roomId: number, period: string) {
   const token = ++previewToken
   previewItems.value = []
+  previewRentBill.value = null
   previewCarryIn.value = 0
   previewLoaded.value = false
   previewError.value = ''
@@ -341,6 +345,7 @@ async function loadPreview(roomId: number, period: string) {
       const data = res.data.data as { exists: boolean; bill: Bill; items: BillItemDetail[] }
       if (!readingIsNew.value) data.exists = true
       previewItems.value = data.items ?? []
+      previewRentBill.value = data.bill
       previewCarryIn.value = Number(data.bill?.carry_in || 0)
       previewLoaded.value = true
       requiresManualRent.value = !!data.bill?.requires_manual_rent
@@ -650,6 +655,11 @@ async function saveReading() {
   f.gas_now = num(f.gas_now)
   f.gas_last = num(f.gas_last)
   f.remark = text(f.remark)
+	if ([f.rent, f.water_price, f.elec_price, f.gas_price, f.sanitation_fee, f.management_fee, f.deposit_fee]
+	  .some(v => typeof v === 'number' && v < 0)) {
+	  readingError.value = '租金、单价和固定费用不能为负数，请核对后再保存'
+	  return
+	}
   // 包月水费不看抄表，读数倒挂不拦
   if ((f.water_mode !== 'monthly' && (f.water_now ?? 0) < (f.water_last ?? 0)) ||
     (f.elec_now ?? 0) < (f.elec_last ?? 0) || (f.gas_now ?? 0) < (f.gas_last ?? 0)) {

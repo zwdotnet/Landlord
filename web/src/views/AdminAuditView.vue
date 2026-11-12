@@ -56,13 +56,13 @@
                 </div>
               </td>
               <td class="py-3.5 px-4">
-                <span class="badge" :class="actionClass(log.action)">{{ log.action }}</span>
+                <span class="badge" :class="actionClass(log.action)" :title="log.action">{{ log.action_label || log.action }}</span>
               </td>
               <td class="py-3.5 px-4 text-muted-foreground">
-                <span v-if="log.target_type">{{ log.target_type }}<span v-if="log.target_id" class="text-muted-foreground">/{{ log.target_id }}</span></span>
+                <span v-if="log.target_type">{{ log.target_type_label || log.target_type }}<span v-if="log.target_id" class="text-muted-foreground">/{{ log.target_id }}</span></span>
                 <span v-else>—</span>
               </td>
-              <td class="py-3.5 px-4 text-foreground/80 max-w-xs truncate">{{ log.detail || '—' }}</td>
+              <td class="py-3.5 px-4 text-foreground/80 min-w-[240px] max-w-md whitespace-normal break-words">{{ log.detail || '—' }}</td>
               <td class="py-3.5 px-6">
                 <code class="text-xs text-muted-foreground">{{ log.ip }}</code>
               </td>

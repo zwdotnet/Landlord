@@ -2,16 +2,29 @@
 
 以 [TechFunWay/rental](https://github.com/TechFunWay/rental) v0.7.1 为起点改造的房东管理平台，面向自己和少数熟悉的房东。Web 使用 Vue 3 + TypeScript，后端使用 Go + Gin + GORM + SQLite。
 
-当前已实现账单隔离、日期续租与折算、合同 PDF 归档、逐笔实收与冲销，以及周期抄表、自动出账、站内提醒、PWA 安装更新与 Web Push。已部署至新加坡 VPS，Linux 中文 PDF 与公网 Edge/WebKit 验证通过；iPhone 真机系统通知和微信小程序仍待后续完成。
+当前已实现账单隔离、日期续租与折算、合同 PDF 归档、逐笔实收与冲销，以及周期抄表、自动出账、站内提醒、PWA 安装更新与 Web Push。Web 已部署至新加坡 VPS，Linux 中文 PDF 与公网 Edge/WebKit 验证通过；iPhone 真机系统通知仍待验证。
+
+微信小程序租客查询首版已在本地实现，含微信登录、首次填写入住手机号、待房东关联、本人房屋资料、账单分页与明细、实收/冲销、合同及 PDF 查看。房东沿用后台确认关联，后续微信直接登录，底部四个入口提供图标。开发入口见 [小程序说明](miniprogram/README.md)；尚未上传体验版或发布，房东小程序操作为后续范围。最新验证事实见 STATE.md。
 
 正式入口：<https://www.zoeng.site/landlord/>。首次管理员需使用部署者提供的初始化邀请链接，自行设置账号密码；日常使用正式入口登录。部署与回退见 [部署记录](doc/部署候选与Safari验收.md)。
 
-当前线上运行 GitHub 云端构建制品（源码 `5323d74`，2026-11-11 22:10 部署），PDF 已改为 Chromium Headless Shell。VPS 单次 PDF 容器峰值约 288 MiB，无内存上限事件或 OOM；最终 Docker 读数约 16.6 MiB。详见 [Headless Shell 上线与资源验证](doc/HeadlessShell上线与资源验证-20261111.md)。
+租房项目只使用 `/landlord/`，根首页仍为“Zoeng 的小站”。当前平台管理员与房东共用 Web 布局，管理员额外提供系统管理菜单；尚无独立管理员首页。小程序多房东来源/归属接入及登记链接一次性使用已记录为暂缓项，后续不得自行启动。
+
+最近部署为登记链接/二维码修复版（源码 `ef3cbee`，2026-11-12 13:36 部署），含已完成的推广清理；来源与验证见 [修复记录](doc/登记链接与二维码修复记录-20261112.json)。PDF 继续使用 Chromium Headless Shell；此前资源样本保留原观察时间，见 [上线与资源验证](doc/HeadlessShell上线与资源验证-20261111.md)。接续以 [STATE.md](STATE.md) 为准。
+
+子路径部署时，「系统配置 → 租客登记与单据 → 租客登记链接基址」应包含应用路径，例如 `https://www.zoeng.site/landlord`。Caddy 全局 CSP 应使用 `?Content-Security-Policy` 默认值，让应用专用策略保留 `img-src ... blob:`；否则会覆盖应用策略并阻止二维码及图片预览。
 
 - 当前需求、技术决定、验收及阶段安排：[项目启动与实施计划](doc/项目启动与实施计划.md)
 - 当前事实与验证结果：[STATE.md](STATE.md)
+- 问题复现与测试边界：[系统性测试报告](doc/系统性测试报告-20261112.md)；下一步修复顺序、验收与授权边界见 STATE.md 的“错误修复顺序与验收”。
 - 改造前实机评估：[rental 实机验证与复用建议](doc/rental实机验证与复用建议-20261111.md)
 - 原始上游说明：[upstream-rental-README.md](docs/upstream-rental-README.md)
+
+## 接续与维护
+
+工作目录为 `F:\zhangwei\AI\Landlord`。接续先读 [STATE.md](STATE.md)，再读本 README、[项目启动与实施计划](doc/项目启动与实施计划.md)，最后按当前动作补读验证或部署记录。STATE.md 维护唯一的动态状态；本文件说明运行方式，阶段计划维护需求和完成条件，带日期的报告保留历史证据。
+
+目标、授权、实现、验证或下一步变化时，同轮更新 STATE.md，区分代码实现、自验、提交和部署；维护日期与事实观察日期分开。修改入口摘要后核对其与 STATE.md 一致。普通接续不自动运行全量测试、构建或部署；本机 `.runtime` 的证据、工具链和首次初始化文件不随 Git 分发，另一环境使用前需核对可访问性。
 
 ## Windows 本地运行
 
@@ -23,7 +36,7 @@ npm --prefix web ci --no-audit --no-fund
 powershell -ExecutionPolicy Bypass -File .\scripts\dev.ps1
 ```
 
-打开 <http://127.0.0.1:18920>。全新数据库由首个注册账号成为管理员；数据保存到 `.runtime/dev-m2/data`。Ctrl+C 停止。已有构建时可用 `-NoBuild`；可用 `-Port` 指定端口，`-Instance` 指定独立的数据目录。M2 预览与旧版 18910 实例使用不同数据库，不能让两个版本同时读写同一数据库。开发启动关闭了上游匿名使用统计。
+打开 <http://127.0.0.1:18920>。全新数据库的首次管理员仍走初始化邀请保护，使用该隔离实例的初始化方式，不将生产邀请复用于本地。数据保存到 `.runtime/dev-m2/data`。Ctrl+C 停止。已有构建时可用 `-NoBuild`；可用 `-Port` 指定端口，`-Instance` 指定独立的数据目录。M2 预览与旧版 18910 实例使用不同数据库，不能让两个版本同时读写同一数据库。已移除上游赞赏、匿名使用统计及原项目自动更新功能。
 
 ## 合同与收据
 

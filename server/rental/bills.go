@@ -3,6 +3,7 @@ package rental
 
 import (
 	"errors"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -82,6 +83,17 @@ func setIf[T any](dst *T, src *T) {
 	if src != nil {
 		*dst = *src
 	}
+}
+
+// Validate explicit fee overrides before applying them. Carry-in and payment
+// reversals have separate rules and must not be treated as negative charges.
+func validBillCharges(values ...*float64) bool {
+	for _, v := range values {
+		if v != nil && (*v < 0 || math.IsNaN(*v) || math.IsInf(*v, 0)) {
+			return false
+		}
+	}
+	return true
 }
 
 // recalc 按统一口径重算费用与合计，并联动缴纳状态。PaidAt 由调用方维护。
@@ -266,7 +278,7 @@ func newBillForTenants(db *gorm.DB, room *Room, period string, tenants []Tenant)
 		DisabledFees: disabledBuiltInFeeKeys(db, room.LedgerID),
 	}
 	setBillRecipients(b, tenants)
-	b.Rent, b.RequiresManualRent = scheduledBillRent(db, room, tenants, period, months)
+	snapshotRentBasis(db, b, room, tenants, months)
 	var previous int64
 	if db.Model(&Bill{}).Where("org_id = ? AND room_id = ? AND tenancy_key = ?", b.LedgerID, b.RoomID, b.TenancyKey).Count(&previous).Error == nil && previous == 0 {
 		for _, t := range tenants {
@@ -469,6 +481,7 @@ func handleBillDetail(db *gorm.DB) gin.HandlerFunc {
 // billItemRows 账单明细行（含按项目已收与欠缴）。单据、账单详情与开票预览
 // 共用这一份出参口径，避免三处各拼一次、改一处漏两处。
 func billItemRows(db *gorm.DB, c *gin.Context, bill *Bill) []gin.H {
+	fillLegacyRentBasis(db, bill)
 	items := make([]BillItem, 0)
 	// 明细按账单溯源即可保证归属；再按可见台账收窄是为了不让
 	// 历史脏数据（跨台账孤儿明细）出现在单据里。
@@ -546,6 +559,7 @@ func handleBillPreview(db *gorm.DB) gin.HandlerFunc {
 		var existing Bill
 		eq := sameTenancyBill(db, bill)
 		if err := eq.First(&existing).Error; err == nil {
+			fillLegacyRentBasis(db, &existing)
 			response.Success(c, gin.H{
 				"exists": true,
 				"bill":   existing,
@@ -597,6 +611,10 @@ func handleBillCreate(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		req.Period = strings.TrimSpace(req.Period)
+		if !validBillCharges(req.Rent, req.WaterPrice, req.ElecPrice, req.GasPrice) {
+			response.ErrorBadRequest(c, "租金、单价和固定费用不能为负数")
+			return
+		}
 		if !isValidPeriod(req.Period) {
 			response.ErrorBadRequest(c, "账期格式应为 YYYY-MM")
 			return
@@ -830,6 +848,11 @@ func handleBillUpdate(db *gorm.DB) gin.HandlerFunc {
 		}
 		if req.PaidAmount != nil && *req.PaidAmount < 0 {
 			response.ErrorBadRequest(c, "已收金额不能为负数")
+			return
+		}
+		if !validBillCharges(req.Rent, req.WaterPrice, req.ElecPrice, req.GasPrice,
+			req.SanitationFee, req.ManagementFee, req.DepositFee) {
+			response.ErrorBadRequest(c, "租金、单价和固定费用不能为负数")
 			return
 		}
 

@@ -24,7 +24,30 @@ if (-not $NoBuild) {
 if (-not (Test-Path $landlordExe)) { throw 'Run without -NoBuild once to build the backend.' }
 if (-not (Test-Path (Join-Path $landlordWeb 'index.html'))) { throw 'Frontend build is missing.' }
 Write-Host "Landlord: http://127.0.0.1:$Port (Ctrl+C to stop)"
+$landlordWxBefore = @{}
+foreach ($landlordWxKey in @('WX_APP_ID', 'WX_APP_SECRET')) {
+    $landlordWxBefore[$landlordWxKey] = [Environment]::GetEnvironmentVariable($landlordWxKey, 'Process')
+}
+# Only the backend receives these values, after the frontend build has ended.
+$landlordWxDotEnv = Join-Path $landlordRoot '.env'
+if (Test-Path -LiteralPath $landlordWxDotEnv) {
+    foreach ($landlordWxLine in (Get-Content -LiteralPath $landlordWxDotEnv)) {
+        if ($landlordWxLine -match '^\s*(?:export\s+)?(WX_APP_ID|WX_APP_SECRET)\s*=\s*(.*?)\s*$') {
+            $landlordWxKey = $Matches[1]
+            $landlordWxValue = $Matches[2]
+            if ($landlordWxValue.Length -ge 2 -and (($landlordWxValue.StartsWith('"') -and $landlordWxValue.EndsWith('"')) -or ($landlordWxValue.StartsWith("'") -and $landlordWxValue.EndsWith("'")))) {
+                $landlordWxValue = $landlordWxValue.Substring(1, $landlordWxValue.Length - 2)
+            }
+            if (-not $landlordWxBefore[$landlordWxKey]) { [Environment]::SetEnvironmentVariable($landlordWxKey, $landlordWxValue, 'Process') }
+        }
+    }
+}
 Push-Location $landlordRoot
 try {
     & $landlordExe -port $Port -data-dir (Join-Path $landlordRun 'data') -web-dir $landlordWeb -log-console -rate-limit 0
-} finally { Pop-Location }
+} finally {
+    Pop-Location
+    foreach ($landlordWxKey in $landlordWxBefore.Keys) {
+        [Environment]::SetEnvironmentVariable($landlordWxKey, $landlordWxBefore[$landlordWxKey], 'Process')
+    }
+}

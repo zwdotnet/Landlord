@@ -1,0 +1,11 @@
+<view class="page"><view class="kicker">我的账号与资料</view><view class="title">我的</view>
+  <view wx:if="{{loading}}" class="loading">正在加载资料…</view><view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重新加载</button></view>
+  <block wx:elif="{{profile}}">
+    <view class="surface"><view class="list-title">{{profile.name}}</view><view class="meta gap">账号：{{username}}</view><view class="meta">{{profile.room_label}}</view></view>
+    <view class="surface"><view class="pair"><text class="label">联系手机</text><text class="value" user-select>{{profile.phone || '未填写'}}</text></view><view class="pair"><text class="label">证件号码</text><text class="value">{{profile.id_card || '未填写'}}</text></view><view class="pair"><text class="label">登记地址</text><text class="value">{{profile.address || '未填写'}}</text></view><view class="pair"><text class="label">紧急联系人</text><text class="value">{{profile.emergency_contact || '未填写'}}</text></view><view class="pair"><text class="label">紧急联系电话</text><text class="value">{{profile.emergency_phone || '未填写'}}</text></view><view class="pair"><text class="label">登记押金</text><text class="value">¥{{profile.depositText}}</text></view></view>
+    <view class="surface"><view class="meta">计费方式</view><view class="note">{{profile.billing_summary || '请联系房东核对'}}</view></view>
+    <view class="surface"><view class="link-row" bindtap="goPayments" role="button"><text>缴费记录与收据</text><text class="arrow">›</text></view></view>
+    <view class="hint">{{profile.pending_change ? '你有一条资料修改申请正在等待房东审核。' : '如资料有误，请联系房东，或在 Web 端提交修改申请。'}}</view>
+  </block>
+  <button class="gap" bindtap="logout">退出登录</button>
+</view>

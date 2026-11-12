@@ -1,0 +1,56 @@
+# Landlord 租客小程序
+
+原生微信小程序，无客户端 npm 依赖。首版覆盖租客微信登录、首次填写入住手机号、等待房东关联、本人房屋/资料、账单分页与明细、逐笔实收/冲销、合同原件及 PDF/图片查看。底部四个入口使用本地图标，并提供选中态。房东常用操作按项目后续阶段补齐，共用现有服务端权限；当前房东继续使用 Web。
+
+## 配置与打开
+
+在项目根目录 `.env` 配置 `WX_APP_ID` 和 `WX_APP_SECRET`。小程序仅取得 AppID；`wx.login` 的一次性 code 交给服务端 `/auth/wechat/login`，由服务端调用 `code2Session`。AppSecret 和 session_key 不进入小程序，OpenID 不作为客户端凭据返回。
+
+本机 `scripts/dev.ps1` 仅在启动后端时读取根 `.env` 的这两个键；前端构建完成后才注入，退出恢复进程原环境。其他启动方式需向后端进程提供同名环境变量。生产部署使用服务器受限环境文件注入，不将凭据写进镜像、源码或小程序包；当前生产是否已配置以 STATE.md 为准。
+
+```powershell
+cd F:\zhangwei\AI\Landlord
+python scripts/prepare-miniprogram.py
+```
+
+用微信开发者工具导入 `F:\zhangwei\AI\Landlord\miniprogram`。本机已定位工具为 `D:\软件\微信web开发者工具\微信开发者工具.exe`，其他机器按实际路径打开。生成器创建被 Git 忽略的 `project.config.json`、`project.private.config.json` 和 `config.local.js`；只将 AppID 和 API 基址写入本地小程序配置，不复制 AppSecret。根目录 `.env` 位于小程序打包目录外。
+
+默认 API 为 `https://www.zoeng.site/landlord/api`。开发配置关闭合法域名校验，备案办理不阻塞开发；真机调试还需按设备环境配置网络/调试选项。进入体验版或发布检查时生成校验开启的配置，并在公众平台完成相应域名条件：
+
+```powershell
+python scripts/prepare-miniprogram.py --production
+```
+
+生成器保留私有工程配置中的其他字段，仅同步 `setting.urlCheck`，避免私有配置覆盖发布检查。它不替你修改微信公众平台，也不上传或发布代码。
+
+API 基址可换为独立本地实例，例如 `--api-base http://127.0.0.1:18940/api`。模拟器 localhost 指向这台电脑，手机 localhost 指向手机自身；本地地址不作为正式发布配置。
+
+## 账号与文件
+
+- 小程序移除账号密码和注册表单。租客点微信登录，首次填写入住手机号后创建待关联的租客账号；页面显示账号名，房东沿用 Web「租户管理 → 关联登录账号」核对并关联，之后微信直接登录。手填手机号仅作联系信息，不按号码自动认领租户或复用其他账号；微信登录本身不返回手机号。已有 Web 账号的入口与注册规则保留，不能仅凭相同手机号自动合并。尚未初始化的平台只允许部署者走原有私有初始化入口；微信登录不能初始化管理员。
+- 首版拒绝房东/管理员角色进入租客门户。身份、账单归属和文件权限始终由服务端决定；客户端不传 tenant_id 获取本人资料。
+- 账单按服务端 `payable` 展示本期应缴，单列 `total_amount` 与 `carry_in`；逐笔实收、原收据和冲销分别保留，未将各期含结转金额合并成欠费总额。
+- 本地仅持久保存应用登录令牌及最小账号标识，业务页面不做离线缓存。隐藏/离开页面、退出/切号时清空页面数据；旧会话的异步结果不能写回新会话。
+- 归档 PDF、上传的 PDF/常见图片通过携带 Bearer 的 `wx.downloadFile` 获取，核对 HTTP 状态和文件头后再打开。下载目标显式放在 `wx.env.USER_DATA_PATH` 下的专用文件名；本轮发现模拟器默认 `http://tmp` 路径无法 unlink，不能用默认临时路径实现退出清理。应用创建的文件在下一次文件打开、退出/切号和下次启动时删除，失败保留索引以重试；原生文件查看器的复制、保存和转发由微信与用户控制。HEIC/HEIF/AVIF 等上传格式的真机兼容尚未验证。
+
+## 验证入口
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify-miniprogram.ps1
+```
+
+可加 `-WxmlCompiler 'D:\软件\微信web开发者工具\resources\app.asar.unpacked\node_modules\wcc-exec\wcc.exe'` 实际编译 8 个页面模板。该编译器可能以退出码 0 报模板错误，脚本同时核查输出和非空产物。
+
+本机原生模拟器验证使用独立合成业务数据，绝不指向生产库：
+
+1. 用现有 Go 工具链将后端构建到 `.runtime/m5-20261112/landlord.exe`。
+2. 执行 `python scripts/miniprogram-tests/serve-fixture.py`，持续运行独立 18940 端口服务；它沿用后端的端口监听方式，测试客户端全部访问 loopback。数据、生成的测试账号和凭据仅存 `.runtime/m5-20261112/fixture-<时间>`。Ctrl+C 关闭本次服务，不删除证据。
+3. 执行 `python scripts/prepare-miniprogram.py --api-base http://127.0.0.1:18940/api`，通过工具绝对路径执行 `cli.bat auto --project F:\zhangwei\AI\Landlord\miniprogram --auto-port 9420`。等模拟器完成加载后再连自动化，避免默认页跳转与自动化导航竞争。
+4. 将 `miniprogram-automator@0.12.1` 安装到 `.runtime/m5-tools`。`node scripts/miniprogram-tests/verify-runtime.cjs` 在真实模拟器中调用页面处理函数，验证生命周期、实际 wx 网络/文件与 SQLite，并保存截图。它和 `verify-native.cjs` 通过 `fixture-login.cjs` 为预建合成账号设置会话，仅验证业务页面，不能当作微信登录验证；微信链路另用真实 AppID/code2Session 和隔离账号实核。旧 SDK 的完整控件点击在页面跳转时有 Page ID/超时历史，该入口尚未全量通过。原生 PDF 回调仅表示模拟器接受打开，不代表手机显示/打印验收。
+5. 验完退出合成账号、停止测试服务，再执行默认的配置生成命令切回公网 API。不上传体验版、不修改生产数据。
+
+当前实现/验证事实与未验证项统一见根目录 [STATE.md](../STATE.md)。
+
+独立后端运行期间还可执行 `node scripts/miniprogram-tests/verify-http.cjs`：它使用实际客户端模块和真实 HTTP/SQLite，但以 Node 适配 wx 网络及文件接口，不作为原生微信页面或文件预览验收。
+
+图标源由 `python scripts/generate-miniprogram-icons.py` 生成（仅开发时需 Pillow），产物 `assets/tabs/*.png` 随客户端打包，运行时不需要生成器或外部图片服务。

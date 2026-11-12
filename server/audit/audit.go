@@ -72,7 +72,9 @@ func MutationLogger(db *gorm.DB) gin.HandlerFunc {
 			path = c.Request.URL.Path
 		}
 		action := strings.ToLower(c.Request.Method) + "_" + strings.Trim(strings.ReplaceAll(path, "/", "_"), "_")
-		Log(db, c, action, "api", 0, c.Request.Method+" "+path)
+		label, target := describeMutation(c.Request.Method, path)
+		id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+		Log(db, c, action, target, uint(id), mutationDetail(label, uint(id)))
 	}
 }
 
@@ -111,15 +113,17 @@ func cleanup(db *gorm.DB) {
 }
 
 type entryView struct {
-	ID         uint   `json:"id"`
-	UserID     uint   `json:"user_id"`
-	Username   string `json:"username"`
-	Action     string `json:"action"`
-	TargetType string `json:"target_type"`
-	TargetID   uint   `json:"target_id"`
-	Detail     string `json:"detail"`
-	IP         string `json:"ip"`
-	CreatedAt  string `json:"created_at"`
+	ID              uint   `json:"id"`
+	UserID          uint   `json:"user_id"`
+	Username        string `json:"username"`
+	Action          string `json:"action"`
+	ActionLabel     string `json:"action_label"`
+	TargetType      string `json:"target_type"`
+	TargetTypeLabel string `json:"target_type_label"`
+	TargetID        uint   `json:"target_id"`
+	Detail          string `json:"detail"`
+	IP              string `json:"ip"`
+	CreatedAt       string `json:"created_at"`
 }
 
 // buildQuery applies the shared filters (user_id, action, username) used by both
@@ -143,10 +147,21 @@ func buildQuery(db *gorm.DB, c *gin.Context) *gorm.DB {
 func toViews(logs []database.AuditLog) []entryView {
 	views := make([]entryView, 0, len(logs))
 	for _, l := range logs {
+		targetLabel := l.TargetType
+		if l.TargetType == "backup" {
+			targetLabel = "数据库备份"
+		}
+		detail := l.Detail
+		if method, path, ok := genericActionRoute(l.Action); ok && (detail == "" || detail == method+" "+path) {
+			label, _ := describeMutation(method, path)
+			detail = mutationDetail(label, l.TargetID)
+		}
 		views = append(views, entryView{
 			ID: l.ID, UserID: l.UserID, Username: l.Username, Action: l.Action,
-			TargetType: l.TargetType, TargetID: l.TargetID, Detail: l.Detail, IP: l.IP,
-			CreatedAt: l.CreatedAt.Format("2006-01-02 15:04:05"),
+			ActionLabel: displayAction(l.Action),
+			TargetType:  l.TargetType, TargetID: l.TargetID, Detail: detail, IP: l.IP,
+			TargetTypeLabel: targetLabel,
+			CreatedAt:       l.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 	return views

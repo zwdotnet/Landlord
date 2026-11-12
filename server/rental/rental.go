@@ -211,6 +211,11 @@ type Bill struct {
 	RoomNo             string   `gorm:"not null" json:"room_no"`
 	TenantName         string   `json:"tenant_name"`
 	Rent               float64  `json:"rent"`
+	RentStartDate      string   `json:"rent_start_date"`
+	RentEndDate        string   `json:"rent_end_date"`
+	RentCalculation    string   `json:"rent_calculation"`
+	RentBasisAmount    float64  `json:"rent_basis_amount"`
+	RentBasisSource    string   `gorm:"-" json:"rent_basis_source,omitempty"`
 	WaterLast          float64  `json:"water_last"`
 	WaterNow           float64  `json:"water_now"`
 	ElecLast           float64  `json:"elec_last"`

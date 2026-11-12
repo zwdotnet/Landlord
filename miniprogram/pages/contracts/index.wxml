@@ -1,0 +1,11 @@
+<view class="page"><view class="kicker">租住有据</view><view class="title">我的合同</view><view class="subtitle">归档合同与房东上传的签署件。</view>
+  <view wx:if="{{loading}}" class="loading">正在加载合同…</view><view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重新加载</button></view>
+  <block wx:else>
+    <view wx:if="{{!agreements.length && !contracts.length}}" class="empty"><view class="empty-title">合同还没上传</view>请联系房东生成合同或上传签署件。</view>
+    <view wx:if="{{agreements.length}}" class="section-title">归档原件</view>
+    <view wx:for="{{agreements}}" wx:key="id" class="surface"><view class="row"><text class="list-title">{{item.title}}</text><text class="badge paid">PDF</text></view><view class="meta gap" user-select>{{item.number}}</view><view class="meta">{{item.dateText}} · 模板版本 {{item.template_version}}</view><button class="small gap" bindtap="openFile" data-path="/rental/portal/documents/{{item.id}}/file" disabled="{{opening}}">查看 PDF</button></view>
+    <view wx:if="{{contracts.length}}" class="section-title">上传的合同与签署件</view>
+    <view wx:for="{{contracts}}" wx:key="id" class="surface"><view class="list-title">{{item.file_name}}</view><view class="meta gap">{{item.dateText}} · {{item.kind === 'pdf' ? 'PDF' : '图片'}}</view><button class="small gap" bindtap="openFile" data-path="/rental/portal/contracts/{{item.id}}/file" data-kind="{{item.kind}}" disabled="{{opening}}">查看文件</button></view>
+    <view class="hint">归档打印稿与签署件分别保留，生成 PDF 不代表已经签署。</view>
+  </block>
+</view>

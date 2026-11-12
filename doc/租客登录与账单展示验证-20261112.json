@@ -1,0 +1,219 @@
+{
+  "observed_at": "2026-11-12T15:44:23.728209+08:00",
+  "status": "SELF-ACCEPT",
+  "source_head": "ef3cbee57268b134fee7b13dd15a1695fb7e6ade",
+  "changes_uncommitted": true,
+  "deployed": false,
+  "miniprogram_uploaded": false,
+  "requests": [
+    "mini-program tab icons",
+    "WeChat login with manually entered contact phone and landlord confirmation",
+    "readable operation log details",
+    "bill table column alignment",
+    "full rental dates on separate lines",
+    "rent calculation explanation"
+  ],
+  "rent_example": {
+    "monthly_rent": 500,
+    "move_in_date": "2026-11-12",
+    "rent_end_date": "2027-01-31",
+    "formula": "500 × 19 / 30 + 500 + 500",
+    "rent": 1316.67,
+    "deposit": 600,
+    "total": 1916.67
+  },
+  "backend_full": {
+    "passed": 457,
+    "failed": 0,
+    "test_skipped": 0
+  },
+  "backend_after_audit_context": {
+    "passed": 26,
+    "failed": 0
+  },
+  "web_typecheck_build": "PASS",
+  "web_browser": {
+    "checks": [
+      {
+        "name": "quarterly new-tenant rent equals 1316.67",
+        "pass": true
+      },
+      {
+        "name": "server provides exact inclusive rental dates",
+        "pass": true
+      },
+      {
+        "name": "server provides actual-day calculation",
+        "pass": true
+      },
+      {
+        "name": "successful mutations contain concrete Chinese audit details",
+        "pass": true
+      },
+      {
+        "name": "desktop all table headers align with actual data columns",
+        "pass": true
+      },
+      {
+        "name": "desktop detail shows full exact dates and calculation",
+        "pass": true
+      },
+      {
+        "name": "desktop detail has no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop date endpoints occupy separate lines",
+        "pass": true
+      },
+      {
+        "name": "desktop meter input shows date range and actual-day rent",
+        "pass": true
+      },
+      {
+        "name": "desktop meter dialog has no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "desktop audit displays readable operation descriptions",
+        "pass": true
+      },
+      {
+        "name": "compact all table headers align with actual data columns",
+        "pass": true
+      },
+      {
+        "name": "compact detail shows full exact dates and calculation",
+        "pass": true
+      },
+      {
+        "name": "compact detail has no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "compact date endpoints occupy separate lines",
+        "pass": true
+      },
+      {
+        "name": "compact meter input shows date range and actual-day rent",
+        "pass": true
+      },
+      {
+        "name": "compact meter dialog has no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "compact audit displays readable operation descriptions",
+        "pass": true
+      },
+      {
+        "name": "mobile detail shows full exact dates and calculation",
+        "pass": true
+      },
+      {
+        "name": "mobile detail has no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile date endpoints occupy separate lines",
+        "pass": true
+      },
+      {
+        "name": "mobile meter input shows date range and actual-day rent",
+        "pass": true
+      },
+      {
+        "name": "mobile meter dialog has no horizontal overflow",
+        "pass": true
+      },
+      {
+        "name": "mobile audit displays readable operation descriptions",
+        "pass": true
+      },
+      {
+        "name": "no browser script exceptions",
+        "pass": true
+      }
+    ],
+    "errors": [],
+    "passed": 25,
+    "failed": 0,
+    "production_data_used": false
+  },
+  "wechat_native": {
+    "checks": [
+      {
+        "name": "native login contains no account-password registration state",
+        "pass": true
+      },
+      {
+        "name": "real wx.login and code2Session request contact phone for first login",
+        "pass": true
+      },
+      {
+        "name": "real WeChat first login creates only a pending synthetic tenant",
+        "pass": true
+      },
+      {
+        "name": "phone equality does not auto-bind or activate tenant",
+        "pass": true
+      },
+      {
+        "name": "existing landlord binding activates the WeChat tenant portal",
+        "pass": true
+      },
+      {
+        "name": "native tab navigation loads tenant bills",
+        "pass": true
+      },
+      {
+        "name": "second real WeChat login reuses approved account without phone entry",
+        "pass": true
+      },
+      {
+        "name": "existing landlord unbind immediately removes portal access",
+        "pass": true
+      },
+      {
+        "name": "no native runtime exceptions",
+        "pass": true
+      }
+    ],
+    "errors": [],
+    "passed": 9,
+    "failed": 0,
+    "scope": "Real WeChat wx.login/code2Session, synthetic local SQLite, developer-tools native pages; no production login or phone-number authorization"
+  },
+  "mini_node": {
+    "passed": 19,
+    "failed": 0
+  },
+  "configuration_python": {
+    "passed": 3,
+    "failed": 0
+  },
+  "wxml_pages_compiled": 8,
+  "client_artifacts": {
+    "appsecret_excluded_from_client": true,
+    "client_files_checked": 125,
+    "tab_pngs_valid": 8
+  },
+  "production_database": "read-only numeric/date inspection; no writes",
+  "physical_devices": "UNOBSERVED",
+  "legacy_bill_rent_basis": "current-lease reference explicitly labelled; historic amounts unchanged",
+  "old_audit_rows": "descriptions translated at read/export time; missing historical facts not invented",
+  "cleanup": {
+    "local_wechat_identifiers_remaining": 0,
+    "temporary_state_removed": true,
+    "listeners": {
+      "18958": false,
+      "18960": false,
+      "18962": false,
+      "9420": false
+    },
+    "production_touched": false
+  },
+  "evidence_root": ".runtime/tenant-improvements-20261112/",
+  "earlier_image_viewer_changes_preserved": true,
+  "registration_link_consumption_change": "deferred per user"
+}

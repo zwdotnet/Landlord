@@ -1,0 +1,10 @@
+<view class="page"><view class="kicker">每期费用，逐笔可查</view><view class="title">我的账单</view>
+  <view wx:if="{{loading}}" class="loading">正在加载账单…</view><view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重新加载</button></view>
+  <block wx:else>
+    <view wx:if="{{!items.length}}" class="empty"><view class="empty-title">暂时没有账单</view>房东出账后，你可以在这里核对费用。</view>
+    <view wx:for="{{items}}" wx:key="id" class="surface" bindtap="goBill" data-id="{{item.id}}" role="button" aria-label="查看{{item.period}}账单">
+      <view class="row"><view class="list-title">{{item.period}}</view><view class="badge {{item.status === 'paid' ? 'paid' : ''}}">{{item.statusText}}</view></view><view class="meta gap">{{item.room_no}} · 本期应缴</view><view class="amount gap"><text class="currency">¥</text>{{item.payableText}}</view><view class="rule"></view><view class="row meta"><text>已缴 ¥{{item.paidText}}</text><text>待缴 ¥{{item.dueText}} ›</text></view>
+    </view>
+    <view wx:if="{{total}}" class="pagination"><button class="small" bindtap="previous" disabled="{{page <= 1}}">上一页</button><text class="meta">{{page}} / {{pages}} 页 · 共 {{total}} 期</text><button class="small" bindtap="next" disabled="{{page >= pages}}">下一页</button></view>
+  </block>
+</view>

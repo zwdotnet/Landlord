@@ -2,7 +2,7 @@
   <Modal :model-value="modelValue" title="关联登录账号" @update:model-value="emit('update:modelValue', $event)">
     <div class="space-y-3.5">
       <div class="rounded-xl border border-brand-500/30 bg-brand-500/[0.06] px-3 py-2.5 text-[11px] leading-5 text-muted-foreground">
-        租客自己注册账号（注册时选「我是租客」）后，在这里把他关联到
+        租客在小程序微信登录并填写入住手机号，或在 Web 注册租客账号后，在这里把他关联到
         <span class="font-semibold text-foreground">{{ tenant?.name || '该租户' }}</span>
         的档案上。<span class="text-foreground font-medium">关联即审核通过</span>，租客随后就能看到自己的登记信息、账单与合同。
       </div>
@@ -17,7 +17,7 @@
             <span class="badge bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">已关联</span>
           </div>
           <div class="text-sm font-semibold text-foreground truncate">{{ account.username }}</div>
-          <div v-if="account.phone" class="text-[11px] text-muted-foreground">注册手机号 {{ account.phone }}</div>
+          <div v-if="account.phone" class="text-[11px] text-muted-foreground">联系手机号 {{ account.phone }}</div>
           <p class="text-[11px] leading-5 text-muted-foreground pt-1">
             解除关联后该账号会回到「等待房东关联」状态（账号不删除），可再关联到别的租户。
           </p>
@@ -31,7 +31,7 @@
               <input
                 v-model="keyword"
                 class="input-field flex-1"
-                placeholder="输入租客注册的用户名"
+                placeholder="输入租客提供的账号名"
                 @keyup.enter="search"
               />
               <button class="btn-ghost !py-2 shrink-0" :disabled="searching" @click="search">
@@ -41,7 +41,7 @@
           </div>
 
           <div v-if="searched && candidates.length === 0" class="rounded-xl border border-border px-3 py-4 text-center text-xs text-muted-foreground">
-            没有找到可关联的租客账号。请确认租客已经在注册页选「我是租客」注册过，
+            没有找到可关联的租客账号。请确认租客已经完成小程序微信登录或 Web 租客注册，
             且还没有被关联到别的租户。
           </div>
 

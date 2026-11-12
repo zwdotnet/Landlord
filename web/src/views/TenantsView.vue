@@ -439,7 +439,11 @@
               </span>
             </div>
             <div v-if="a.photo_url" class="mt-2">
-              <img v-if="photoUrls[a.id]" :src="photoUrls[a.id]" class="max-h-52 rounded-lg border border-border" alt="身份证照片" />
+              <button v-if="photoUrls[a.id]" type="button" class="block text-left cursor-zoom-in rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+                aria-label="放大身份证照片" @click="viewingApplicationId = a.id">
+                <img :src="photoUrls[a.id]" class="max-h-52 rounded-lg border border-border" alt="身份证照片" />
+                <span class="block mt-1 text-xs text-brand-600 dark:text-brand-300">点击图片放大</span>
+              </button>
               <button v-else class="text-xs text-brand-600 dark:text-brand-300" @click="loadApplicationPhoto(a)">📷 查看身份证照片</button>
             </div>
             <div v-if="a.status === 'pending'" class="flex items-center gap-4 pt-2 mt-2 border-t border-border/60 text-xs">
@@ -455,6 +459,9 @@
         </div>
       </div>
     </Modal>
+
+    <ImageViewer v-if="showApplications && viewingApplicationId && photoUrls[viewingApplicationId]"
+      :src="photoUrls[viewingApplicationId]" title="身份证照片" @close="viewingApplicationId = null" />
 
     <!-- 租户资料附件弹窗：租房协议、汽车车牌、租客本人照片、身份证等 -->
     <Modal v-model="showAttachments" title="租户资料附件">
@@ -705,7 +712,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useLedgerStore } from '../stores/ledger'
 import { ID_CARD_PATTERN, idCardHint } from '../utils/id-card'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
@@ -713,6 +720,7 @@ import DateField from '../components/DateField.vue'
 import FilePick from '../components/FilePick.vue'
 import FilterPanel from '../components/FilterPanel.vue'
 import Modal from '../components/Modal.vue'
+import ImageViewer from '../components/ImageViewer.vue'
 import PageHeader from '../components/PageHeader.vue'
 import Pagination from '../components/Pagination.vue'
 import TagInput from '../components/TagInput.vue'
@@ -739,7 +747,7 @@ import {
   tenantBillingSummary, waterModeLabel, type BillingDefaults, type WaterMode,
 } from '../utils/billing'
 import { cycleLabel, payCycleOptions } from '../utils/cycle'
-import { leaseEndDateStr } from '../utils/lease'
+import { leaseEndDateStr, parseLeaseDate } from '../utils/lease'
 
 const ledgerStore = useLedgerStore()
 
@@ -1038,6 +1046,22 @@ const showApplications = ref(false)
 const applications = ref<TenantApplication[]>([])
 const applicationsLoading = ref(false)
 const photoUrls = ref<Record<number, string>>({})
+const viewingApplicationId = ref<number | null>(null)
+let photoSession = 0
+
+function clearApplicationPhotos() {
+  photoSession += 1
+  viewingApplicationId.value = null
+  for (const url of Object.values(photoUrls.value)) URL.revokeObjectURL(url)
+  photoUrls.value = {}
+}
+
+watch(showApplications, (open) => { if (!open) clearApplicationPhotos() })
+watch(() => ledgerStore.currentLedgerId, () => {
+  showApplications.value = false
+  clearApplicationPhotos()
+})
+onBeforeUnmount(clearApplicationPhotos)
 // 待审核申请数：既要支撑弹窗里的徽标，也要在**页面加载时**就显示红点。
 // 此前只由 applications 派生，而 applications 只在点开弹窗时才拉，页面首屏
 // 永远没有角标（2026-10-11 审计）。这里改成独立计数：挂载时轻量拉一次
@@ -1120,7 +1144,8 @@ async function loadApplications() {
       pendingCount.value = applications.value.filter((a) => a.status === 'pending').length
       // 已不在列表里的照片 objectURL 顺手释放
       for (const id of Object.keys(photoUrls.value)) {
-        if (!applications.value.some((a) => a.id === Number(id))) {
+        if (!applications.value.some((a) => a.id === Number(id) && a.photo_url)) {
+          if (viewingApplicationId.value === Number(id)) viewingApplicationId.value = null
           URL.revokeObjectURL(photoUrls.value[Number(id)])
           delete photoUrls.value[Number(id)]
         }
@@ -1132,10 +1157,17 @@ async function loadApplications() {
 }
 
 async function loadApplicationPhoto(a: TenantApplication) {
+  const session = photoSession
   try {
-    photoUrls.value[a.id] = await fetchApplicationPhoto(a.id)
+    const url = await fetchApplicationPhoto(a.id)
+    if (session !== photoSession || !showApplications.value) {
+      URL.revokeObjectURL(url)
+      return
+    }
+    if (photoUrls.value[a.id]) URL.revokeObjectURL(photoUrls.value[a.id])
+    photoUrls.value[a.id] = url
   } catch {
-    toast('照片加载失败', 'error')
+    if (session === photoSession && showApplications.value) toast('照片加载失败', 'error')
   }
 }
 
@@ -1253,6 +1285,14 @@ async function save() {
     return
   }
   // 入住成员的行内校验：逐行报第几位，避免只丢一句「参数错误」
+	if ([form.value.move_in_date, form.value.lease_end_date].some(v => v && !parseLeaseDate(v))) {
+	  formError.value = '入住和到期日期须为有效的 YYYY-MM-DD 日期'
+	  return
+	}
+	if (form.value.move_in_date && form.value.lease_end_date && form.value.lease_end_date < form.value.move_in_date) {
+	  formError.value = '合同到期日期不能早于入住日期'
+	  return
+	}
   for (let i = 0; i < formMembers.value.length; i++) {
     const m = formMembers.value[i]
     if (!m.name?.trim()) {

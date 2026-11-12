@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"smallgo/server/audit"
 	"smallgo/server/database"
 	"smallgo/server/response"
 	"smallgo/server/utils"
@@ -293,6 +294,8 @@ func handleMeterUpsert(db *gorm.DB) gin.HandlerFunc {
 				response.ErrorInternal(c, "保存抄表记录失败")
 				return
 			}
+			audit.Log(db, c, "post_api_rental_meter-records", "meter_record", rec.ID,
+				fmt.Sprintf("修改抄表记录：房源 %s，账期 %s（水 %s，电 %s，燃气 %s）", room.RoomNo, rec.Period, fmtAmount(rec.Water), fmtAmount(rec.Elec), fmtAmount(rec.Gas)))
 			response.Success(c, rec)
 			return
 		}
@@ -304,6 +307,8 @@ func handleMeterUpsert(db *gorm.DB) gin.HandlerFunc {
 			response.ErrorInternal(c, "保存抄表记录失败")
 			return
 		}
+		audit.Log(db, c, "post_api_rental_meter-records", "meter_record", rec.ID,
+			fmt.Sprintf("新增抄表记录：房源 %s，账期 %s（水 %s，电 %s，燃气 %s）", room.RoomNo, rec.Period, fmtAmount(rec.Water), fmtAmount(rec.Elec), fmtAmount(rec.Gas)))
 		response.Success(c, rec)
 	}
 }

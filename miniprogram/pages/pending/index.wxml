@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="brand">Landlord · 租住</view>
+  <view class="hero"><view class="title">等房东关联一下</view><view class="subtitle">账号已就绪。请把你的账号告诉房东，由房东在租户管理中关联你的租住档案。</view></view>
+  <view wx:if="{{loading}}" class="loading">正在核对关联状态…</view>
+  <view wx:elif="{{error}}" class="error">{{error}}</view>
+  <view wx:else class="surface"><view class="meta">你的账号</view><view class="list-title gap" user-select>{{username}}</view><view class="hint">关联完成后，点击下方按钮进入。</view></view>
+  <view class="actions"><button class="primary" bindtap="refresh" loading="{{loading}}" disabled="{{loading}}">检查关联状态</button><button bindtap="logout">退出账号</button></view>
+</view>

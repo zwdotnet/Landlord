@@ -1,0 +1,175 @@
+{
+  "observed_date": "2026-11-12",
+  "timezone": "Asia/Hong_Kong",
+  "acceptance": "SELF-ACCEPT; no independent verifier",
+  "scope": "Tenant-only native mini program local implementation; existing Go/Web product source unchanged",
+  "revision_base": "53f366b0fb9f25c25f9315dcec33a5b3c483ae72",
+  "client": {
+    "command": "scripts/verify-miniprogram.ps1 -WxmlCompiler <local wcc.exe>",
+    "node_tests": 17,
+    "python_tests": 3,
+    "wxml_pages": 8,
+    "result": "PASS",
+    "raw_local": ".runtime/m5-20261112/final-client-checks.txt"
+  },
+  "backend": {
+    "result": "package PASS",
+    "selected_tests": [
+      "TestUnboundTenantCanOnlyReadPortalStatus",
+      "TestBindTenantAccountActivatesPortal",
+      "TestLandlordBlockedFromPortal",
+      "TestPortalBillsWithoutMoveInUseExplicitRecipients",
+      "TestPortalBillDetailHidesOthers",
+      "TestPortalPaymentsScopedToVisibleBills",
+      "TestPortalContractsAndAttachmentsScopedToSelf",
+      "TestM2DocumentScopeAndIntegrity"
+    ],
+    "count_basis": "8 specified selectors; original command reported package ok; not a full-suite or per-test JSON count"
+  },
+  "http_client": {
+    "observed_at": "2026-11-12T02:15:38.146Z",
+    "checks": [
+      {
+        "name": "login form rejects incorrect credentials over real HTTP",
+        "pass": true
+      },
+      {
+        "name": "unbound login routes to waiting without fetching private profile",
+        "pass": true
+      },
+      {
+        "name": "bound tenant reads profile and latest bill through client guard",
+        "pass": true
+      },
+      {
+        "name": "bill pages, receipt IDs and reversal display match SQLite response",
+        "pass": true
+      },
+      {
+        "name": "contracts and payment screen load actual protected documents",
+        "pass": true
+      },
+      {
+        "name": "client downloads actual PDF and deletes it at logout",
+        "pass": true
+      },
+      {
+        "name": "another tenant has empty lists and cannot read first tenant bill or PDF",
+        "pass": true
+      },
+      {
+        "name": "server rejects revoked token and client removes stale identity",
+        "pass": true
+      },
+      {
+        "name": "registration form creates pending tenant without profile access",
+        "pass": true
+      }
+    ],
+    "pass": true,
+    "scope": "Actual client modules + real HTTP/SQLite; Node wx adapter, no native preview acceptance"
+  },
+  "native_runtime": {
+    "checks": [
+      {
+        "name": "native runtime returns wrong password error from actual backend",
+        "pass": true
+      },
+      {
+        "name": "native login and lifecycle route unbound tenant to pending",
+        "pass": true
+      },
+      {
+        "name": "native lifecycle loads actual profile and last bill",
+        "pass": true
+      },
+      {
+        "name": "native bills pagination and detail including reversals",
+        "pass": true
+      },
+      {
+        "name": "native contracts and payment records",
+        "pass": true
+      },
+      {
+        "name": "real wx download validates PDF before native preview",
+        "pass": true
+      },
+      {
+        "name": "native logout clears identity and temporary files",
+        "pass": true
+      },
+      {
+        "name": "second native tenant cannot display previous account data",
+        "pass": true
+      }
+    ],
+    "exceptions": [],
+    "pass": true,
+    "scope": "Native simulator page handlers/lifecycle + actual wx transport/files; no physical device; not full UI tap automation"
+  },
+  "native_ui_clicks": {
+    "result": "INCOMPLETE/FAIL",
+    "observed": "Login controls rendered and wrong-password server message observed; full SDK page navigation showed rawPath/Page ID, callMethod and timeout errors",
+    "raw_local": ".runtime/m5-20261112/fixture-095445/native-results*.json"
+  },
+  "fixes": [
+    {
+      "problem": "WXML conditional used escaped && entity and failed compilation",
+      "fix": "Use native WXML expression; all 8 templates compiled"
+    },
+    {
+      "problem": "Anonymous guard redirected twice",
+      "fix": "Single login redirect from request failure handler; regression covered"
+    },
+    {
+      "problem": "Default native http://tmp download could not be unlinked",
+      "fix": "Explicit USER_DATA_PATH owned destination; native final logout cleanup PASS",
+      "failed_evidence": ".runtime/m5-20261112/fixture-095445/runtime-results-1794449668091.json"
+    }
+  ],
+  "unobserved": [
+    "Physical iPhone/Android preview, image contracts and printing",
+    "Full UI input/click automation",
+    "WeChat code2Session identity integration",
+    "Experience build or production publishing, platform legal-domain acceptance",
+    "Landlord mini program actions"
+  ],
+  "production": {
+    "data_mutations": false,
+    "ssh_used": false,
+    "deployed": false,
+    "uploaded_to_wechat": false
+  },
+  "local_config": {
+    "secret_copied_to_client": false,
+    "restored_api_base": "https://www.zoeng.site/landlord/api",
+    "development_domain_check": false
+  },
+  "evidence": [
+    {
+      "path": ".runtime/m5-20261112/fixture-095445/http-results.json",
+      "sha256": "2116168182855d1a1d9e8c404da063e2627dcc5f49bbdef3ff1c95135bdd94a6"
+    },
+    {
+      "path": ".runtime/m5-20261112/fixture-095445/runtime-results-1794449785281.json",
+      "sha256": "81c4063e04e7a750e525f79d346c61d8830061eb410c2d1e1419d2e8ce407be6"
+    },
+    {
+      "path": ".runtime/m5-20261112/fixture-095445/runtime-results-1794449668091.json",
+      "sha256": "78e8657e9d3a6ef51a7755078fc3789356a16ac1351578d6d664998a2e5f9902"
+    },
+    {
+      "path": ".runtime/m5-20261112/fixture-095445/runtime-home.png",
+      "sha256": "60ab40fba03796f89d4527ee3cad6a39ac9fd466a36db5957a1f556f7f893eb3"
+    },
+    {
+      "path": ".runtime/m5-20261112/fixture-095445/runtime-bill.png",
+      "sha256": "992ad94de351096dd5a3c9c57ed42a90ae4e5d7f1ed6eaa247ebe34b0aa21793"
+    },
+    {
+      "path": ".runtime/m5-20261112/fixture-095445/runtime-contracts.png",
+      "sha256": "135c7fbe4caeb7631a6aa6cdeda2db01f84b448652eda4c19c9989dad5255d1f"
+    }
+  ]
+}

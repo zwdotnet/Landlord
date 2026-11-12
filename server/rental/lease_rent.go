@@ -28,6 +28,10 @@ func rentForTenantAt(db *gorm.DB, room *Room, tenant *Tenant, date string) float
 // once at the end. Joint tenants share one room rent; conflicting rates require
 // landlord review instead of adding each person's rent together.
 func scheduledBillRent(db *gorm.DB, room *Room, tenants []Tenant, period string, months float64) (float64, bool) {
+	return scheduledBillRentWithDetails(db, room, tenants, period, months, nil)
+}
+
+func scheduledBillRentWithDetails(db *gorm.DB, room *Room, tenants []Tenant, period string, months float64, details *rentBreakdown) (float64, bool) {
 	if len(tenants) == 0 || months == 0 {
 		return round2(room.DefaultRent * months), false
 	}
@@ -95,6 +99,9 @@ func scheduledBillRent(db *gorm.DB, room *Room, tenants []Tenant, period string,
 				}
 			}
 			total += rate / float64(last.Day())
+			if found && details != nil {
+				details.add(date, rate, last.Day())
+			}
 		}
 	}
 	return round2(total), review

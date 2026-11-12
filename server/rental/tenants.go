@@ -3,10 +3,12 @@ package rental
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"smallgo/server/audit"
 	"smallgo/server/logger"
 	"smallgo/server/response"
 	"smallgo/server/utils"
@@ -331,6 +333,8 @@ func handleTenantCreate(db *gorm.DB) gin.HandlerFunc {
 				consumeApplication(db, &app, &tenant)
 			}
 		}
+		audit.Log(db, c, "post_api_rental_tenants", "tenant", tenant.ID,
+			fmt.Sprintf("新增租户：%s（房源编号 %d，入住日期 %s）", tenant.Name, tenant.RoomID, tenant.MoveInDate))
 		response.Success(c, tenant)
 	}
 }
@@ -408,12 +412,38 @@ func handleTenantUpdate(db *gorm.DB) gin.HandlerFunc {
 			response.ErrorInternal(c, "保存租户失败")
 			return
 		}
+		audit.Log(db, c, "put_api_rental_tenants_:id", "tenant", tenant.ID,
+			fmt.Sprintf("修改租户资料：%s（房源编号 %d，入住日期 %s，到期日期 %s）", tenant.Name, tenant.RoomID, tenant.MoveInDate, tenant.LeaseEndDate))
 		response.Success(c, tenant)
 	}
 }
 
 // validateTenantBillingRequest 校验租户计费与缴费入参，失败时已写出 400 响应。
 func validateTenantBillingRequest(c *gin.Context, req *tenantRequest) bool {
+	if !validBillCharges(&req.Deposit) {
+		response.ErrorBadRequest(c, "押金不能为负数")
+		return false
+	}
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		response.ErrorBadRequest(c, "请填写租户姓名")
+		return false
+	}
+	req.MoveInDate = strings.TrimSpace(req.MoveInDate)
+	req.LeaseEndDate = strings.TrimSpace(req.LeaseEndDate)
+	for _, value := range []string{req.MoveInDate, req.LeaseEndDate} {
+		if value == "" {
+			continue
+		}
+		if _, err := time.Parse("2006-01-02", value); err != nil {
+			response.ErrorBadRequest(c, "入住和到期日期须为有效的 YYYY-MM-DD 日期")
+			return false
+		}
+	}
+	if req.MoveInDate != "" && req.LeaseEndDate != "" && req.LeaseEndDate < req.MoveInDate {
+		response.ErrorBadRequest(c, "合同到期日期不能早于入住日期")
+		return false
+	}
 	payDay, remindDays := tenantFollowGlobal, tenantFollowGlobal
 	if req.PayDay != nil {
 		payDay = *req.PayDay

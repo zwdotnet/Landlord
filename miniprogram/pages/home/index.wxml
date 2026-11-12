@@ -1,0 +1,16 @@
+<view class="page">
+  <view class="kicker">我的租住</view><view class="title">住得安心，账目清楚</view>
+  <view wx:if="{{loading}}" class="loading">正在读取租住信息…</view>
+  <view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重新加载</button></view>
+  <block wx:elif="{{profile}}">
+    <view class="hero"><view class="row top"><view class="room grow">{{profile.room_label || '房屋信息待补充'}}</view><view class="badge paid">{{profile.active ? '在租' : '历史租住'}}</view></view><view class="subtitle">{{profile.name}} · {{profile.community || '我的住处'}}</view><view class="rule"></view><view class="pair"><text class="label">入住日期</text><text>{{profile.moveInText}}</text></view><view class="pair"><text class="label">租约到期</text><text>{{profile.endText}}</text></view></view>
+    <view class="row section-title"><text>最近账单</text><button class="small quiet" bindtap="goBills">全部账单 ›</button></view>
+    <view wx:if="{{latest}}" class="surface" bindtap="goBill" data-id="{{latest.id}}" role="button" aria-label="查看最近账单">
+      <view class="row"><text class="list-title">{{latest.period}}</text><text class="badge {{latest.status === 'paid' ? 'paid' : ''}}">{{latest.statusText}}</text></view>
+      <view class="meta gap">本期应缴</view><view class="amount gap"><text class="currency">¥</text>{{latest.payableText}}</view><view class="rule"></view><view class="row meta"><text>已缴 ¥{{latest.paidText}}</text><text>待缴 ¥{{latest.dueText}} ›</text></view>
+    </view>
+    <view wx:else class="surface empty">还没有账单，出账后会显示在这里。</view>
+    <view class="surface"><view class="link-row" bindtap="goContracts" role="button"><text>合同与签署件</text><text class="arrow">›</text></view><view class="link-row" bindtap="goPayments" role="button"><text>缴费记录与收据</text><text class="arrow">›</text></view></view>
+    <view class="hint">账单由房东出具，缴费记录为房东登记的线下实收。</view>
+  </block>
+</view>

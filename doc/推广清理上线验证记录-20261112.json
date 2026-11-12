@@ -1,0 +1,176 @@
+{
+  "date": "2026-11-12",
+  "timezone": "Asia/Hong_Kong",
+  "scope": "Remove upstream donation, telemetry and updater; build on GitHub and deploy Web/API only",
+  "commit": "a38fa953a6871e65866133ac0de2c3bbbd9282ec",
+  "workflow": {
+    "id": 43153996297,
+    "status": "completed",
+    "conclusion": "success",
+    "head_sha": "a38fa953a6871e65866133ac0de2c3bbbd9282ec",
+    "url": "https://github.com/zwdotnet/Landlord/actions/runs/43153996297",
+    "run_attempt": 1,
+    "created_at": "2026-11-12T04:19:07Z",
+    "updated_at": "2026-11-12T04:24:48Z"
+  },
+  "artifact": {
+    "downloaded": true,
+    "bytes": 344902436,
+    "sha256": "ee764a37571d480d468ec788b59bf7c4e3e537b4d72a8e4c2b07379f3afbf306",
+    "github_digest_matches": true,
+    "artifact_id": 13915511575,
+    "run_id": 43153996297
+  },
+  "deployment": {
+    "published_at": "2026-11-12T12:30:18.376318+08:00",
+    "release": "/opt/landlord/releases/20261112-0.10.0-cleanup-a38fa95",
+    "previous_release": "/opt/landlord/releases/20261111-0.10.0-shell-5323d74",
+    "backup": "/var/backups/landlord/pre-cleanup-20261112-122952",
+    "image": "landlord:0.10.0-a38fa953a687-43153996297-1",
+    "image_id": "sha256:e62e1d71367ab72abd7feb13ced353da7686e29a219dfe32b10ebe7756be8d40",
+    "commit": "a38fa953a6871e65866133ac0de2c3bbbd9282ec",
+    "container_id": "292293ad8cc36adf6a92a9d2d5098b4cbe303a8f75362edb025aba322c3c2598",
+    "health": "healthy",
+    "counts": {
+      "users": 1,
+      "rooms": 1,
+      "tenants": 0,
+      "bills": 0,
+      "payments": 0,
+      "automation_plans": 0,
+      "cycle_tasks": 0
+    },
+    "database_quick_check": "ok",
+    "bootstrap_unchanged": true,
+    "caddy_unchanged": true,
+    "public_health": "PASS",
+    "removed_endpoints_404": [
+      "/api/donate/support",
+      "/api/version/check",
+      "/api/update/apply",
+      "/api/update/apply/status"
+    ]
+  },
+  "image_provenance": {
+    "cloud_image_id": "sha256:7dfd5456c5bd1a3ceb1234fb5add389765579693e7aeea2dc16414cf40366f10",
+    "vps_image_id": "sha256:e62e1d71367ab72abd7feb13ced353da7686e29a219dfe32b10ebe7756be8d40",
+    "rootfs_layers_match": true,
+    "revision_label_matches_commit": true,
+    "web_files_verified": 76
+  },
+  "verification": {
+    "local_backend_full_tests_pass": 451,
+    "local_added_route_test_pass": 1,
+    "local_frontend_tests_pass": 5,
+    "local_http_checks_pass": 19,
+    "local_ui_checks_pass": 47,
+    "vps_isolated_candidate_checks_pass": 8,
+    "public_checks_pass": 25,
+    "public_browser_errors": [],
+    "server": {
+      "pass": true,
+      "time_utc": "2026-11-12T04:32:30.588766+00:00",
+      "release": "/opt/landlord/releases/20261112-0.10.0-cleanup-a38fa95",
+      "image": "landlord:0.10.0-a38fa953a687-43153996297-1",
+      "image_id": "sha256:e62e1d71367ab72abd7feb13ced353da7686e29a219dfe32b10ebe7756be8d40",
+      "commit": "a38fa953a6871e65866133ac0de2c3bbbd9282ec",
+      "container_id": "292293ad8cc36adf6a92a9d2d5098b4cbe303a8f75362edb025aba322c3c2598",
+      "health": "healthy",
+      "database_quick_check": "ok",
+      "counts": {
+        "users": 1,
+        "rooms": 1,
+        "tenants": 0,
+        "bills": 0,
+        "payments": 0,
+        "automation_plans": 0,
+        "cycle_tasks": 0
+      },
+      "business_content_matches_backup": {
+        "users": true,
+        "rooms": true,
+        "tenants": true,
+        "bills": true,
+        "payments": true,
+        "automation_plans": true,
+        "cycle_tasks": true
+      },
+      "backup": "/var/backups/landlord/pre-cleanup-20261112-122952",
+      "previous_release": "/opt/landlord/releases/20261111-0.10.0-shell-5323d74",
+      "bootstrap_unchanged": true,
+      "caddy_unchanged": true,
+      "resource_limits_unchanged": true,
+      "other_containers": {
+        "roundcube": {
+          "unchanged_id": true,
+          "not_restarted": true,
+          "running": true
+        },
+        "mailserver": {
+          "unchanged_id": true,
+          "not_restarted": true,
+          "running": true
+        },
+        "keepup-app-1": {
+          "unchanged_id": true,
+          "not_restarted": true,
+          "running": true
+        }
+      },
+      "siblings": {
+        "home": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "game": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "worksheet": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "keepup": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "keepup_health": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "komari": {
+          "status": 200,
+          "same_content_sha256": true
+        },
+        "mail": {
+          "status": 200,
+          "same_content_sha256": false
+        }
+      },
+      "docker_stats": {
+        "BlockIO": "1.36MB / 8.19kB",
+        "CPUPerc": "0.06%",
+        "Container": "landlord",
+        "ID": "292293ad8cc3",
+        "MemPerc": "1.71%",
+        "MemUsage": "8.734MiB / 512MiB",
+        "Name": "landlord",
+        "NetIO": "11.9kB / 189kB",
+        "PIDs": "7"
+      }
+    }
+  },
+  "limits": {
+    "independent_acceptance": false,
+    "physical_phone_acceptance": "UNOBSERVED",
+    "miniprogram_uploaded_or_published": false,
+    "production_test_accounts_created": false,
+    "vps_build_performed": false
+  },
+  "rollback": {
+    "release": "/opt/landlord/releases/20261111-0.10.0-shell-5323d74",
+    "backup": "/var/backups/landlord/pre-cleanup-20261112-122952",
+    "database_restore_automatic": false
+  },
+  "evidence_directory": ".runtime/deploy-cleanup-20261112/"
+}

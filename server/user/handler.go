@@ -563,6 +563,7 @@ func RegisterRoutes(publicGroup *gin.RouterGroup, optionalAuthGroup *gin.RouterG
 	publicGroup.GET("/auth/setup-required", handleSetupRequired(db))
 	publicGroup.POST("/auth/register", handleRegister(db, gatewayPrefix))
 	publicGroup.POST("/auth/login", handleLogin(db, gatewayPrefix))
+	publicGroup.POST("/auth/wechat/login", handleWeChatLogin(db))
 	if fnOSApp {
 		publicGroup.GET("/auth/fnos/identity", handleFnOSIdentity())
 		publicGroup.POST("/auth/fnos/login", handleFnOSLogin(db, gatewayPrefix))

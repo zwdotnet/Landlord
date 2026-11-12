@@ -1,0 +1,14 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">正在读取账单明细…</view><view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重新加载</button></view>
+  <block wx:elif="{{bill}}">
+    <view class="kicker">{{bill.room_no}} · {{bill.period}}</view><view class="title">账单明细</view>
+    <view class="hero"><view class="row"><text class="meta">本期应缴</text><text class="badge {{bill.status === 'paid' ? 'paid' : ''}}">{{bill.statusText}}</text></view><view class="amount gap"><text class="currency">¥</text>{{bill.payableText}}</view><view class="rule"></view><view class="pair"><text class="label">本期费用</text><text>¥{{bill.totalText}}</text></view><view class="pair"><text class="label">上期结转</text><text>¥{{bill.carryText}}</text></view><view class="pair"><text class="label">已缴</text><text>¥{{bill.paidText}}</text></view><view class="pair"><text class="label">待缴</text><text class="money">¥{{bill.dueText}}</text></view></view>
+    <view class="section-title">费用明细</view><view class="surface"><view wx:for="{{items}}" wx:key="key" class="gap"><view class="row top"><view class="grow"><view>{{item.name}}</view><view wx:if="{{item.detail}}" class="meta">{{item.detail}}</view></view><view class="money">¥{{item.amountText}}</view></view></view><view wx:if="{{!items.length}}" class="meta">暂无分项明细</view></view>
+    <view class="section-title">逐笔收款</view>
+    <view wx:if="{{!payments.length}}" class="surface empty">房东尚未登记实收。</view>
+    <view wx:for="{{payments}}" wx:key="id" class="surface"><view class="row"><text>{{item.kindText}}</text><text class="money {{item.kindText === '冲销' ? 'negative' : 'positive'}}">{{item.kindText === '冲销' ? '-' : '+'}} ¥{{item.amountText}}</text></view><view class="meta gap">{{item.dateText}}</view><view wx:if="{{item.note}}" class="note">{{item.note}}</view><view wx:if="{{item.voided_at}}" class="note negative">已冲销 · {{item.void_reason}}</view><button wx:if="{{item.receipt_id}}" class="small gap" bindtap="openFile" data-path="/rental/portal/documents/{{item.receipt_id}}/file" disabled="{{opening}}">查看{{item.stateText}}</button><view wx:else class="hint">历史流水尚无归档 PDF</view></view>
+    <view wx:if="{{bill.remark}}" class="surface"><view class="meta">账单备注</view><view class="note">{{bill.remark}}</view></view>
+    <view wx:if="{{property.name || property.contact}}" class="hint">{{property.name}} {{property.contact}}</view>
+    <view class="hint">本期应缴包含上期结转；各期差额不重复累加。实收与冲销均保留原流水。</view>
+  </block>
+</view>

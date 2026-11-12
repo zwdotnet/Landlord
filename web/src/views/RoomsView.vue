@@ -75,7 +75,6 @@
                 <div v-if="r.tags?.length || roomReferralText(r) || r.landlord_name" class="flex flex-wrap gap-1 mt-1">
                   <span v-for="t in r.tags" :key="t" class="badge !px-1.5 !py-0.5 text-[11px] bg-brand-500/10 text-brand-600 dark:text-brand-300">{{ t }}</span>
                   <span v-if="roomReferralText(r)" class="badge !px-1.5 !py-0.5 text-[11px] bg-amber-500/10 text-amber-600 dark:text-amber-300">{{ roomReferralText(r) }}</span>
-                <span v-if="r.landlord_name" class="badge !px-1.5 !py-0.5 text-[11px] bg-muted text-muted-foreground">房东 {{ r.landlord_name }}</span>
                   <span v-if="r.landlord_name" class="badge !px-1.5 !py-0.5 text-[11px] bg-muted text-muted-foreground">房东 {{ r.landlord_name }}</span>
                 </div>
               </td>

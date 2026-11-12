@@ -422,13 +422,31 @@ func handlePortalBillList(db *gorm.DB) gin.HandlerFunc {
 			response.ErrorInternal(c, "查询账单失败")
 			return
 		}
+		// Summary shares the exact account/filter scope, before pagination. Net
+		// current charges across periods; carry-in would count old debt twice.
+		var all []Bill
+		if err := q.Session(&gorm.Session{}).Find(&all).Error; err != nil {
+			response.ErrorInternal(c, "查询账单汇总失败")
+			return
+		}
+		var paid float64
+		unpaidCount := 0
+		for _, bill := range all {
+			paid += bill.PaidAmount
+			if bill.Payable-bill.PaidAmount > feeTolerance {
+				unpaidCount++
+			}
+		}
 		rows := make([]Bill, 0, pageSize)
 		if err := q.Order("period DESC, id DESC").
 			Offset(utils.Offset(page, pageSize)).Limit(pageSize).Find(&rows).Error; err != nil {
 			response.ErrorInternal(c, "查询账单失败")
 			return
 		}
-		response.SuccessPage(c, rows, total, page, pageSize)
+		response.Success(c, gin.H{
+			"items": rows, "total": total, "page": page, "pageSize": pageSize,
+			"summary": gin.H{"paid": round2(paid), "outstanding": outstandingByTenancy(all, false), "unpaid_count": unpaidCount},
+		})
 	}
 }
 
@@ -444,6 +462,7 @@ func portalBill(db *gorm.DB, c *gin.Context, t *Tenant) (*Bill, bool) {
 		response.ErrorNotFound(c, "账单不存在")
 		return nil, false
 	}
+	fillLegacyRentBasis(db, &bill)
 	return &bill, true
 }
 

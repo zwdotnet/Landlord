@@ -86,7 +86,7 @@
           </button>
         </div>
 
-        <Pagination :page="page" :page-size="pageSize" :total="total" @update:page="changePage" />
+        <Pagination :page="page" :page-size="pageSize" :total="total" @change="changePage" />
       </template>
     </template>
 
@@ -227,6 +227,7 @@ const bills = ref<PortalBill[]>([])
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const summary = ref({ paid: 0, outstanding: 0, unpaid_count: 0 })
 
 const showDetail = ref(false)
 const detailLoading = ref(false)
@@ -240,12 +241,12 @@ const receiptPaper = ref<ReceiptPaper>(loadReceiptPaper())
 const customPaper = ref<CustomPaper>(loadCustomPaper())
 
 const stats = computed(() => {
-  const unpaid = bills.value.filter((b) => arrearsOf(b) > 0)
-  const due = unpaid.reduce((sum, b) => sum + arrearsOf(b), 0)
-  const paid = bills.value.reduce((sum, b) => sum + Number(b.paid_amount || 0), 0)
+  const unpaid = summary.value.unpaid_count
+  const due = summary.value.outstanding
+  const paid = summary.value.paid
   return [
     { label: '账单数', value: String(total.value), cls: 'text-foreground' },
-    { label: '欠缴笔数', value: String(unpaid.length), cls: unpaid.length ? 'text-rose-500' : 'text-foreground' },
+    { label: '欠缴笔数', value: String(unpaid), cls: unpaid ? 'text-rose-500' : 'text-foreground' },
     { label: '欠缴合计', value: fmtMoneyCompact(due), cls: due > 0 ? 'text-rose-500' : 'text-foreground' },
     { label: '已缴合计', value: fmtMoneyCompact(paid), cls: 'text-emerald-600 dark:text-emerald-400' },
   ]
@@ -264,6 +265,7 @@ async function load() {
       const d = res.data.data
       bills.value = Array.isArray(d?.items) ? d.items : []
       total.value = Number(d?.total || 0)
+      summary.value = d.summary
     } else {
       loadError.value = res.data?.message || '加载失败'
     }

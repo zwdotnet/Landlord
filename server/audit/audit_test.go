@@ -90,3 +90,23 @@ func TestCleanupRespectsRetentionDays(t *testing.T) {
 		t.Fatalf("retention cleanup kept %v, want [recent]", actions)
 	}
 }
+
+func TestMutationDescriptionsAndLegacyViews(t *testing.T) {
+	for _, tc := range []struct{ method, path, want string }{
+		{"POST", "/api/rental/tenants", "新增租户"},
+		{"PUT", "/api/rental/tenants/:id", "修改租户"},
+		{"POST", "/api/rental/meter-records", "保存抄表记录"},
+		{"POST", "/api/rental/rooms/:id/apply-link", "生成或重置租客登记链接"},
+		{"DELETE", "/api/rental/bills/:id", "删除账单"},
+	} {
+		label, _ := describeMutation(tc.method, tc.path)
+		if label != tc.want {
+			t.Fatalf("%s %s = %s", tc.method, tc.path, label)
+		}
+	}
+	rows := toViews([]database.AuditLog{{Action: "put_api_rental_tenants_:id", Detail: "PUT /api/rental/tenants/:id"},
+		{Action: "rental.tenant_account.bind", Detail: "关联租户登录账号：合成账号"}})
+	if rows[0].Detail != "修改租户" || rows[0].ActionLabel != "修改租户" || rows[1].Detail != "关联租户登录账号：合成账号" {
+		t.Fatalf("bad display mapping: %#v", rows)
+	}
+}
