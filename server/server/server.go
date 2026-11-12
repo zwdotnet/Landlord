@@ -24,9 +24,7 @@ import (
 	"smallgo/server/response"
 	"smallgo/server/scheduler"
 	"smallgo/server/security"
-	"smallgo/server/stats"
 	"smallgo/server/sysconfig"
-	"smallgo/server/update"
 	"smallgo/server/upload"
 	"smallgo/server/user"
 	"smallgo/server/version"
@@ -207,13 +205,6 @@ func Start() {
 	}
 
 	r := NewRouter(cfg, db, jwtSecret)
-
-	// 匿名使用统计心跳：默认开启、应用内不提供关闭入口（2026-10-11 用户定调），
-	// 只有部署层面的 -disable-stats / DISABLE_STATS=1 能整体退出。
-	if !cfg.DisableStats {
-		stats.Start(version.AppName, version.Version, cfg.DeviceType, cfg.DataDir)
-		defer stats.Stop()
-	}
 
 	// Start background jobs registered by the framework or apps.
 	sched := scheduler.Start()
@@ -429,14 +420,6 @@ func NewRouter(cfg config.Config, db *gorm.DB, jwtSecret string) *gin.Engine {
 	// live updates via realtime.Publish; browsers subscribe at /api/realtime.
 	authGroup.GET("/realtime", realtime.Handler())
 
-	// 版本检查（升级提示条）：需要登录，检查失败优雅降级。
-	update.RegisterRoutes(authGroup)
-	// 一键自更新（下载发行包 → 替换自身 → 原地重启）只允许管理员触发
-	update.RegisterApplyRoutes(adminGroup)
-
-	// 赞赏支持计数：需要登录（前端入口仅对管理员显示）。
-	stats.RegisterRoutes(authGroup, db)
-
 	// 数据库备份管理：仅管理员。
 	backup.RegisterRoutes(adminGroup, db, cfg.DataDir)
 
@@ -478,6 +461,11 @@ func NewRouter(cfg config.Config, db *gorm.DB, jwtSecret string) *gin.Engine {
 			c.File(cfg.WebDir + "/manifest.webmanifest")
 		})
 		r.NoRoute(func(c *gin.Context) {
+			// Unknown API paths must stay 404 rather than falling back to the SPA.
+			if c.Request.URL.Path == api.BasePath() || strings.HasPrefix(c.Request.URL.Path, api.BasePath()+"/") {
+				c.Status(http.StatusNotFound)
+				return
+			}
 			if !cfg.FnOSApp || c.Request.URL.Path == strings.TrimSuffix(cfg.GatewayPrefix, "/") || strings.HasPrefix(c.Request.URL.Path, strings.TrimSuffix(cfg.GatewayPrefix, "/")+"/") {
 				serveSPA(c, cfg)
 				return

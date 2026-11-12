@@ -35,11 +35,9 @@ FRAMEWORK_FILES=(
   response/response.go
   scheduler/scheduler.go
   security/security.go
-  stats/stats.go
   sysconfig/handlers.go
   sysconfig/registry.go
   sysconfig/sysconfig.go
-  update/update.go
   upload/upload.go
   utils/export.go
   utils/pagination.go

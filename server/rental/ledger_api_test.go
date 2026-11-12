@@ -72,7 +72,7 @@ func TestApprovalPathWhitelist(t *testing.T) {
 	allow := []string{
 		"/api/auth/login", "/api/auth/me", "/api/rental/ledgers/mine",
 		"/api/configs", "/api/user/profile",
-		"/api/version", "/api/version/check", "/api/realtime",
+		"/api/version", "/api/realtime",
 		"/api/rental/users/me/approval", "/api/health",
 		"/app/techfunway-rental/api/rental/ledgers/mine", "/rental/ledgers/mine",
 	}

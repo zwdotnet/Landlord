@@ -2,8 +2,7 @@ package version
 
 import "time"
 
-// startedAt 进程启动时间：前端用它区分「本次运行」与「重启后」，
-// 例如赞赏提示弹窗在应用重启后才会再次出现。
+// startedAt 记录本次进程启动时间，用于版本信息与运行诊断。
 var startedAt = time.Now()
 
 var (

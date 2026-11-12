@@ -110,17 +110,6 @@
           </div>
         </div>
 
-        <!-- 支持作者 -->
-        <div class="px-4 pb-2">
-          <button
-            class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-amber-600 dark:text-amber-300 bg-amber-400/10 hover:bg-amber-400/20 transition-colors"
-            @click="openSupport"
-          >
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            支持作者
-          </button>
-        </div>
-
         <!-- 版本号已移至顶栏左上角 -->
       </div>
     </aside>
@@ -151,23 +140,7 @@
                      当前页标题（面包屑第二段）sm 起再显示 -->
                 <div class="flex items-center gap-1.5 text-sm">
                   <RouterLink to="/admin" class="font-semibold text-foreground hover:text-brand-600 dark:hover:text-brand-300 transition-colors truncate">{{ authStore.siteTitle }}</RouterLink>
-                  <!-- 版本号就是「版本与更新」的常驻入口（管理员可点）：
-                       不再只在检测到新版本时才出现升级条，平时也能点开看版本、手动检查。
-                       有新版本时常驻入口高亮成品牌色并带一个小圆点提示。 -->
-                  <button
-                    v-if="versionInfo && authStore.isAdmin"
-                    type="button"
-                    class="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium tabular-nums border transition-colors"
-                    :class="supportStore.updateInfo?.has_update
-                      ? 'bg-brand-500/15 text-brand-600 dark:text-brand-300 border-brand-500/40 hover:bg-brand-500/25'
-                      : 'bg-muted text-muted-foreground border-border/50 hover:text-foreground hover:bg-muted/70'"
-                    title="版本与更新（检查新版本 / 一键更新）"
-                    @click="supportStore.openUpdateDialog()"
-                  >
-                    <span v-if="supportStore.updateInfo?.has_update" class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
-                    {{ versionInfo }}
-                  </button>
-                  <span v-else-if="versionInfo" class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium tabular-nums bg-muted text-muted-foreground border border-border/50">{{ versionInfo }}</span>
+                  <span v-if="versionInfo" class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium tabular-nums bg-muted text-muted-foreground border border-border/50">{{ versionInfo }}</span>
                   <svg class="hidden sm:block w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                   <span class="hidden sm:inline text-foreground font-semibold truncate">{{ currentTitle }}</span>
                 </div>
@@ -221,42 +194,6 @@
       <!-- 手机端密度：页边距 p-3（原 p-4），底部预留 pb-24 给底部导航；
            sm 起恢复 p-6 / pb-8。顶栏在窄屏是两行（约 106px），页边距收紧一点补回来。 -->
       <main class="flex-1 p-3 pb-24 sm:p-6 sm:pb-28 lg:pb-8 xl:p-8 overflow-auto">
-        <!-- 新版本提示条（管理员，每个最新版本一次）；一键更新 + 多下载入口 -->
-        <div v-if="supportStore.updateBannerVisible" class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-brand-500/30 bg-brand-500/10 px-4 py-3">
-          <div class="text-sm text-foreground min-w-0">
-            <span>
-              🎉 发现新版本 <strong>{{ supportStore.updateInfo?.latest }}</strong>（当前 {{ supportStore.updateInfo?.current }}），建议升级以获得最新功能和修复。
-            </span>
-            <p v-if="supportStore.applyMessage" class="text-xs mt-0.5"
-              :class="supportStore.applyStage === 'failed' && /已更新|重启完成/.test(supportStore.applyMessage) ? 'text-emerald-600 dark:text-emerald-400' : /失败|超时/.test(supportStore.applyMessage) ? 'text-destructive' : 'text-muted-foreground'">
-              {{ supportStore.applyMessage }}
-            </p>
-            <span class="block sm:inline sm:ml-2 mt-1.5 sm:mt-0">
-              <button v-if="supportStore.updateInfo?.fpk_assets?.length" type="button"
-                class="btn-brand !py-1 !px-2.5 !text-xs mr-2 align-middle"
-                :disabled="supportStore.applying"
-                @click="supportStore.applyNewVersion()">
-                {{ supportStore.applyButtonText }}
-              </button>
-              <a v-for="fpk in supportStore.updateInfo?.fpk_assets ?? []" :key="fpk.url" :href="fpk.url" target="_blank" rel="noopener"
-                class="mr-2 text-brand-600 dark:text-brand-300 hover:underline">
-                {{ /arm|aarch/.test(fpk.name) ? 'ARM' : 'x86' }}包直链
-              </a>
-              <a :href="supportStore.updateInfo?.gitee_url" target="_blank" rel="noopener" class="mr-2 text-brand-600 dark:text-brand-300 hover:underline">Gitee 发行版</a>
-              <a :href="supportStore.updateInfo?.github_url" target="_blank" rel="noopener" class="text-brand-600 dark:text-brand-300 hover:underline">GitHub</a>
-            </span>
-          </div>
-          <button class="text-muted-foreground hover:text-foreground text-lg leading-none px-1" title="关闭" @click="supportStore.dismissUpdateBanner()">×</button>
-        </div>
-
-        <!-- 赞赏横幅（管理员，每个版本一次）；手机端只留一句，长文案桌面端才显示 -->
-        <div v-if="supportStore.bannerVisible" class="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-3">
-          <span class="text-sm text-foreground">
-            ❤ <button class="font-semibold text-brand-600 dark:text-brand-300 hover:underline" @click="supportStore.open()">请作者喝杯咖啡</button><span class="hidden sm:inline">（不赞赏不影响任何功能）</span><span class="sm:hidden">，不赞赏不影响功能</span>。
-          </span>
-          <button class="text-muted-foreground hover:text-foreground text-lg leading-none px-1" title="关闭" @click="supportStore.dismissBanner()">×</button>
-        </div>
-
         <RouterView v-slot="{ Component }">
           <!-- 手机端体验：短淡入即可（out-in 长动画会有"停顿-再出现"的卡顿感） -->
           <transition mode="out-in" enter-active-class="transition-[opacity,transform] duration-150 ease-out" enter-from-class="opacity-0 translate-y-1.5" leave-active-class="transition-opacity duration-75" leave-to-class="opacity-0">
@@ -301,12 +238,6 @@
       </div>
     </nav>
 
-    <!-- 赞赏支持弹窗（安全问题引导优先，让位不渲染） -->
-    <SupportModal v-if="!showSecurityModal" />
-
-    <!-- 版本与更新弹窗：顶栏版本号按钮与系统设置卡片共用 -->
-    <UpdateDialog />
-
     <!-- Security question prompt -->
     <Modal v-model="showSecurityModal" title="设置安全问题" :closable="false">
       <div class="flex flex-col items-center text-center gap-4 py-2">
@@ -341,18 +272,14 @@ import { getVersion } from '../api/config'
 import { getStats } from '../api/rental'
 import { permScore } from '../utils/perm'
 import { landingRouteName } from '../router'
-import { useSupportStore } from '../stores/support'
 import UiThemeToggle from '../components/ui/ThemeToggle.vue'
 import Modal from '../components/Modal.vue'
-import SupportModal from '../components/SupportModal.vue'
-import UpdateDialog from '../components/UpdateDialog.vue'
 import LedgerSwitcher from '../components/LedgerSwitcher.vue'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
-const supportStore = useSupportStore()
 // 业务权限的唯一口径是**当前台账**（ledgerStore）：侧栏菜单、底部导航、角标与
 // 页面内按钮、路由守卫全部读它，菜单亮着就一定点得动。
 // （历史上菜单/按钮读的是跨台账并集，与按台账判定的守卫不同源，普通用户
@@ -387,13 +314,11 @@ onMounted(async () => {
     const res = await getVersion()
     if (res.data?.code === 0) {
       const d = res.data.data
-      versionInfo.value = `v${d.version}`
+      versionInfo.value = String(d.version).replace(/^[vV]?/, 'v')
     }
   } catch {}
-  // 赞赏提示与新版本检查：仅管理员可见（store 内部只对管理员生效）
   await authStore.init()
   await ledgerStore.ensureLoaded()
-  supportStore.init(authStore.isAdmin)
   // 缴费提醒角标：立即拉一次，之后每 5 分钟刷新
   refreshPaymentBadge()
   paymentTimer = window.setInterval(refreshPaymentBadge, 5 * 60 * 1000)
@@ -513,12 +438,6 @@ function handleLogout() {
   // （虽然守卫会按新账号的台账列表纠正，但不该让上一任的 id 留在本地）。
   ledgerStore.reset()
   router.push('/login')
-}
-
-// "支持作者"入口：赞赏弹窗的常规调度仅对管理员生效，
-// 这里对所有登录用户开放手动触发（复用设置页入口的 open()）。
-function openSupport() {
-  supportStore.open()
 }
 
 const showSecurityModal = ref(false)

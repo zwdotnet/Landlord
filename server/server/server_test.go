@@ -195,6 +195,38 @@ func TestHealthAndVersion(t *testing.T) {
 	}
 }
 
+func TestRemovedPromotionEndpointsDoNotServeSPA(t *testing.T) {
+	r, db, dir := setupTestRouter(t)
+	token := registerUser(t, r, "route-admin", "isolated-route-test-password")
+	secret, err := sysconfig.GetConfig(db, "jwt_secret", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<html>test app</html>"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, prefix := range []string{"", "/app/techfunway-rental"} {
+		router := NewRouter(config.Config{WebDir: dir, DataDir: dir, FnOSApp: prefix != "", GatewayPrefix: prefix}, db, secret)
+		for _, endpoint := range []struct{ method, path string }{
+			{"POST", "/api/donate/support"}, {"GET", "/api/version/check"},
+			{"POST", "/api/update/apply"}, {"GET", "/api/update/apply/status"},
+		} {
+			for _, credential := range []string{"", token} {
+				w := doJSON(router, endpoint.method, prefix+endpoint.path, credential, nil)
+				if w.Code != http.StatusNotFound {
+					t.Fatalf("removed endpoint %s %s: status %d", endpoint.method, prefix+endpoint.path, w.Code)
+				}
+			}
+		}
+		if w := doJSON(router, "GET", prefix+"/api/version", "", nil); w.Code != http.StatusOK {
+			t.Fatalf("version endpoint: status %d", w.Code)
+		}
+		if w := doJSON(router, "GET", prefix+"/admin/configs", "", nil); w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "test app") {
+			t.Fatalf("SPA navigation: status %d body %s", w.Code, w.Body.String())
+		}
+	}
+}
+
 func TestFirstUserBecomesAdminAndLogin(t *testing.T) {
 	r, _, _ := setupTestRouter(t)
 	registerUser(t, r, "admin", "secret123")

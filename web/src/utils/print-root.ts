@@ -3,7 +3,7 @@
 // 旧方案是「visibility 技巧」：body * 全隐藏、单据子树再显示。两处致命伤：
 // ① 规则写在 RentalReceipt 的 scoped 样式里，编译成 `body[data-v-xxx] *`，
 //    body 上没有 data-v 属性，隐藏规则永远匹配不到 —— 打印输出整张网页，
-//    弹窗遮罩、赞赏弹窗全被印出来（2026-10-11 粉丝反馈"打印能显示网页、
+//    弹窗遮罩等界面元素全被印出来（2026-10-11 粉丝反馈"打印能显示网页、
 //    数据空的乱的"的根因）；
 // ② 单据被 position:absolute 提到弹窗面板左上角，绝对定位元素在 Chrome 里
 //    不参与跨页分片，超出一页的内容被直接裁掉。
@@ -11,7 +11,7 @@
 // 新方案：单据挂载时把自身克隆进 body 直属的 #print-root（屏幕上 display:none），
 // 打印时把 body 其余直属子元素全部 display:none、只显示 #print-root。
 // display 隔离让单据回到正常文档流：可自然分页，且与弹窗层级、运行中弹出的
-// 引导弹窗（安全引导/赞赏弹窗）完全无关。没暂存单据时（普通 Ctrl+P）不启用
+// 引导弹窗（如安全引导）完全无关。没暂存单据时（普通 Ctrl+P）不启用
 // 隔离，页面照常打印。
 const ROOT_ID = 'print-root'
 const BODY_FLAG = 'print-stage-active'

@@ -24,28 +24,6 @@
     <!-- 缴费提醒通知：钉钉 / 邮箱 / 短信 / QQ 机器人渠道绑定与测试 -->
     <NotifyChannelsCard v-if="ledgerStore.canRead" class="mt-4" />
 
-    <!-- 支持开发者（仅管理员可见，赞赏完全自愿） -->
-    <div v-if="authStore.isAdmin" class="surface rounded-2xl p-3.5 sm:p-6">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-start gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-400/15 text-amber-500 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-foreground">支持开发者</h3>
-            <p class="text-sm text-muted-foreground mt-1 leading-relaxed">
-              这个应用免费、无广告，数据完全保存在你自己的设备上。
-              如果它帮到了你，欢迎请作者喝杯咖啡——金额随意，1 元也是心意；
-              <strong class="text-foreground">不赞赏不影响任何功能</strong>。
-            </p>
-            <p v-if="supportStore.donateSupported" class="text-xs text-emerald-500 mt-2">❤ 感谢你的支持，这也太暖了</p>
-          </div>
-        </div>
-        <button class="btn-brand !px-4 !py-2" @click="supportStore.open()">
-          {{ supportStore.donateSupported ? '再次赞赏' : '去赞赏' }}
-        </button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -58,13 +36,9 @@ import NotifyChannelsCard from '../components/NotifyChannelsCard.vue'
 import { getUserConfigMeta, updateConfig } from '../api/config'
 import type { ConfigMeta } from '../api/config'
 import { useThemeStore } from '../stores/theme'
-import { useAuthStore } from '../stores/auth'
 import { useLedgerStore } from '../stores/ledger'
-import { useSupportStore } from '../stores/support'
 
-const authStore = useAuthStore()
 const ledgerStore = useLedgerStore()
-const supportStore = useSupportStore()
 const items = ref<ConfigMeta[]>([])
 const loading = ref(false)
 const errorMsg = ref('')

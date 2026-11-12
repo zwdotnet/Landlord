@@ -6,10 +6,10 @@ desc                       = """
 """
 source                     = thirdparty
 platform                   = x86
-maintainer                 = 科技智趣坊
-maintainer_url             = https://github.com/TechFunWay/rental
-distributor                = 科技智趣坊
-distributor_url            = http://techfunway.wycto.cn
+maintainer                 = Landlord
+maintainer_url             = https://github.com/zwdotnet/Landlord
+distributor                = Landlord
+distributor_url            = https://github.com/zwdotnet/Landlord
 os_min_version             = 1.0.0
 ctl_stop                   = true
 desktop_uidir              = ui

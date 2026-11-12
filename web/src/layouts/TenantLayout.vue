@@ -149,7 +149,7 @@ import { useLedgerStore } from '../stores/ledger'
 import { getPortalStatus, type PortalStatus } from '../api/tenant'
 
 // 租户门户外壳。刻意保持极简：租户只读自己的数据，没有台账、权限与业务录入，
-// 因此不做 MainLayout 那套台账切换器 / 业务导航 / 管理后台分区 / 赞赏横幅。
+// 因此不做 MainLayout 那套台账切换器 / 业务导航 / 管理后台分区。
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()

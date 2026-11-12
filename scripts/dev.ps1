@@ -26,5 +26,5 @@ if (-not (Test-Path (Join-Path $landlordWeb 'index.html'))) { throw 'Frontend bu
 Write-Host "Landlord: http://127.0.0.1:$Port (Ctrl+C to stop)"
 Push-Location $landlordRoot
 try {
-    & $landlordExe -port $Port -data-dir (Join-Path $landlordRun 'data') -web-dir $landlordWeb -disable-stats -log-console -rate-limit 0
+    & $landlordExe -port $Port -data-dir (Join-Path $landlordRun 'data') -web-dir $landlordWeb -log-console -rate-limit 0
 } finally { Pop-Location }

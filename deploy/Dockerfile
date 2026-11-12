@@ -20,4 +20,4 @@ ENV LANDLORD_PDF_BROWSER=/usr/local/bin/landlord-chromium TZ=Asia/Hong_Kong
 USER 10001:10001
 EXPOSE 8910
 ENTRYPOINT ["/app/landlord"]
-CMD ["-port","8910","-data-dir","/app/data","-web-dir","/app/web","-disable-stats","-rate-limit","240"]
+CMD ["-port","8910","-data-dir","/app/data","-web-dir","/app/web","-rate-limit","240"]

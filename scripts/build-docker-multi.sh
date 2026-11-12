@@ -73,7 +73,7 @@ ARG VERSION
 LABEL org.opencontainers.image.title="techfunway-rental"
 LABEL org.opencontainers.image.description="面向房东、公寓与宿舍管理者的租房管理系统"
 LABEL org.opencontainers.image.version="${VERSION}"
-LABEL org.opencontainers.image.source="https://github.com/TechFunWay/rental"
+LABEL org.opencontainers.image.source="https://github.com/zwdotnet/Landlord"
 
 WORKDIR /app
 COPY techfunway-rental-v${VERSION}-linux-${TARGETARCH}/rental /app/rental
@@ -86,7 +86,7 @@ ENV PORT=8910
 ENV DATA_DIR=/app/data
 
 ENTRYPOINT ["/app/rental"]
-CMD ["-data-dir", "/app/data", "-web-dir", "./static/dist", "-device-type", "docker"]
+CMD ["-data-dir", "/app/data", "-web-dir", "./static/dist"]
 EOF
 
 # ARG VERSION 需要在 COPY 路径展开前注入到上下文目录名（buildkit 支持 ${VERSION} 在 COPY 源路径）
