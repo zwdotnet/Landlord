@@ -415,9 +415,9 @@
           <div class="flex flex-wrap items-center gap-2 mt-2.5">
             <a
               v-if="applyQrUrl"
-              :href="applyQrDownloadUrl"
+              :href="applyQrUrl"
               class="btn-ghost !py-1.5 !px-3 text-xs"
-              download
+              :download="'租客登记二维码-' + (applyRoom?.room_no || '房源') + '.png'"
             >⬇ 下载二维码图</a>
             <button
               class="btn-ghost !py-1.5 !px-3 text-xs"
@@ -519,7 +519,7 @@ import {
 } from '../utils/billing'
 import {
   createRoom, deleteRoom, downloadRoomTemplate, exportRooms, fetchRoomApplyQRCodeBlob, fmtMoney,
-  getAllRooms, getRoomApplyLink, roomApplyQRCodeDownloadUrl,
+  getAllRooms, getRoomApplyLink,
   getRoomApplications, getRooms, importRooms, updateRoom,
   type ImportResult, type Room, type RoomApplyLink, type RoomView,
 } from '../api/rental'
@@ -651,10 +651,6 @@ const applyLinkScope = computed(() =>
 const applyQrUrl = ref('')
 const applyQrLoading = ref(false)
 const applyQrError = ref('')
-// 下载地址必须带 ledger_id（与其它下载类接口同口径），且要走带 download=1 的形态。
-const applyQrDownloadUrl = computed(() =>
-  applyRoom.value ? roomApplyQRCodeDownloadUrl(applyRoom.value.id) : '#',
-)
 
 /** 换掉当前 blob URL 时先释放，避免连续刷新/关弹窗后内存里的旧图一直挂着。 */
 function revokeApplyQr() {
@@ -664,13 +660,13 @@ function revokeApplyQr() {
   }
 }
 
-// regenerate=true 时让服务端换新 token（二维码与链接一起失效，与「重新生成」一致）。
-async function loadApplyQr(regenerate = false) {
+// 图片只读取当前口令；口令由登记链接接口统一生成，避免两次重置后链接立即失效。
+async function loadApplyQr() {
   if (!applyRoom.value) return
   applyQrLoading.value = true
   applyQrError.value = ''
   try {
-    const blob = await fetchRoomApplyQRCodeBlob(applyRoom.value.id, regenerate)
+    const blob = await fetchRoomApplyQRCodeBlob(applyRoom.value.id)
     revokeApplyQr()
     applyQrUrl.value = URL.createObjectURL(blob)
   } catch {
@@ -683,7 +679,7 @@ async function loadApplyQr(regenerate = false) {
 
 /** 「刷新二维码」按钮：不动 token，只重新取图（图本身不会变，用于生成失败后重试）。 */
 async function refreshApplyQr() {
-  await loadApplyQr(false)
+  await loadApplyQr()
 }
 
 const applyLinkError = ref('')
@@ -716,7 +712,7 @@ async function openApplyLink(r: RoomView) {
     applyLinkError.value = '生成登记链接失败，请重试'
   }
   // 链接拿到后再取二维码：两者必须同 token，顺序反了会先印出旧码。
-  await loadApplyQr(false)
+  await loadApplyQr()
 }
 
 async function regenerateApplyLink() {
@@ -728,7 +724,7 @@ async function regenerateApplyLink() {
     if (res.data?.code === 0) {
       setApplyLink(res.data.data)
       toast('已重新生成，旧链接与旧二维码均已失效')
-      await loadApplyQr(true)
+      await loadApplyQr()
     } else {
       applyLinkError.value = res.data?.message || '重新生成失败'
     }

@@ -1290,11 +1290,6 @@ export function fetchRoomApplyQRCodeBlob(roomId: number, regenerate = false): Pr
     .then((res) => res.data as Blob)
 }
 
-/** 二维码的直接下载地址（带 download=1，交给浏览器存文件）。 */
-export function roomApplyQRCodeDownloadUrl(roomId: number): string {
-  return withLedgerUrl(`/api/rental/rooms/${roomId}/apply-qrcode?download=1`)
-}
-
 /** 公开登记页的房源信息：ai_ocr 表示房东有没有配 AI 识别（没配就不显示识别按钮） */
 export interface ApplyRoomInfo {
   community: string
