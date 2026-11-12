@@ -1,5 +1,7 @@
 # 新加坡部署与 Safari 验收
 
+> 最新追加：2026-11-12 22:45已发布QA修复源码6595307；当前版本、备份和回退见本文件末节。以下11月11日记录保留原观察时间。
+
 记录日期：2026-11-11，Asia/Hong_Kong；实际当前状态以根目录 STATE.md 为准。按用户选择 Headless Shell 的授权，22:10 已切换 GitHub 最终制品，15 项公网验证通过，22:13 最终检查 healthy。19:44 的完整 Chromium 版为回退版本。MAIN自验，无独立验收。
 
 ## 正式运行
@@ -61,3 +63,30 @@ ln -sfn /opt/landlord/releases/20261111-0.10.0-gh-e1d14c9 /opt/landlord/current
 `accepted`表示推送服务接收，设备显示/点击才证明送达。Windows WebKit验证不能替代真机，当前为UNOBSERVED。依据：[WebKit Home Screen Web Push](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/)。
 
 Swap配置依据 [swapon手册](https://man7.org/linux/man-pages/man8/swapon.8.html) 与 [Linux内核swappiness说明](https://docs.kernel.org/admin-guide/sysctl/vm.html)；构建限额依据 [Docker container driver](https://docs.docker.com/build/builders/drivers/docker-container/)。本文件的通过结论来自本任务实际运行结果。
+
+## 2026-11-12 QA修复版发布
+
+用户在修复自验完成后明确授权“提交并部署”。源码`65953074545c28d8ccb6429d099ad69e499af93b`已提交并推送main，完整保留此前待发布内容；镜像仍为0.10.0，以commit/run区分制品。小程序源码入Git，客户端未上传或发布，多房东接入/一次性登记链接/管理员重构均未启动。
+
+- 正式入口：<https://www.zoeng.site/landlord/>；原首页及其他子站保留。22:45:41（香港时间）发布，22:48服务器最终复核通过。
+- [云端构建43237672099](https://github.com/zwdotnet/Landlord/actions/runs/43237672099)成功，GitHub runner执行Web检查、Linux镜像构建及只读中文PDF冒烟；VPS没有构建。发布前本地完整门禁Go493/15包、Web及Node5、独立HTTP52、桌面/390×844各12闭环、原生兼容8均通过，详见[测试报告§9—10](系统性测试报告-20261112.md)。
+- current：`/opt/landlord/releases/20261112-0.10.0-qa-6595307`；镜像`landlord:0.10.0-65953074545c-43237672099-1`；VPS image ID `sha256:7153b465f4353e9d085140aac0056fd554642285c1fef2f54b62c8239ee67a2c`，核对了OCI源码revision及rootfs层。78份静态文件来自同一制品，目录0755/文件0644、只读挂载。
+- 制品`/opt/landlord/artifacts/github-43237672099`；原GitHub ZIP SHA256 `31515fe64904065f032c9e58f73a7a95d84bcdcc54398dd300ce4a4d58f152ca`。应用512MiB RAM/768MiB内存加swap/1CPU/160pids、只读根、127.0.0.1:18930、Headless Shell与PDF串行20秒保持，healthy且未OOM。最终单点Docker8.305MiB为空闲样本，不作为峰值/压力结论。
+- 正式数据仍`/var/lib/landlord/data`。受限`/var/lib/landlord/bootstrap.env`安全追加WX_APP_ID/WX_APP_SECRET，其他键保留、0600；值未写日志或Git。公网空code请求400/no-store，证明配置与路由生效，未外调微信、未建微信身份或生产测试账号。
+- 发布前在线一致性备份`/var/backups/landlord/pre-qa-20261112-223009`；停应用后再次备份`/var/backups/landlord/pre-qa-switch-20261112-224535`，含DB、上传资料、环境、旧Compose及Caddy。先在不联网/不挂生产数据的副本验证新增微信表和账单4个快照字段，并验证上一应用可读迁移后副本，再切换；无批量更正历史金额。
+- 最终quick_check=ok，原13业务表旧字段/旧ID匹配最新冻结备份，原附件/备份/导出静态文件指纹保持，5份旧日志前缀完整。users3/rooms1/tenants1/bills1/items2/attachments1、payments/contracts/issued_documents0、微信身份0是当时只读观察，不假定以后仍相同。
+- 公网38项通过：HTTPS健康、精确index和有关JS/SW/manifest指纹、匿名接口保护、已删除接口404、微信空code拒绝、Edge桌面与WebKit390×844登录页渲染/宽度、SW作用域，无页面脚本异常。未登录生产账号做业务验收。物理手机、图片/账单等登录后WebKit兼容、打印/推送及正式小程序仍未验。
+- Caddy SHA256 `31bc98fc5356bc66a170e9ad493da041c5742de72c990fd0b75149ebd9762f5c`未改；原首页SHA256 `fdc6985aedfe85031c31a9caa0ec4b6a03f1e5cad89fa41be461199236378096`保持。其他3容器ID和启动时间未变，7个原站点入口200/6个稳定响应指纹相同；邮件页动态内容只核状态。
+
+上一版本release`/opt/landlord/releases/20261112-0.10.0-apply-ef3cbee`及镜像`landlord:0.10.0-ef3cbee57268-43161630747-1`保留。需要回退应用时，先核对后续变更和当前业务，再使用匹配的旧Compose/前端：
+
+```sh
+docker compose -p landlord -f /opt/landlord/releases/20261112-0.10.0-apply-ef3cbee/compose.yml up -d --no-build --pull never --wait
+curl --fail http://127.0.0.1:18930/api/health
+curl --fail http://127.0.0.1:18930/ >/dev/null
+ln -sfn /opt/landlord/releases/20261112-0.10.0-apply-ef3cbee /opt/landlord/current
+```
+
+这只切应用/前端。旧应用启动迁移后副本已通过，但后续数据仍需另判；不能恢复旧数据库覆盖新业务，不回退正确的`/landlord`基址/CSP或其他站点配置，不用down -v。WX受限配置可保留，旧代码不使用它。
+
+发布证据在本机`.runtime/deploy-qa-20261112/`与服务器`/opt/landlord/operations/qa-20261112/`，包含预检、备份、制品、迁移预演、发布、最终服务器和公网回执；公开截图仅本机。脚本含固定旧状态/独占目录，仅作模板，不能原样重跑。初轮静态文件断言因正常日志追加失败，已核实原前缀保持并修正检查，详见测试报告§10；未因此改业务或恢复旧库。上述为SELF-ACCEPT，无独立/真机验收，未安排后台监控。
