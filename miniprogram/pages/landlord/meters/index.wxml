@@ -1,0 +1,41 @@
+<import src="../../../templates/landlord.wxml" />
+<view class="page">
+  <template is="landlord-scope" data="{{username, ledgers, ledgerIndex, ledgerName, loading, busy}}" />
+  <view class="title gap">抄表</view><view class="subtitle">按房源和账期记录水、电、燃气读数。</view>
+  <picker mode="date" fields="month" value="{{period}}" bindchange="changePeriod" disabled="{{busy || contextLoading || loading}}"><view class="surface row"><text>账期</text><text>{{period}}　⌄</text></view></picker>
+  <view class="actions"><input aria-label="搜索抄表房源" value="{{keyword}}" bindinput="inputKeyword" bindconfirm="search" placeholder="搜索房号 / 小区" disabled="{{busy || loading}}" /><button class="small" bindtap="search" disabled="{{busy || loading}}">搜索房源</button></view>
+  <view wx:if="{{loading}}" class="loading">正在读取台账和房源…</view>
+  <view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重新加载</button></view>
+  <block wx:else>
+    <view wx:if="{{!items.length}}" class="surface empty">暂无可抄表房源。</view>
+    <block wx:else>
+      <view class="meta gap">共 {{total}} 间房源 · 点击选择</view>
+      <view class="actions"><button wx:for="{{items}}" wx:key="id" class="small {{room && room.id === item.id ? 'primary' : ''}}" data-id="{{item.id}}" bindtap="chooseRoom" disabled="{{busy || contextLoading}}">{{item.room_no}}<view class="meta">{{item.community}} {{item.building}}</view></button></view>
+      <view wx:if="{{pages > 1}}" class="pagination"><button class="small" bindtap="previousPage" disabled="{{busy || page <= 1}}">上一页</button><text class="meta">{{page}} / {{pages}}</text><button class="small" bindtap="nextPage" disabled="{{busy || page >= pages}}">下一页</button></view>
+    </block>
+    <view wx:if="{{contextLoading}}" class="loading">正在读取该房的抄表记录…</view>
+    <view wx:if="{{room}}" class="section-title">{{room.room_no}} · {{period}}</view>
+    <block wx:if="{{formReady}}">
+      <view class="surface">
+        <view class="list-title">{{previous.is_initial ? '房源初始底数' : '上期读数 · ' + previous.period}}</view>
+        <view class="pair"><text class="label">水</text><text>{{previous.water}}</text></view><view class="pair"><text class="label">电</text><text>{{previous.elec}}</text></view><view class="pair"><text class="label">燃气</text><text>{{previous.gas}}</text></view>
+        <view class="hint">{{currentRecord ? '已载入本期记录，保存将更新该记录。' : '本期尚未录入，请完整填写三项读数；未使用请填写0。'}}</view>
+      </view>
+      <view wx:if="{{!canEdit}}" class="hint">当前台账只有抄表查看权限，不能保存读数。</view>
+      <label class="label-input">本期水表读数<input aria-label="水表读数" type="digit" value="{{water}}" data-field="water" bindinput="inputReading" maxlength="32" disabled="{{!canEdit || busy || needsCheck}}" /></label>
+      <label class="label-input">本期电表读数<input aria-label="电表读数" type="digit" value="{{elec}}" data-field="elec" bindinput="inputReading" maxlength="32" disabled="{{!canEdit || busy || needsCheck}}" /></label>
+      <label class="label-input">本期燃气表读数<input aria-label="燃气表读数" type="digit" value="{{gas}}" data-field="gas" bindinput="inputReading" maxlength="32" disabled="{{!canEdit || busy || needsCheck}}" /></label>
+      <label class="label-input">备注（选填）<input aria-label="抄表备注" value="{{note}}" data-field="note" bindinput="inputReading" maxlength="500" disabled="{{!canEdit || busy || needsCheck}}" /></label>
+      <view wx:if="{{lowerReading}}" class="login-error">读数低于上期，请确认换表或输入是否正确；自动出账可能需要人工核对。</view>
+      <view wx:if="{{billExists}}" class="hint">本期已出账。修改抄表不会改写已出账单，费用调整请在 Web 核对处理。</view>
+      <view class="hint">已启用周期计划的房源，补齐抄表后会按现有计划自动出账；未启用的房源只保存读数。</view>
+    </block>
+    <view wx:if="{{formError}}" class="login-error">{{formError}}</view>
+    <view wx:if="{{serverReading}}" class="surface">服务器当前：{{serverReading}}</view>
+    <view wx:if="{{message}}" class="hint">{{message}}</view>
+    <button wx:if="{{formReady && canEdit && !needsCheck}}" class="primary gap save-reading" bindtap="save" disabled="{{busy}}" loading="{{busy}}">{{lowerReading ? '确认保存（读数低于上期）' : '保存并回查读数'}}</button>
+    <button wx:if="{{needsCheck}}" class="primary gap" bindtap="checkSaved" disabled="{{busy}}" loading="{{busy}}">核对服务器记录</button>
+    <button wx:if="{{room && !needsCheck || conflict}}" class="quiet gap" bindtap="reloadContext" disabled="{{busy || contextLoading}}">{{conflict ? '载入服务器记录，重新修改' : '重新载入本期读数'}}</button>
+    <view class="hint">切换房源、账期或离开页面会清空未保存的输入。</view>
+  </block>
+</view>

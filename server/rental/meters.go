@@ -72,6 +72,8 @@ func setupMeterRoutes(api *gin.RouterGroup, db *gorm.DB) {
 	edit := requireLedgerModule(db, ModuleMeters, PermEdit)
 	full := requireLedgerModule(db, ModuleMeters, PermFull)
 	api.GET("/rental/meter-records", view, handleMeterList(db))
+	api.GET("/rental/meter-records/rooms", view, handleMeterRooms(db))
+	api.GET("/rental/meter-records/context", view, handleMeterContext(db))
 	api.POST("/rental/meter-records", edit, handleMeterUpsert(db))
 	api.DELETE("/rental/meter-records/:id", full, handleMeterDelete(db))
 }
@@ -258,21 +260,20 @@ func meterUsage(prev, now float64) float64 {
 // handleMeterUpsert 录入/修改一条抄表记录（同房同月覆盖）。
 func handleMeterUpsert(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var req struct {
-			RoomID uint    `json:"room_id" binding:"required"`
-			Period string  `json:"period" binding:"required"`
-			Water  float64 `json:"water"`
-			Elec   float64 `json:"elec"`
-			Gas    float64 `json:"gas"`
-			Note   string  `json:"note"`
-		}
+		c.Header("Cache-Control", "no-store")
+		var req meterRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			response.ErrorBadRequest(c, "请选择房间与账期")
 			return
 		}
 		req.Period = strings.TrimSpace(req.Period)
+		req.Note = strings.TrimSpace(req.Note)
 		if !isValidPeriod(req.Period) {
 			response.ErrorBadRequest(c, "账期格式应为 YYYY-MM")
+			return
+		}
+		if !req.valid() {
+			response.ErrorBadRequest(c, "读数须为非负有限数，备注最多500字；请重新读取后提交")
 			return
 		}
 		room, ok := loadRoom(db, c, req.RoomID)
@@ -283,32 +284,31 @@ func handleMeterUpsert(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 已存在记录按 (房间, 账期) 覆盖；台账记录归属必须与房间同台账，
-		// 跨台账的同名记录不参与覆盖（避免写到别的台账上）。
 		var rec MeterRecord
-		q, _ := scopeLedger(db.Where("room_id = ? AND period = ?", room.ID, req.Period), c)
-		err := q.First(&rec).Error
-		if err == nil {
-			rec.Water, rec.Elec, rec.Gas, rec.Note = req.Water, req.Elec, req.Gas, strings.TrimSpace(req.Note)
-			if err := db.Save(&rec).Error; err != nil {
-				response.ErrorInternal(c, "保存抄表记录失败")
-				return
+		changed, denied := false, false
+		err := db.Transaction(func(tx *gorm.DB) error {
+			var err error
+			rec, changed, err = saveMeterRecord(tx, room, currentUserID(c), req)
+			if err != nil {
+				return err
 			}
+			if !requireLedgerWrite(tx, c, room.LedgerID, ModuleMeters, PermEdit) {
+				denied = true
+				return fmt.Errorf("meter permission changed")
+			}
+			return nil
+		})
+		if denied {
+			return
+		}
+		if err != nil {
+			meterSaveError(c, err)
+			return
+		}
+		if changed {
 			audit.Log(db, c, "post_api_rental_meter-records", "meter_record", rec.ID,
-				fmt.Sprintf("修改抄表记录：房源 %s，账期 %s（水 %s，电 %s，燃气 %s）", room.RoomNo, rec.Period, fmtAmount(rec.Water), fmtAmount(rec.Elec), fmtAmount(rec.Gas)))
-			response.Success(c, rec)
-			return
+				fmt.Sprintf("保存抄表记录：房源 %s，账期 %s（水 %s，电 %s，燃气 %s）", room.RoomNo, rec.Period, fmtAmount(rec.Water), fmtAmount(rec.Elec), fmtAmount(rec.Gas)))
 		}
-		rec = MeterRecord{
-			UserID: currentUserID(c), LedgerID: room.LedgerID, RoomID: room.ID, Period: req.Period, // UserID 录入人戳
-			Water: req.Water, Elec: req.Elec, Gas: req.Gas, Note: strings.TrimSpace(req.Note),
-		}
-		if err := db.Create(&rec).Error; err != nil {
-			response.ErrorInternal(c, "保存抄表记录失败")
-			return
-		}
-		audit.Log(db, c, "post_api_rental_meter-records", "meter_record", rec.ID,
-			fmt.Sprintf("新增抄表记录：房源 %s，账期 %s（水 %s，电 %s，燃气 %s）", room.RoomNo, rec.Period, fmtAmount(rec.Water), fmtAmount(rec.Elec), fmtAmount(rec.Gas)))
 		response.Success(c, rec)
 	}
 }
