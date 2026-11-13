@@ -7,6 +7,7 @@
 import { watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { registerPWA, setPushAudience } from './utils/pwa'
+import { existingPushSubscription } from './utils/push-subscription'
 import { saveSubscription } from './api/automation'
 import Toast from './components/Toast.vue'
 import { toastState, toastText } from './utils/toast'
@@ -18,7 +19,7 @@ watch(() => auth.user?.id, async (id) => {
  if(current !== generation) return
  await setPushAudience(id || null)
  if(id && reg) {
-  const sub = await reg.pushManager?.getSubscription()
+  const sub = await existingPushSubscription(reg).catch(() => null)
   if(sub && current === generation) await saveSubscription(sub.toJSON()).catch(() => null)
  }
 }, { immediate: true })

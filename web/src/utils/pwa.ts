@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { existingPushSubscription } from './push-subscription'
 export const waitingWorker = ref<ServiceWorker | null>(null)
 export const installPrompt = ref<(Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }) | null>(null)
 let registration: Promise<ServiceWorkerRegistration | null> | null = null
@@ -30,7 +31,7 @@ export async function detachPush(token: string) {
   // push subscription, preserving the app's service worker and other sites.
   await setPushAudience(null)
   const reg = await registerPWA()
-  const sub = await reg?.pushManager?.getSubscription()
+  const sub = await existingPushSubscription(reg)
   if (!sub) return
   const endpoint = sub.endpoint
   await sub.unsubscribe().catch(() => false)

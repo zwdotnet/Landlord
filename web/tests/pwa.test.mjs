@@ -2,6 +2,36 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
+import ts from 'typescript'
+
+function subscriptionReader(notification) {
+ const exports = {}
+ const source = ts.transpileModule(readFileSync(new URL('../src/utils/push-subscription.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
+ vm.runInNewContext(source, { exports, ...(notification ? { Notification: notification } : {}) })
+ return exports.existingPushSubscription
+}
+
+test('ungranted notification permission never touches the native push service', async () => {
+ const registration = { get pushManager() { throw new Error('native push service was touched') } }
+ for (const permission of ['default', 'denied']) {
+  assert.equal(await subscriptionReader({ permission })(registration), null)
+ }
+ assert.equal(await subscriptionReader()(registration), null)
+})
+test('granted permission preserves the existing subscription for account binding and removal', async () => {
+ const subscription = { endpoint: 'https://push.example/synthetic-device' }
+ let calls = 0
+ const read = subscriptionReader({ permission: 'granted' })
+ assert.equal(await read({ pushManager: { async getSubscription() { calls++; return subscription } } }), subscription)
+ assert.equal(calls, 1)
+ assert.equal(await read({ pushManager: { async getSubscription() { return null } } }), null)
+ assert.equal(await read(null), null)
+ assert.equal(await read({}), null)
+})
+test('native subscription failures remain visible to the calling UI', async () => {
+ const read = subscriptionReader({ permission: 'granted' })
+ await assert.rejects(read({ pushManager: { async getSubscription() { throw new Error('push unavailable') } } }), /push unavailable/)
+})
 function worker() {
  const events={}, stores=new Map(), shown=[], opened=[]
  const scope='https://www.zoeng.site/landlord/'
