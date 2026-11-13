@@ -18,10 +18,14 @@ function environment() {
     files: require(root + '/lib/files') }
 }
 function identity(id = 1) { return { token: 'synthetic-token-' + id, user: { id, username: 'tenant-' + id, role: 'tenant', api_key: 'must-not-persist' } } }
-test('stores only tenant identity and token, never password or API key', () => {
+test('stores only supported role identity and token, never password or API key', () => {
   const e = environment(); e.session.start(identity())
   assert.deepEqual(e.session.current(), { token: identity().token, user: { id: 1, username: 'tenant-1', role: 'tenant' } })
-  assert.throws(() => e.session.start({ token: 'owner', user: { id: 2, role: 'admin' } }), /租客/)
+  for (const role of ['user', 'admin']) {
+    e.session.start({ token: 'owner', user: { id: 2, username: 'owner', role, password: 'never-store' } })
+    assert.equal(e.session.current().user.role, role); assert.equal(e.session.current().user.password, undefined)
+  }
+  assert.throws(() => e.session.start({ token: 'owner', user: { id: 2, role: 'unknown' } }), /不可用/)
 })
 test('expiry clears current identity and rejects protected result', async () => {
   const e = environment(); e.session.start(identity())

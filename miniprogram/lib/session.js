@@ -8,8 +8,8 @@ function matches(value) { return value.epoch === epoch && value.token === token(
 function notify() { epoch++; listeners.forEach(fn => fn()) }
 function clear() { wx.removeStorageSync(KEY); notify() }
 function start(result) {
-  if (!result || !result.token || !result.user || result.user.role !== 'tenant') {
-    throw new Error('首版小程序供租客使用，房东请使用现有 Web 入口')
+  if (!result || !result.token || !result.user || !['tenant', 'user', 'admin'].includes(result.user.role)) {
+    throw new Error('登录账号不可用，请重新登录')
   }
   clear()
   const u = result.user

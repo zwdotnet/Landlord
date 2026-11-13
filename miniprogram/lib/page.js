@@ -1,14 +1,11 @@
 const session = require('./session')
 const { request, error } = require('./request')
 const files = require('./files')
-function goLogin() {
-  const pages = getCurrentPages()
-  if (!pages.length || pages[pages.length - 1].route !== 'pages/login/index') wx.reLaunch({ url: '/pages/login/index' })
-}
+const { goLogin, enter, logout } = require('./navigation')
 async function guard(pending = false) {
   if (!session.token()) throw error('请先登录', 401)
   const user = await request('/auth/me')
-  if (user.role !== 'tenant') { session.clear(); goLogin(); throw error('首版小程序供租客使用', 403) }
+  if (user.role !== 'tenant') { await enter(user); throw error('已切换到账号对应的工作台', 0, true) }
   const status = await request('/rental/portal/status')
   if (!status.bound && !pending) {
     wx.reLaunch({ url: '/pages/pending/index' })
@@ -58,12 +55,7 @@ function tenantPage(options) {
         else if (!err.stale) wx.showToast({ title: err.message, icon: 'none' })
       } finally { if (this.sequence === seq) this.setData({ opening: false }) }
     },
-    logout() {
-      const token = session.token()
-      if (token) request('/auth/logout', { method: 'POST' }).catch(() => {})
-      session.clear()
-      goLogin()
-    },
+    logout,
     goPayments() { wx.navigateTo({ url: '/pages/payments/index' }) },
     goBill(e) { const id = e.currentTarget.dataset.id; if (/^[1-9]\d*$/.test(String(id))) wx.navigateTo({ url: '/pages/bill/index?id=' + id }) },
     goBills() { wx.switchTab({ url: '/pages/bills/index' }) },

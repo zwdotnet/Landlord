@@ -1,0 +1,8 @@
+<import src="../../../templates/landlord.wxml" />
+<view class="page"><template is="landlord-scope" data="{{username, ledgers, ledgerIndex, ledgerName, loading}}" /><view class="title gap">账单查询</view>
+  <view class="row"><input aria-label="搜索账单" value="{{keyword}}" bindinput="inputKeyword" bindconfirm="search" confirm-type="search" placeholder="搜索房号 / 租客" /><button class="small" bindtap="search" disabled="{{loading}}">搜索</button></view>
+  <view wx:if="{{loading}}" class="loading">正在读取账单…</view><view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重新加载</button></view>
+  <block wx:else><view class="meta gap">共 {{total}} 张账单</view><view wx:if="{{!items.length}}" class="surface empty">暂无符合条件的账单。</view>
+    <view wx:for="{{items}}" wx:key="id" class="surface" bindtap="goBill" data-id="{{item.id}}"><view class="row"><view class="list-title">{{item.room_no}} · {{item.period}}</view><text class="badge {{item.status === 'paid' ? 'paid' : ''}}">{{item.statusText}}</text></view><view class="meta gap">{{item.tenant_name}}</view><view class="pair"><text class="label">本期应缴</text><text class="money">¥{{item.payableText}}</text></view><view class="pair"><text class="label">尚欠</text><text>¥{{item.dueText}}</text></view></view>
+    <view wx:if="{{pages > 1}}" class="pagination"><button class="small" bindtap="previous" disabled="{{page <= 1}}">上一页</button><text class="meta">{{page}} / {{pages}}</text><button class="small" bindtap="next" disabled="{{page >= pages}}">下一页</button></view>
+  </block></view>

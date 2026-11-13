@@ -1,0 +1,1 @@
+<view class="page"><view wx:if="{{error}}" class="error">{{error}}<button bindtap="refresh">重试</button></view><view wx:else class="loading">正在恢复登录…</view></view>

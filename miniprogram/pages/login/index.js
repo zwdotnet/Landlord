@@ -1,6 +1,7 @@
 const { request } = require('../../lib/request')
 const session = require('../../lib/session')
-const initial = () => ({ phone: '', phoneRequired: false, busy: false, error: '' })
+const { enter } = require('../../lib/navigation')
+const initial = () => ({ mode: 'tenant', username: '', password: '', phone: '', phoneRequired: false, busy: false, error: '' })
 Page({
   data: initial(),
   onLoad() { this.attempt = 0 },
@@ -9,6 +10,25 @@ Page({
   onPullDownRefresh() { wx.stopPullDownRefresh() },
   clearPrivate() { this.attempt = (this.attempt || 0) + 1; this.setData(initial()) },
   input(e) { this.setData({ phone: e.detail.value }) },
+  switchMode(e) { this.clearPrivate(); this.setData({ mode: e.currentTarget.dataset.mode === 'landlord' ? 'landlord' : 'tenant' }) },
+  inputUsername(e) { this.setData({ username: e.detail.value }) },
+  inputPassword(e) { this.setData({ password: e.detail.value }) },
+  async submitAccount() {
+    if (this.data.busy) return
+    const username = this.data.username.trim(), password = this.data.password
+    if (!username || !password) { this.setData({ error: '请输入账号和密码' }); return }
+    const attempt = ++this.attempt, state = session.snapshot()
+    this.setData({ busy: true, error: '' })
+    try {
+      const data = await request('/auth/login', { public: true, method: 'POST', data: { username, password } })
+      if (attempt !== this.attempt || !session.matches(state)) return
+      this.setData({ password: '' })
+      session.start(data)
+      await enter(data.user)
+    } catch (e) {
+      if (!e.stale && attempt === this.attempt) this.setData({ error: e.message || '登录失败，请重试' })
+    } finally { if (attempt === this.attempt) this.setData({ busy: false }) }
+  },
   async submit() {
     if (this.data.busy) return
     const phone = this.data.phone.trim()
@@ -31,7 +51,7 @@ Page({
       }
       session.start(data)
       this.setData({ phone: '' })
-      wx.switchTab({ url: '/pages/home/index' })
+      await enter(data.user)
     } catch (e) {
       if (!e.stale && attempt === this.attempt) this.setData({ error: e.message || '登录失败，请重试' })
     } finally { if (attempt === this.attempt) this.setData({ busy: false }) }
