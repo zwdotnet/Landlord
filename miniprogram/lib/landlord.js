@@ -77,6 +77,7 @@ function landlordPage(options) {
       else this.refresh()
     },
     goHome() { wx.reLaunch({ url: '/pages/landlord/home/index' }) },
+    goAccount() { wx.navigateTo({ url: '/pages/landlord/account/index' }) },
     goRooms() { wx.navigateTo({ url: '/pages/landlord/rooms/index' }) },
     goBills() { wx.navigateTo({ url: '/pages/landlord/bills/index' }) },
     goBill(e) { const id = String(e.currentTarget.dataset.id); if (/^[1-9]\d*$/.test(id)) wx.navigateTo({ url: '/pages/landlord/bill/index?id=' + id }) },

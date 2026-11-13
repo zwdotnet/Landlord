@@ -5,7 +5,8 @@
     "pages/bills/index", "pages/bill/index", "pages/contracts/index",
     "pages/profile/index", "pages/payments/index",
     "pages/landlord/home/index", "pages/landlord/pending/index",
-    "pages/landlord/rooms/index", "pages/landlord/bills/index", "pages/landlord/bill/index"
+    "pages/landlord/rooms/index", "pages/landlord/bills/index", "pages/landlord/bill/index",
+    "pages/landlord/account/index"
   ],
   "window": {
     "navigationBarTitleText": "我的租住", "navigationBarBackgroundColor": "#f5f7f5",

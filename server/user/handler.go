@@ -564,6 +564,8 @@ func RegisterRoutes(publicGroup *gin.RouterGroup, optionalAuthGroup *gin.RouterG
 	publicGroup.POST("/auth/register", handleRegister(db, gatewayPrefix))
 	publicGroup.POST("/auth/login", handleLogin(db, gatewayPrefix))
 	publicGroup.POST("/auth/wechat/login", handleWeChatLogin(db))
+	wechat := configuredWeChatClient()
+	publicGroup.POST("/auth/wechat/landlord-login", landlordWeChatLoginHandler(db, wechat))
 	if fnOSApp {
 		publicGroup.GET("/auth/fnos/identity", handleFnOSIdentity())
 		publicGroup.POST("/auth/fnos/login", handleFnOSLogin(db, gatewayPrefix))
@@ -577,6 +579,9 @@ func RegisterRoutes(publicGroup *gin.RouterGroup, optionalAuthGroup *gin.RouterG
 	optionalAuthGroup.POST("/auth/logout", handleLogout(db, gatewayPrefix))
 
 	authGroup.GET("/auth/me", handleGetCurrentUser(db))
+	authGroup.GET("/auth/wechat/bind", landlordWeChatBindingHandler(db, wechat, "status"))
+	authGroup.POST("/auth/wechat/bind", landlordWeChatBindingHandler(db, wechat, "bind"))
+	authGroup.DELETE("/auth/wechat/bind", landlordWeChatBindingHandler(db, wechat, "unbind"))
 	authGroup.PUT("/auth/password", handleChangePassword(db))
 	authGroup.POST("/auth/apikey", handleRegenerateAPIKey(db))
 

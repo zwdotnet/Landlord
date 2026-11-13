@@ -7,6 +7,8 @@
     <label class="label-input">密码<input aria-label="房东密码" password value="{{password}}" bindinput="inputPassword" maxlength="128" placeholder="输入账号密码" disabled="{{busy}}" /></label>
     <view wx:if="{{error}}" class="login-error">{{error}}</view>
     <button class="primary" bindtap="submitAccount" loading="{{busy}}" disabled="{{busy}}">登录房东工作台</button>
+    <button class="gap wechat-login" bindtap="submitLandlordWeChat" loading="{{busy}}" disabled="{{busy}}">已绑定微信快捷登录</button>
+    <view class="hint">首次请用账号密码登录，在“微信绑定”中关联当前微信。</view>
     <view class="footer-note">使用已开通的账号登录。新账号开通与复杂操作请在 Web 完成。</view>
   </block>
   <block wx:else>

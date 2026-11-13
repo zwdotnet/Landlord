@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="brand">Landlord · 房东</view><view class="title">微信绑定</view>
+  <view wx:if="{{loading}}" class="loading">正在读取绑定状态…</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <block wx:if="{{ready}}">
+    <view class="subtitle">{{username}}</view>
+    <view class="surface gap">{{bound ? (currentApp ? '账号已绑定微信' : '账号已绑定其他小程序') : '账号尚未绑定微信'}}</view>
+    <view wx:if="{{!bound && status === 2}}" class="hint">账号审核通过后可绑定微信。</view>
+    <view wx:elif="{{!bound && !available}}" class="hint">微信绑定暂未配置，请继续使用账号密码登录。</view>
+    <block wx:if="{{bound || (available && status === 1)}}">
+      <view class="hint">{{bound ? '解绑后将撤销所有已签发的登录令牌（含 Web），当前页面也会退出。账号及租务资料保留，可用密码重新登录。' : '绑定当前微信后，可使用同一个房东账号快捷登录。已关联租客或其他账号的微信不能重复绑定。'}}</view>
+      <label class="label-input">当前账号密码<input aria-label="确认账号密码" password value="{{password}}" bindinput="inputPassword" maxlength="128" disabled="{{busy}}" placeholder="验证本人操作" /></label>
+      <button wx:if="{{!bound}}" class="primary gap" bindtap="bind" disabled="{{busy}}" loading="{{busy}}">确认绑定当前微信</button>
+      <button wx:else class="gap" bindtap="unbind" disabled="{{busy}}" loading="{{busy}}">确认解绑并退出登录</button>
+    </block>
+    <view wx:if="{{message}}" class="hint">{{message}}</view>
+  </block>
+  <button class="quiet gap" bindtap="refresh" disabled="{{busy || loading}}">刷新绑定状态</button>
+</view>

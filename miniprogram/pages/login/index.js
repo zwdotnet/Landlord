@@ -1,6 +1,7 @@
 const { request } = require('../../lib/request')
 const session = require('../../lib/session')
 const { enter } = require('../../lib/navigation')
+const { loginCode } = require('../../lib/wechat')
 const initial = () => ({ mode: 'tenant', username: '', password: '', phone: '', phoneRequired: false, busy: false, error: '' })
 Page({
   data: initial(),
@@ -13,6 +14,23 @@ Page({
   switchMode(e) { this.clearPrivate(); this.setData({ mode: e.currentTarget.dataset.mode === 'landlord' ? 'landlord' : 'tenant' }) },
   inputUsername(e) { this.setData({ username: e.detail.value }) },
   inputPassword(e) { this.setData({ password: e.detail.value }) },
+  async submitLandlordWeChat() {
+    if (this.data.busy) return
+    const attempt = ++this.attempt, state = session.snapshot()
+    this.setData({ busy: true, error: '', password: '' })
+    try {
+      const code = await loginCode()
+      if (attempt !== this.attempt || !session.matches(state)) return
+      const data = await request('/auth/wechat/landlord-login', { public: true, method: 'POST', data: { code } })
+      if (attempt !== this.attempt || !session.matches(state)) return
+      session.start(data)
+      // App's session subscriber clears every page, including this form.
+      const navigationAttempt = this.attempt
+      await enter(data.user, () => navigationAttempt === this.attempt)
+    } catch (e) {
+      if (!e.stale && attempt === this.attempt) this.setData({ error: e.message || '微信登录失败，请使用账号密码登录' })
+    } finally { if (attempt === this.attempt) this.setData({ busy: false }) }
+  },
   async submitAccount() {
     if (this.data.busy) return
     const username = this.data.username.trim(), password = this.data.password

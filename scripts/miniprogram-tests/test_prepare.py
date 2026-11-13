@@ -48,5 +48,18 @@ class PrepareTest(unittest.TestCase):
             module.prepare('https://example.com/api')
 
 
+class PageAssetsTest(unittest.TestCase):
+    def test_registered_pages_have_compilable_assets(self):
+        root = Path(__file__).parents[2] / 'miniprogram'
+        config = json.loads((root / 'app.json').read_text(encoding='utf-8'))
+        for page in config['pages']:
+            for suffix in ('.js', '.json', '.wxml'):
+                with self.subTest(page=page, suffix=suffix):
+                    asset = root / (page + suffix)
+                    self.assertTrue(asset.is_file(), str(asset))
+                    if suffix == '.json':
+                        self.assertIsInstance(json.loads(asset.read_text(encoding='utf-8')), dict)
+
+
 if __name__ == '__main__':
     unittest.main()
