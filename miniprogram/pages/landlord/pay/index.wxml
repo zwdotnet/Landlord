@@ -1,0 +1,25 @@
+<import src="../../../templates/landlord.wxml" />
+<view class="page">
+  <template is="landlord-scope" data="{{username, ledgers, ledgerIndex, ledgerName, loading, busy}}" />
+  <view class="title gap">线下实收</view><view class="subtitle">登记已经收到的款项，生成本笔收据。</view>
+  <view wx:if="{{loading}}" class="loading">正在核对账单与实收…</view><view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重新读取</button></view>
+  <block wx:elif="{{bill}}">
+    <view class="surface"><view class="room">{{bill.room_no}} · {{bill.period}}</view><view class="meta">{{bill.tenant_name}}</view><view class="pair"><text>本期应缴</text><text>¥{{bill.payableText}}</text></view><view class="pair"><text>累计净实收</text><text>¥{{bill.paidText}}</text></view><view class="pair"><text>尚欠</text><text>¥{{bill.dueText}}</text></view></view>
+    <view wx:if="{{blocked}}" class="note">{{message}}<button class="gap" bindtap="goHome">回工作台核对原请求</button></view>
+    <block wx:elif="{{!finished}}">
+      <view wx:if="{{!canEdit}}" class="hint">当前台账只有查看权限，无法登记或重试实收。</view>
+      <label class="label-input">本次已收到的金额（元）<input type="digit" data-field="amount" value="{{amount}}" bindinput="input" placeholder="例如 500.00" disabled="{{busy || pending || !canEdit}}" /></label>
+      <label class="label-input">备注（可选，最多500字）<input data-field="note" value="{{note}}" bindinput="input" maxlength="500" placeholder="例如 线下转账" disabled="{{busy || pending || !canEdit}}" /></label>
+      <button wx:if="{{canEdit && !pending && !reviewed}}" class="gap review-payment" bindtap="reviewPayment" disabled="{{busy}}" loading="{{busy}}">核对本次实收</button>
+      <view wx:if="{{reviewed || retryReady}}" class="surface"><view>本次登记 ¥{{reviewedAmount}}</view><view wx:if="{{overpay}}" class="note">本次含超过账单应缴的预收，请核对金额。是否抵扣后续账期取决于台账结转设置。</view><view class="hint">请确认已实际收到款项。登记后保留原始流水与收据，更正请在Web办理冲销。</view></view>
+      <button wx:if="{{canEdit && reviewed && !pending}}" class="primary gap submit-payment" bindtap="submit" disabled="{{busy}}" loading="{{busy}}">确认已收款 · ¥{{reviewedAmount}}</button>
+      <block wx:if="{{pending}}"><view class="note">结果未确认前，这一笔金额和备注会临时保存在本机，以便关闭后继续核对；核对成功或退出账号后清除。</view><button class="gap check-payment" bindtap="checkPayment" disabled="{{busy}}" loading="{{busy}}">核对本笔实收</button><button wx:if="{{canEdit && retryReady}}" class="primary gap retry-payment" bindtap="retry" disabled="{{busy}}">按原请求确认登记 · ¥{{reviewedAmount}}</button></block>
+    </block>
+    <view wx:if="{{formError}}" class="login-error">{{formError}}</view><view wx:if="{{message && !blocked}}" class="note">{{message}}</view>
+    <button wx:if="{{finished && canEdit}}" class="gap" bindtap="newPayment" disabled="{{busy || opening}}">登记另一笔实收</button>
+    <view class="section-title">{{finished ? '本次核对的原始流水' : '逐笔实收与冲销'}}</view>
+    <view wx:if="{{!payments.length}}" class="surface empty">暂无实收记录。</view>
+    <view wx:for="{{payments}}" wx:key="id" class="surface"><view class="row"><text>{{item.kindText}} · {{item.stateText}}</text><text class="money">{{item.kindText === '冲销' ? '-' : '+'}} ¥{{item.amountText}}</text></view><view class="meta gap">{{item.dateText}}</view><view wx:if="{{item.note}}" class="note">{{item.note}}</view><view wx:if="{{item.voided_at}}" class="note negative">已冲销 · {{item.void_reason}}</view><button wx:if="{{item.receipt_id}}" class="gap open-receipt" bindtap="openReceipt" data-id="{{item.receipt_id}}" disabled="{{busy || opening}}">查看{{item.stateText}}</button><view wx:else class="hint">历史流水尚无归档PDF</view></view>
+    <view class="hint">本页不提供在线支付。这里登记整笔实收；按收费项目分摊、冲销与退款核对请在Web完成。</view>
+  </block>
+</view>

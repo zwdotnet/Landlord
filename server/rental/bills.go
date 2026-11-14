@@ -29,7 +29,12 @@ func setupBillRoutes(api *gin.RouterGroup, db *gorm.DB) {
 	// 开票预览：抄表开票弹窗在保存前就能看到自定义收费项目、押金与上期结转，
 	// 计算链与服务端建账完全一致（不写库），避免预览合计与落库账单对不上。
 	api.GET("/rental/bills/preview", view, handleBillPreview(db))
+	api.GET("/rental/bills/issue-rooms", view, handleBillIssueRooms(db))
+	api.GET("/rental/bills/issue-tenants", view, handleBillIssueTenants(db))
+	api.GET("/rental/bills/issue-preview", view, handleBillIssuePreview(db))
+	api.POST("/rental/bills/confirm", edit, handleBillConfirm(db))
 	api.GET("/rental/bills/:id", view, handleBillDetail(db))
+	api.GET("/rental/bills/:id/payment-status", view, handleBillPaymentStatus(db))
 	api.POST("/rental/bills", edit, handleBillCreate(db))
 	api.PUT("/rental/bills/:id/recipients", edit, handleLegacyBillRecipients(db))
 	api.POST("/rental/bills/generate", edit, handleBillGenerate(db))
@@ -980,6 +985,7 @@ func syncBillItemsOnUpdate(db *gorm.DB, bill *Bill) error {
 // items 传了时按项目校验分摊（累计不超过该项目应付），没传视为整体收款不分摊。
 func handleBillPay(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store")
 		bill, ok := findUserBill(db, c)
 		if !ok {
 			return
@@ -988,10 +994,11 @@ func handleBillPay(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		var req struct {
-			Amount     float64      `json:"amount" binding:"required"`
-			RequestKey string       `json:"request_key"`
-			Note       string       `json:"note"`
-			Items      []payItemReq `json:"items"`
+			Amount     float64          `json:"amount" binding:"required"`
+			RequestKey string           `json:"request_key"`
+			Note       string           `json:"note"`
+			Items      []payItemReq     `json:"items"`
+			Expected   *paymentExpected `json:"expected"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil || req.Amount <= 0 {
 			response.ErrorBadRequest(c, "收款金额必须大于 0")
@@ -1015,6 +1022,10 @@ func handleBillPay(db *gorm.DB) gin.HandlerFunc {
 			}
 			bill.LastPaymentID, bill.LastReceiptID = prior.ID, prior.ReceiptID
 			response.Success(c, bill)
+			return
+		}
+		if !req.Expected.matches(bill) {
+			response.Error(c, 409, 409, "账单金额或实收已变化，请重新核对后再确认")
 			return
 		}
 

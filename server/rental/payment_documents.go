@@ -80,6 +80,9 @@ func newPaymentDocument(ctx context.Context, db *gorm.DB, bill *Bill, payment *P
 // The expected amount prevents stale concurrent requests from losing money.
 func commitDocumentedPayment(db *gorm.DB, bill *Bill, payment *Payment, doc *IssuedDocument, expected float64, original *Payment) error {
 	return db.Transaction(func(tx *gorm.DB) error {
+		if permRank[ledgerPerms(tx, payment.UserID, payment.LedgerID)[ModuleBills]] < permRank[PermEdit] {
+			return errors.New("台账收款权限已变化，请重新核对")
+		}
 		if original != nil {
 			now := time.Now()
 			updated := tx.Model(&Payment{}).Where("id = ? AND org_id = ? AND voided_at IS NULL", original.ID, original.LedgerID).

@@ -1,0 +1,38 @@
+<import src="../../../templates/landlord.wxml" />
+<view class="page">
+  <template is="landlord-scope" data="{{username, ledgers, ledgerIndex, ledgerName, loading, busy}}" />
+  <view class="title gap">预览与出账</view><view class="subtitle">按房源、账期和入住记录核对费用，再确认生成账单。</view>
+  <view wx:if="{{loading}}" class="loading">正在读取台账…</view><view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重试</button></view>
+  <block wx:else>
+    <picker mode="date" fields="month" value="{{period}}" bindchange="changePeriod" disabled="{{busy || contextLoading}}"><view class="surface row"><text>账期</text><text>{{period}} ⌄</text></view></picker>
+    <block wx:if="{{!room}}">
+      <view class="section-title">选择房源</view><input placeholder="搜索房号、小区或楼栋" value="{{keyword}}" bindinput="inputKeyword" bindconfirm="search" disabled="{{busy}}" /><button class="gap" bindtap="search">搜索</button>
+      <view wx:if="{{!items.length}}" class="surface empty">没有匹配的房源。</view>
+      <button wx:for="{{items}}" wx:key="id" class="surface link-row" data-id="{{item.id}}" bindtap="chooseRoom"><view class="grow">{{item.room_no}}<view class="meta">{{item.community}} {{item.building}}</view></view><text class="arrow">›</text></button>
+      <view class="pagination"><button class="small" bindtap="previousPage" disabled="{{page <= 1}}">上一页</button><text class="meta">{{page}} / {{pages}} · {{total}}套</text><button class="small" bindtap="nextPage" disabled="{{page >= pages}}">下一页</button></view>
+    </block>
+    <block wx:else>
+      <view class="surface row"><view class="grow"><view class="meta">已选房源</view><view class="room">{{room.room_no}}</view></view><button class="small" bindtap="changeRoom" disabled="{{busy || contextLoading}}">更换房源</button></view>
+      <view class="section-title">本期承租关系</view><view class="hint">按入住记录选择；同名租客请核对记录编号与日期。合租同一账单可多选。</view>
+      <view wx:if="{{contextLoading}}" class="loading">正在读取入住记录…</view>
+      <checkbox-group wx:elif="{{selectionReady}}" bindchange="selectTenants">
+        <label wx:for="{{tenants}}" wx:key="id" class="surface row"><checkbox value="{{item.id}}" checked="{{item.selected}}" disabled="{{busy}}" color="#245c45" /><view class="grow"><view>{{item.name}} · 记录 #{{item.id}}</view><view class="meta">入住 {{item.move_in_date || '待补齐'}}<text wx:if="{{item.move_out_date}}"> · 退租 {{item.move_out_date}}</text></view><view class="meta">租约至 {{item.lease_end_date || '未填写'}} · {{item.active ? '在租' : '已退租'}}</view></view></label>
+        <view wx:if="{{!tenants.length}}" class="surface empty">本期没有可选入住记录，请在 Web 核对日期与归属。</view>
+      </checkbox-group>
+      <button wx:else class="gap" bindtap="reloadTenants">重新读取入住记录</button>
+      <button wx:if="{{selectionReady && !needsCheck}}" class="gap" bindtap="preview" disabled="{{busy || !tenantIDs.length}}" loading="{{busy}}">预览账单</button>
+      <view wx:if="{{!canEdit}}" class="hint">当前台账只有查看权限，可预览已有费用，无法确认出账。</view>
+      <view wx:if="{{formError}}" class="login-error">{{formError}}</view><view wx:if="{{message}}" class="note">{{message}}</view>
+      <button wx:if="{{needsCheck}}" class="primary gap" bindtap="checkIssued" disabled="{{busy}}" loading="{{busy}}">核对是否已出账</button>
+      <block wx:if="{{bill}}">
+        <view class="section-title">{{exists ? '本期原单' : '账单预览'}}</view><view class="hero"><view class="meta">{{bill.room_no}} · {{bill.period}} · {{bill.tenant_name}}</view><view class="amount gap">¥{{bill.payableText}}</view><view class="pair"><text class="label">本期费用</text><text>¥{{bill.totalText}}</text></view><view class="pair"><text class="label">上期结转</text><text>¥{{bill.carryText}}</text></view><view class="meta">以上为服务端计算的本期应缴。</view></view>
+        <view wx:if="{{bill.rent_start_date || bill.rent_calculation}}" class="surface"><view>{{bill.rent_basis_source === 'current_lease_reference' ? '租金计算参考（按当前档案）' : '租金计算依据'}}</view><view class="meta">{{bill.rent_start_date}} — {{bill.rent_end_date}}</view><view class="note">{{bill.rent_calculation}}</view></view>
+        <view wx:if="{{fees.length}}" class="surface"><view wx:for="{{fees}}" wx:key="key" class="gap row top"><view class="grow">{{item.name}}<view class="meta">{{item.detail}}</view></view><text class="money">¥{{item.amountText}}</text></view></view>
+        <view wx:if="{{blockReason}}" class="note">{{blockReason}}</view>
+        <button wx:if="{{canConfirm && !needsCheck}}" class="primary gap" bindtap="confirm" disabled="{{busy}}" loading="{{busy}}">确认出账 · ¥{{bill.payableText}}</button>
+        <button wx:if="{{exists}}" class="primary gap" bindtap="goBill" disabled="{{busy}}">查看账单详情</button>
+      </block>
+      <view class="hint">已有账单直接查看原单。收费条款调整、退租结算、异常读数及收款请在 Web 核对。</view>
+    </block>
+  </block>
+</view>

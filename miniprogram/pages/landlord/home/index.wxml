@@ -4,12 +4,14 @@
   <view class="title gap">房东工作台</view><view class="subtitle">查看房源与账单，掌握当前台账的租务。</view>
   <view wx:if="{{loading}}" class="loading">正在读取台账…</view><view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重试</button></view>
   <block wx:else>
+    <button wx:if="{{hasPendingPayment}}" class="surface" bindtap="resumePayment">有一笔实收待核对 · 继续处理</button>
     <view wx:if="{{!hasLedger}}" class="surface empty">暂无可用台账，请在 Web 开通或联系台账管理者。</view>
     <view wx:elif="{{!canRooms && !canBills && !canMeters}}" class="surface empty">当前台账暂未授予房源、抄表或账单查看权限。</view>
     <button wx:if="{{canMeters}}" class="surface link-row" bindtap="goMeters">抄表<text class="arrow">›</text></button>
+    <button wx:if="{{canIssue}}" class="surface link-row" bindtap="goIssue">预览与出账<text class="arrow">›</text></button>
     <button wx:if="{{canRooms}}" class="surface link-row" bindtap="goRooms">房源查询<text class="arrow">›</text></button>
     <button wx:if="{{canBills}}" class="surface link-row" bindtap="goBills">账单查询<text class="arrow">›</text></button>
-    <view class="hint">小程序可录入抄表；房源编辑、开票调整及收款请继续使用 Web。</view>
+    <view class="hint">小程序可抄表、预览与确认出账；房源编辑、条款调整及收款请使用 Web。</view>
   </block>
   <button class="gap" bindtap="goAccount">微信绑定</button>
   <button class="quiet gap" bindtap="logout">退出登录 / 切换账号</button>

@@ -1,6 +1,8 @@
 const session = require('./session')
 const { request, error } = require('./request')
 const { enter, goLogin, logout } = require('./navigation')
+const intent = require('./payment-intent')
+const files = require('./files')
 let selected = null, epoch = 0, lastToken = session.token()
 session.subscribe(() => { if (lastToken !== session.token()) { selected = null; epoch++; lastToken = session.token() } })
 function select(id) {
@@ -43,7 +45,7 @@ async function guard(pending, isCurrent = () => true) {
 function canView(ledger, module) { return !!ledger && ['view', 'edit', 'full'].includes((ledger.perms || {})[module]) }
 function canEdit(ledger, module) { return !!ledger && ['edit', 'full'].includes((ledger.perms || {})[module]) }
 function landlordPage(options) {
-  const initial = () => Object.assign({ loading: false, error: '', username: '', ledgers: [], ledgerIndex: 0, ledgerName: '', hasLedger: false, canRooms: false, canBills: false, canMeters: false }, options.initial())
+  const initial = () => Object.assign({ loading: false, opening: false, error: '', username: '', ledgers: [], ledgerIndex: 0, ledgerName: '', hasLedger: false, canRooms: false, canBills: false, canMeters: false, canIssue: false, hasPendingPayment: false }, options.initial())
   Page(Object.assign({}, options.methods || {}, {
     data: initial(),
     onLoad(query) { this.query = query || {}; this.sequence = 0 },
@@ -59,7 +61,8 @@ function landlordPage(options) {
         const context = await guard(!!options.pending, () => this.sequence === seq && session.matches(auth))
         if (this.sequence !== seq || !session.matches(auth)) return
         const scope = snapshot(), ledger = context.ledger
-        const common = { username: context.user.username, ledgers: context.ledgers, ledgerIndex: Math.max(0, context.ledgers.findIndex(row => ledger && row.id === ledger.id)), ledgerName: ledger ? ledger.name : '', hasLedger: !!ledger, canRooms: canView(ledger, 'rooms'), canBills: canView(ledger, 'bills'), canMeters: canView(ledger, 'meters') }
+        const common = { username: context.user.username, ledgers: context.ledgers, ledgerIndex: Math.max(0, context.ledgers.findIndex(row => ledger && row.id === ledger.id)), ledgerName: ledger ? ledger.name : '', hasLedger: !!ledger, canRooms: canView(ledger, 'rooms'), canBills: canView(ledger, 'bills'), canMeters: canView(ledger, 'meters'), canIssue: canEdit(ledger, 'bills') }
+        common.hasPendingPayment = !!intent.load()
         this.setData(common)
         if (options.module && !canView(ledger, options.module)) throw error(ledger ? '当前台账没有此模块的查看权限' : '暂无可用台账，请联系台账管理者', 403)
         const data = await options.load.call(this, context)
@@ -81,8 +84,26 @@ function landlordPage(options) {
     goAccount() { wx.navigateTo({ url: '/pages/landlord/account/index' }) },
     goRooms() { wx.navigateTo({ url: '/pages/landlord/rooms/index' }) },
     goMeters() { wx.navigateTo({ url: '/pages/landlord/meters/index' }) },
+    goIssue() { wx.navigateTo({ url: '/pages/landlord/issue/index' }) },
     goBills() { wx.navigateTo({ url: '/pages/landlord/bills/index' }) },
     goBill(e) { const id = String(e.currentTarget.dataset.id); if (/^[1-9]\d*$/.test(id)) wx.navigateTo({ url: '/pages/landlord/bill/index?id=' + id }) },
+    goPay() { if (this.data.canIssue && this.data.bill) wx.navigateTo({ url: '/pages/landlord/pay/index?id=' + this.data.bill.id }) },
+    resumePayment() {
+      const pending = intent.load()
+      if (!pending) return this.refresh()
+      if (!this.data.ledgers.some(row => row.id === pending.ledgerID && canView(row, 'bills'))) { wx.showToast({ title: '原台账无可用账单权限，请联系台账管理者后继续核对', icon: 'none' }); return }
+      select(pending.ledgerID); wx.navigateTo({ url: '/pages/landlord/pay/index?id=' + pending.billID })
+    },
+    async openReceipt(e) {
+      if (this.data.opening) return
+      const id = Number(e.currentTarget.dataset.id)
+      if (!(this.data.payments || []).some(p => p.receipt_id === id)) return
+      const seq = this.sequence, auth = session.snapshot(), scope = snapshot(), current = () => seq === this.sequence && session.matches(auth) && matches(scope)
+      this.setData({ opening: true })
+      try { await files.openReceipt(id, scope.id, current) }
+      catch (e) { if (e.status === 401 && !e.stale && !session.token()) goLogin(); else if (!e.stale && current()) wx.showToast({ title: e.message, icon: 'none' }) }
+      finally { if (current()) this.setData({ opening: false }) }
+    },
     logout,
   }))
 }

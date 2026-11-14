@@ -8,7 +8,7 @@ try {
         & node --check $landlordMiniFile.FullName
         if ($LASTEXITCODE -ne 0) { throw "JavaScript syntax check failed: $($landlordMiniFile.Name)" }
     }
-    & node --test scripts/miniprogram-tests/client.test.cjs scripts/miniprogram-tests/landlord.test.cjs scripts/miniprogram-tests/meters.test.cjs
+    & node --test scripts/miniprogram-tests/client.test.cjs scripts/miniprogram-tests/landlord.test.cjs scripts/miniprogram-tests/meters.test.cjs scripts/miniprogram-tests/issue.test.cjs scripts/miniprogram-tests/payments.test.cjs
     if ($LASTEXITCODE -ne 0) { throw 'Mini program client tests failed.' }
     & python -m unittest discover -s scripts/miniprogram-tests -p 'test_*.py'
     if ($LASTEXITCODE -ne 0) { throw 'Mini program configuration tests failed.' }

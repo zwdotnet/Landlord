@@ -1,5 +1,6 @@
 const session = require('./lib/session')
 const files = require('./lib/files')
+require('./lib/payment-intent')
 
 App({
   onLaunch() {

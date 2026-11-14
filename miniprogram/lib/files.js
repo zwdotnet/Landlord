@@ -29,8 +29,17 @@ function classify(buffer) {
 }
 async function open(path, expected = 'pdf') {
   if (!/^\/rental\/portal\/(documents|contracts)\/[1-9]\d*\/file$/.test(path)) throw error('无效的文件路径')
+  return download(path, expected)
+}
+async function openReceipt(id, ledgerID, isCurrent) {
+  if (!/^[1-9]\d*$/.test(String(id)) || !/^[1-9]\d*$/.test(String(ledgerID)) || typeof isCurrent !== 'function') throw error('无效的收据或台账')
+  return download('/rental/documents/' + id + '/file?ledger_id=' + ledgerID, 'pdf', isCurrent)
+}
+async function download(path, expected, scopeCurrent = () => true) {
   const state = session.snapshot()
   if (!state.token) throw error('请先登录', 401)
+  const current = () => session.matches(state) && scopeCurrent()
+  if (!current()) throw error('页面或台账已切换', 0, true)
   clean()
   // Native download temp paths can be read-only (observed http://tmp in DevTools).
   // Own the output under USER_DATA_PATH so logout can actually unlink it.
@@ -41,14 +50,14 @@ async function open(path, expected = 'pdf') {
       success(res) {
         const name = res.filePath || res.tempFilePath
         if (name) track(name)
-        if (!session.matches(state)) { remove(name); reject(error('账号已切换', 0, true)); return }
+        if (!current()) { remove(name); reject(error('页面、账号或台账已切换', 0, true)); return }
         if (res.statusCode !== 200 || !name) {
           remove(name)
           if (res.statusCode === 401) session.clear()
           reject(error(res.statusCode === 401 ? '登录已过期，请重新登录' : '文件无法读取，请刷新后重试', res.statusCode)); return
         }
         resolve(name)
-      }, fail() { remove(destination); reject(error('下载失败，请检查网络后重试')) },
+      }, fail() { remove(destination); reject(error(current() ? '下载失败，请检查网络后重试' : '页面或台账已切换', 0, !current())) },
     })
   })
   try {
@@ -56,7 +65,7 @@ async function open(path, expected = 'pdf') {
       wx.getFileSystemManager().readFile({ filePath: file,
         success(res) { resolve(classify(res.data)) }, fail() { reject(error('文件读取失败')) } })
     })
-    if (!session.matches(state)) throw error('账号已切换', 0, true)
+    if (!current()) throw error('页面、账号或台账已切换', 0, true)
     if (!kind || (expected === 'pdf' && kind !== 'pdf')) throw error('返回的内容不是有效文件，请刷新后重试')
     await new Promise((resolve, reject) => {
       const callbacks = { success: resolve, fail: () => reject(error('无法打开文件，请稍后重试')) }
@@ -65,4 +74,4 @@ async function open(path, expected = 'pdf') {
     })
   } catch (e) { remove(file); throw e }
 }
-module.exports = { open, clean, classify }
+module.exports = { open, openReceipt, clean, classify }
