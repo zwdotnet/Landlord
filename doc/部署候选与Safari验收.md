@@ -115,3 +115,28 @@ ln -sfn /opt/landlord/releases/20261112-0.10.0-qa-6595307 /opt/landlord/current
 ```
 
 以上为回退参考，**本次未执行回退**；不恢复旧数据库覆盖后续业务，不回退Caddy或WX配置，不用down -v。证据位于本机`.runtime/deploy-readiness-20261113/`，服务器`/opt/landlord/operations/readiness-20261113/`及`/opt/landlord/artifacts/github-43263322293/`，新release内有published.json。所有旧release、镜像、备份和失败证据保留；后续单独文档提交不改变本次部署的源码revision1753277。执行者SELF-ACCEPT，无独立验收，未安排后台监控。
+
+## 2026-11-14 房东小程序接口与SW修复发布
+
+用户在本地提交623a21d后明确指令“好，接下来部署”。本轮推送该源码并发布Web/API，包含SW订阅权限保护、房东微信绑定/快捷登录、抄表/账单/实收接口；小程序客户端仍未上传/发布。多房东来源、一次性登记链接、管理员重构及小程序冲销均未启动，没有生产测试业务。
+
+- [云构建43592881908](https://github.com/zwdotnet/Landlord/actions/runs/43592881908)成功，源码`623a21d30366cd95d6590fe7b1ef1284fd4dba64`，GitHub完成Web检查、Linux镜像构建、只读运行与中文PDF冒烟。VPS只下载/加载制品，没有构建。镜像标签仍以0.10.0加commit/run区分。
+- 当前：`/opt/landlord/releases/run-43592881908-623a21d30366`；镜像`landlord:0.10.0-623a21d30366-43592881908-1`，实际ID`sha256:a777001b5e2eff27a63bfc4ddc365d46ca8a51671241050e4d87542aa5e6a6a5`。核对源码revision、rootfs层与78份前端。20:11:59写出发布回执，20:13服务器、20:14公网复核通过，均为香港时间。
+- 制品：`/opt/landlord/artifacts/github-43592881908/`，原GitHub ZIP为345224737字节，SHA256 `d24bbeca48b66caf0d71ee585c5b6445ce78d31e64d936e5f99eadfdc09dbe1d`匹配。内外来源、三文件校验和、归档成员/前端完整性由现有release.py核对，未改发布工具代码。
+- 冻结备份：`/var/backups/landlord/pre-run-43592881908-20261114-121157`（UTC名），含一致性SQLite、附件/日志、受限环境、旧Compose与Caddy。旧release`/opt/landlord/releases/run-43263322293-17532776461d`及其镜像保留。current在健康、精确前端、数据/配置核对通过后切换；失败回退分支未触发。
+- 原数据：quick_check=ok、结构不变，14个旧业务表原字段/ID与冻结库一致；8份非数据库文件哈希及11份旧日志前缀保持。users3、rooms1、tenants1、bills1、items2、attachments1，payments/documents/contracts/plans/tasks和微信身份0；没有新建生产账号或录入业务。
+- 容器healthy、无OOM，512MiB RAM/768MiB内存加swap、1CPU、160pids、只读根和前端、loopback18930保持；bootstrap原字节/0600、WX键存在及Caddy保持。其他3容器未重建/重启、7个站点入口200、6个稳定响应指纹保持（邮件页动态只断言状态）。
+- 发布前完成Go553/15含测试包、Web类型/构建、Node8及发布Python8组成项；PowerShell5将unittest正常stderr误判为NativeCommandError，原入口退出1，已单独复核Python8项为0/OK，Go/Web未重跑。原错误保留，不声称verify.ps1整体退出0。公网47项、脚本异常0，覆盖精确静态文件、登录页、新旧API匿名鉴权、空微信code交换前拒绝和SW作用域；物理手机、生产真实微信交换与登录后业务未验。详细证据见测试报告§19。
+
+云构建5分21秒；VPS直下并校验102.73秒，含解包/包验证109.16秒；发布工具28.12秒，其中包校验0.99秒、冻结备份/切换/核对段1.66秒。构建起至发布回执9分3.54秒，至公网验证11分41.01秒；本次完整检查与云构建并行，初读和最终文档另计，不能与此前复用门禁或未埋点的33分钟估计直接比较。
+
+回退仍先核对现场和后续业务兼容性，再仅切回前一应用/前端，验证后更新current：
+
+```sh
+docker compose -p landlord -f /opt/landlord/releases/run-43263322293-17532776461d/compose.yml up -d --no-build --pull never --wait
+curl --fail http://127.0.0.1:18930/api/health
+curl --fail http://127.0.0.1:18930/ >/dev/null
+ln -sfn /opt/landlord/releases/run-43263322293-17532776461d /opt/landlord/current
+```
+
+本轮未执行回退，不恢复旧数据库覆盖后续业务，不用down -v或回退Caddy/WX。证据在本机`.runtime/deploy-owner-20261114/raw/`，服务器`/opt/landlord/operations/owner-20261114/`和制品目录，新release内有published.json。凭据和短时签名下载位置仅在进程中使用，未落盘/入日志；没有后台监控。执行者SELF-ACCEPT，无独立/真机验收。发布收尾文档另行提交推送，应用源码revision保持623a21d。
