@@ -1,1 +1,4 @@
-{"navigationBarTitleText":"账单明细"}
+{
+  "navigationBarTitleText": "账单明细",
+  "navigationStyle": "custom"
+}

@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>超市经营账 · 主题预览 v4 — 晨雾玻璃</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   主题令牌 —— 与 design-tokens.css 同源
+   设计约束：店主单手操作、环境光不定、需快速扫读金额。
+   因此玻璃只服务于「层次」，一旦影响可读性就让位。
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --mg-brand-50:#F0F2FE; --mg-brand-100:#E2E6FC; --mg-brand-200:#C6CDF8;
+  --mg-brand-300:#A2ACF2; --mg-brand-400:#7583E8; --mg-brand-500:#5262DD;
+  --mg-brand-600:#4148C5; --mg-brand-700:#363BA0;
+
+  --mg-danger-50:#FEF2F2;  --mg-danger-500:#CE3439;  --mg-danger-600:#B92B31;
+  --mg-success-50:#EDFAF3; --mg-success-500:#1E7A4E; --mg-success-600:#186340;
+  --mg-warn-50:#FDF4E3;    --mg-warn-500:#DD8A00;    --mg-warn-600:#9E6200;
+
+  --mg-ink-900:#14161F; --mg-ink-800:#252833; --mg-ink-700:#3A3E4D;
+  --mg-ink-600:#525770; --mg-ink-500:#636980; --mg-ink-400:#8E94A8;
+  --mg-ink-300:#B4B9C8; --mg-ink-200:#D6D9E2; --mg-ink-100:#E9EBF1; --mg-ink-50:#F5F6FA;
+
+  --mg-bg:#F7F8FC; --mg-surface:#FFF; --mg-surface-sunk:#F5F6FA;
+  --mg-glass:rgba(255,255,255,.66); --mg-glass-strong:rgba(255,255,255,.78);
+  --mg-glass-blur:saturate(180%) blur(22px);
+  --mg-glass-sheen:rgba(255,255,255,.92); --mg-glass-edge:rgba(20,22,31,.07);
+  --mg-line:#E4E7F0; --mg-line-strong:#D2D7E4;
+
+  --mg-bg-page:var(--mg-bg); --mg-text:var(--mg-ink-900);
+  --mg-text-2:var(--mg-ink-600); --mg-text-3:var(--mg-ink-500);
+  --mg-text-onfill:#FFF; --mg-accent:var(--mg-brand-500); --mg-accent-quiet:var(--mg-brand-50);
+
+  --mg-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  --mg-font-num:"SF Pro Display",-apple-system,"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+
+  --mg-fs-micro:11px; --mg-fs-xs:12px; --mg-fs-sm:13px; --mg-fs-md:15px;
+  --mg-fs-lg:17px; --mg-fs-xl:21px; --mg-fs-2xl:26px; --mg-fs-3xl:40px;
+  --mg-fw-regular:400; --mg-fw-medium:500; --mg-fw-semi:600; --mg-fw-bold:700;
+  --mg-lh-tight:1.12; --mg-lh-snug:1.35; --mg-lh-base:1.55;
+  --mg-ls-hero:-.028em; --mg-ls-title:-.011em; --mg-ls-body:0; --mg-ls-label:.055em;
+
+  --mg-space-1:4px; --mg-space-2:8px; --mg-space-3:12px; --mg-space-4:16px;
+  --mg-space-5:20px; --mg-space-6:24px; --mg-space-8:32px; --mg-space-10:40px; --mg-space-12:48px;
+  --mg-gutter:18px; --mg-stack-card:12px; --mg-row-pad-y:14px; --mg-row-inset:70px;
+
+  --mg-radius-xs:8px; --mg-radius-sm:12px; --mg-radius-md:14px; --mg-radius-lg:18px;
+  --mg-radius-xl:22px; --mg-radius-2xl:28px; --mg-radius-full:999px;
+
+  --mg-shadow-xs:0 1px 2px rgba(24,28,60,.04);
+  --mg-shadow-sm:0 2px 8px -2px rgba(24,28,60,.07),0 1px 2px rgba(24,28,60,.04);
+  --mg-shadow-md:0 10px 26px -8px rgba(24,28,60,.13),0 2px 6px -2px rgba(24,28,60,.05);
+  --mg-shadow-lg:0 24px 56px -16px rgba(24,28,60,.20),0 6px 16px -6px rgba(24,28,60,.08);
+  --mg-shadow-brand:0 10px 22px -8px rgba(82,98,221,.42);
+  --mg-shadow-danger:0 10px 22px -8px rgba(206,52,57,.36);
+
+  --mg-z-tabbar:60; --mg-z-scrim:70; --mg-z-modal:80; --mg-z-toast:90;
+
+  --mg-ease-out:cubic-bezier(.22,1,.36,1); --mg-ease-inout:cubic-bezier(.65,0,.35,1);
+  --mg-dur-fast:140ms; --mg-dur-base:240ms; --mg-dur-slow:380ms;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-family:var(--mg-font);font-size:var(--mg-fs-md);line-height:var(--mg-lh-base);
+  color:var(--mg-text);background:#EEF0F6;font-kerning:normal;-webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent}
+:where(button,a,input,[tabindex]):focus-visible{outline:2px solid var(--mg-brand-500);outline-offset:2px;border-radius:8px}
+
+/* ═══ 背景 · 晨雾 ══════════════════════════════════════════════
+   光斑压到 0.26~0.40 并重度模糊：保证玻璃叠上去后，
+   最亮处的次级文字仍有 5:1 以上对比。这是玻璃主题最易翻车处。 */
+.mg-mist{position:absolute;inset:0;z-index:0;pointer-events:none;background-color:var(--mg-bg)}
+.mg-mist::before{content:"";position:absolute;inset:-15%;
+  background:
+    radial-gradient(58% 34% at 10% 4%,rgba(120,138,255,.40),transparent 70%),
+    radial-gradient(46% 30% at 94% 12%,rgba(168,140,250,.30),transparent 72%),
+    radial-gradient(64% 30% at 50% 96%,rgba(90,196,178,.26),transparent 74%);
+  filter:blur(44px)}
+/* 颗粒：给磨砂以物理质感，消解数字渐变的塑料感 */
+.mg-mist::after{content:"";position:absolute;inset:0;opacity:.028;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.mg-canvas{position:relative;z-index:1}
+
+/* ═══ 玻璃基类 ═════════════════════════════════════════════════
+   三段式棱边：顶部高光 + 底部暗边 + 外部柔影。
+   这三层是「一块玻璃」和「一个半透明方块」的全部区别。 */
+.mg-glass{background:var(--mg-glass);-webkit-backdrop-filter:var(--mg-glass-blur);backdrop-filter:var(--mg-glass-blur);
+  border-radius:var(--mg-radius-xl);
+  box-shadow:inset 0 1px 0 var(--mg-glass-sheen),inset 0 0 0 1px rgba(255,255,255,.45),0 0 0 1px var(--mg-glass-edge),var(--mg-shadow-md)}
+.mg-card{background:var(--mg-surface);border-radius:var(--mg-radius-xl);box-shadow:var(--mg-shadow-sm);overflow:hidden}
+
+/* ═══ Hero · 液态玻璃主卡 ════════════════════════════════════ */
+.mg-hero{position:relative;margin:var(--mg-space-2) var(--mg-gutter) var(--mg-stack-card);
+  padding:var(--mg-space-6) var(--mg-space-5) var(--mg-space-5);border-radius:var(--mg-radius-2xl);overflow:hidden;
+  background:var(--mg-glass-strong);-webkit-backdrop-filter:var(--mg-glass-blur);backdrop-filter:var(--mg-glass-blur);
+  box-shadow:inset 0 1px 0 var(--mg-glass-sheen),inset 0 0 0 1px rgba(255,255,255,.5),0 0 0 1px var(--mg-glass-edge),var(--mg-shadow-lg)}
+.mg-hero::before{content:"";position:absolute;top:-60%;left:-25%;width:92%;height:150%;
+  background:radial-gradient(closest-side,rgba(82,98,221,.22),transparent);filter:blur(28px);pointer-events:none}
+.mg-hero__top{position:relative;display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--mg-space-5)}
+.mg-hero__date{font-size:var(--mg-fs-sm);font-weight:var(--mg-fw-medium);color:var(--mg-text-2)}
+.mg-hero__status{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 11px;border-radius:var(--mg-radius-full);
+  font-size:var(--mg-fs-xs);font-weight:var(--mg-fw-semi);color:var(--mg-brand-700);background:var(--mg-brand-50);
+  box-shadow:inset 0 0 0 1px rgba(82,98,221,.16)}
+.mg-hero__label{position:relative;font-size:var(--mg-fs-sm);font-weight:var(--mg-fw-medium);color:var(--mg-text-2);margin-bottom:6px}
+.mg-hero__amount{position:relative;display:flex;align-items:baseline;gap:4px;font-family:var(--mg-font-num);
+  font-variant-numeric:tabular-nums;font-size:var(--mg-fs-3xl);font-weight:var(--mg-fw-bold);
+  line-height:var(--mg-lh-tight);letter-spacing:var(--mg-ls-hero);color:var(--mg-text)}
+.mg-hero__amount .mg-currency{font-size:var(--mg-fs-lg);font-weight:var(--mg-fw-medium);color:var(--mg-text-2);letter-spacing:0}
+.mg-hero__chips{position:relative;display:flex;flex-wrap:wrap;gap:var(--mg-space-2);margin-top:var(--mg-space-4)}
+
+/* ═══ 指标条 ═════════════════════════════════════════════════ */
+.mg-metrics{display:flex;margin:0 var(--mg-gutter) var(--mg-stack-card);border-radius:var(--mg-radius-xl);
+  overflow:hidden;background:var(--mg-surface);box-shadow:var(--mg-shadow-sm)}
+.mg-metric{flex:1;padding:var(--mg-space-4);min-width:0}
+.mg-metric+.mg-metric{border-left:1px solid var(--mg-line)}
+.mg-metric__k{font-size:var(--mg-fs-xs);font-weight:var(--mg-fw-medium);color:var(--mg-text-2);letter-spacing:var(--mg-ls-label)}
+.mg-metric__v{margin-top:5px;font-family:var(--mg-font-num);font-variant-numeric:tabular-nums;font-size:var(--mg-fs-xl);
+  font-weight:var(--mg-fw-bold);letter-spacing:-.018em;color:var(--mg-text)}
+.mg-metric__v .mg-currency{font-size:var(--mg-fs-sm);font-weight:var(--mg-fw-medium);color:var(--mg-text-2)}
+
+/* ═══ 分组与列表行 ═══════════════════════════════════════════ */
+.mg-section{display:flex;align-items:center;gap:7px;margin:var(--mg-space-6) var(--mg-gutter) var(--mg-space-2);
+  font-size:var(--mg-fs-xs);font-weight:var(--mg-fw-semi);color:var(--mg-text-3);letter-spacing:var(--mg-ls-label)}
+.mg-section::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--mg-brand-500);opacity:.55;flex:none}
+.mg-group{margin:0 var(--mg-gutter) var(--mg-stack-card);border-radius:var(--mg-radius-xl);overflow:hidden;
+  background:var(--mg-surface);box-shadow:var(--mg-shadow-sm)}
+.mg-row{position:relative;display:flex;align-items:center;gap:var(--mg-space-3);min-height:58px;
+  padding:var(--mg-row-pad-y) var(--mg-gutter);cursor:pointer;transition:background-color var(--mg-dur-fast) linear}
+.mg-row:active{background:var(--mg-surface-sunk)}
+/* 内嵌分隔线：不抵左边缘，让图标列成为连续视觉通道 */
+.mg-row:not(:last-child)::after{content:"";position:absolute;left:var(--mg-row-inset);right:0;bottom:0;height:1px;background:var(--mg-line)}
+.mg-row--flush:not(:last-child)::after{left:var(--mg-gutter)}
+.mg-row__grow{flex:1;min-width:0}
+.mg-row__title{font-size:var(--mg-fs-lg);font-weight:var(--mg-fw-semi);letter-spacing:var(--mg-ls-title);color:var(--mg-text)}
+.mg-row__sub{margin-top:3px;font-size:var(--mg-fs-sm);color:var(--mg-text-2)}
+.mg-row__value{flex:none;font-family:var(--mg-font-num);font-variant-numeric:tabular-nums;font-size:var(--mg-fs-lg);
+  font-weight:var(--mg-fw-semi);letter-spacing:-.016em;text-align:right;color:var(--mg-text)}
+.mg-tile{flex:none;width:42px;height:42px;border-radius:var(--mg-radius-sm);display:grid;place-items:center;
+  font-size:var(--mg-fs-md);font-weight:var(--mg-fw-semi);color:var(--mg-brand-700);background:var(--mg-brand-50);
+  box-shadow:inset 0 0 0 1px rgba(82,98,221,.10)}
+.mg-tile--neutral{color:var(--mg-ink-600);background:var(--mg-ink-50);box-shadow:inset 0 0 0 1px var(--mg-line)}
+.mg-chevron{flex:none;width:18px;height:18px;color:var(--mg-ink-400)}
+.mg-chevron svg{display:block;width:100%;height:100%}
+.mg-amt-danger{color:var(--mg-danger-600)} .mg-amt-success{color:var(--mg-success-500)}
+.mg-amt-warn{color:var(--mg-warn-600)} .mg-amt-muted{color:var(--mg-ink-500);font-weight:var(--mg-fw-medium)}
+
+/* ═══ 胶囊 / 角标 ════════════════════════════════════════════ */
+.mg-chip{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 11px;border-radius:var(--mg-radius-full);
+  font-size:var(--mg-fs-xs);font-weight:var(--mg-fw-semi);letter-spacing:.01em}
+.mg-chip--brand{background:var(--mg-brand-50);color:var(--mg-brand-700)}
+.mg-chip--warn{background:var(--mg-warn-50);color:var(--mg-warn-600)}
+.mg-chip--success{background:var(--mg-success-50);color:var(--mg-success-500)}
+.mg-chip--danger{background:var(--mg-danger-50);color:var(--mg-danger-600)}
+.mg-badge{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:var(--mg-radius-full);
+  font-size:var(--mg-fs-micro);font-weight:var(--mg-fw-semi);letter-spacing:.02em}
+.mg-badge--danger{background:var(--mg-danger-50);color:var(--mg-danger-600)}
+.mg-badge--warn{background:var(--mg-warn-50);color:var(--mg-warn-600)}
+.mg-badge--success{background:var(--mg-success-50);color:var(--mg-success-500)}
+.mg-badge--brand{background:var(--mg-brand-50);color:var(--mg-brand-700)}
+
+/* ═══ 分段控件 ═══════════════════════════════════════════════ */
+.mg-seg{display:flex;gap:2px;margin:0 var(--mg-gutter);padding:3px;border-radius:var(--mg-radius-md);
+  background:var(--mg-surface-sunk);box-shadow:inset 0 0 0 1px var(--mg-line)}
+.mg-seg__item{flex:1;min-height:40px;display:grid;place-items:center;border:0;border-radius:11px;background:none;
+  font:inherit;font-size:var(--mg-fs-sm);font-weight:var(--mg-fw-semi);color:var(--mg-text-2);cursor:pointer;
+  transition:color var(--mg-dur-fast),background-color var(--mg-dur-fast),box-shadow var(--mg-dur-fast)}
+.mg-seg__item[aria-selected="true"]{color:var(--mg-text);background:var(--mg-surface);box-shadow:var(--mg-shadow-xs),0 0 0 1px rgba(20,22,31,.05)}
+
+/* ═══ 表单 ══════════════════════════════════════════════════ */
+.mg-field{position:relative;display:flex;align-items:center;gap:var(--mg-space-3);min-height:58px;padding:var(--mg-row-pad-y) var(--mg-gutter)}
+.mg-field:not(:last-child)::after{content:"";position:absolute;left:var(--mg-gutter);right:0;bottom:0;height:1px;background:var(--mg-line)}
+.mg-field__label{flex:none;font-size:var(--mg-fs-lg);color:var(--mg-text)}
+.mg-field__input{flex:1;min-width:0;border:0;outline:0;background:none;font-family:var(--mg-font-num);
+  font-variant-numeric:tabular-nums;font-size:var(--mg-fs-lg);font-weight:var(--mg-fw-semi);letter-spacing:-.016em;
+  text-align:right;color:var(--mg-text)}
+/* placeholder 也必须 4.5:1：用字重降级换取视觉轻柔，而非降对比 */
+.mg-field__input::placeholder{color:var(--mg-text-3);font-weight:var(--mg-fw-regular)}
+.mg-field:focus-within{background:var(--mg-brand-50)}
+.mg-field:focus-within .mg-field__label{color:var(--mg-brand-700);font-weight:var(--mg-fw-medium)}
+.mg-switch{flex:none;position:relative;width:50px;height:30px;border:0;padding:0;border-radius:var(--mg-radius-full);
+  background:var(--mg-ink-300);cursor:pointer;transition:background-color var(--mg-dur-base) var(--mg-ease-out)}
+/* 视觉 50×30，可点区域扩到 66×46 —— 拇指容错靠这里，不靠放大控件 */
+.mg-switch::before{content:"";position:absolute;inset:-8px}
+.mg-switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;
+  box-shadow:0 2px 5px rgba(24,28,60,.22);transition:transform var(--mg-dur-base) var(--mg-ease-out)}
+.mg-switch[aria-checked="true"]{background:var(--mg-success-500)}
+.mg-switch[aria-checked="true"]::after{transform:translateX(20px)}
+
+/* ═══ 按钮 ══════════════════════════════════════════════════ */
+.mg-btn{display:flex;align-items:center;justify-content:center;gap:var(--mg-space-2);width:100%;min-height:52px;
+  padding:0 var(--mg-space-5);border:0;border-radius:var(--mg-radius-md);font-family:inherit;font-size:var(--mg-fs-lg);
+  font-weight:var(--mg-fw-semi);letter-spacing:var(--mg-ls-title);cursor:pointer;
+  transition:transform var(--mg-dur-fast) var(--mg-ease-out),box-shadow var(--mg-dur-base) var(--mg-ease-out),background-color var(--mg-dur-fast) linear}
+.mg-btn:active{transform:scale(.975)}
+.mg-btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+/* 同色相深浅渐变（非彩虹渐变），保证最亮端仍 ≥5:1 */
+.mg-btn--primary{color:var(--mg-text-onfill);background:linear-gradient(135deg,#5262DD 0%,#4148C5 100%);
+  box-shadow:var(--mg-shadow-brand),inset 0 1px 0 rgba(255,255,255,.22)}
+.mg-btn--primary:active{box-shadow:var(--mg-shadow-xs),inset 0 1px 0 rgba(255,255,255,.18)}
+.mg-btn--danger{color:var(--mg-text-onfill);background:linear-gradient(135deg,#CE3439 0%,#B92B31 100%);
+  box-shadow:var(--mg-shadow-danger),inset 0 1px 0 rgba(255,255,255,.20)}
+.mg-btn--secondary{color:var(--mg-text);background:var(--mg-surface);box-shadow:inset 0 0 0 1px var(--mg-line-strong),var(--mg-shadow-xs)}
+.mg-btn--secondary:active{background:var(--mg-surface-sunk)}
+.mg-btn--text{min-height:46px;color:var(--mg-brand-500);background:none}
+.mg-btn--text:active{background:var(--mg-brand-50)}
+
+/* ═══ 底部标签栏 ════════════════════════════════════════════ */
+.mg-tabbar{display:flex;width:100%;padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--mg-glass-strong);-webkit-backdrop-filter:var(--mg-glass-blur);backdrop-filter:var(--mg-glass-blur);
+  box-shadow:inset 0 1px 0 var(--mg-glass-sheen),0 -1px 0 var(--mg-glass-edge)}
+.mg-tab{flex:1;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  border:0;background:none;font:inherit;font-size:var(--mg-fs-micro);font-weight:var(--mg-fw-semi);
+  color:var(--mg-ink-500);cursor:pointer;transition:color var(--mg-dur-fast)}
+.mg-tab[aria-selected="true"]{color:var(--mg-brand-500)}
+.mg-tab svg{width:23px;height:23px;display:block}
+
+/* ═══ 遮罩 / 对话框 / 抽屉 / 轻提示 ══════════════════════════ */
+.mg-scrim{position:absolute;inset:0;z-index:var(--mg-z-scrim);background:rgba(18,20,34,.38);opacity:0;visibility:hidden;
+  transition:opacity var(--mg-dur-base) var(--mg-ease-out),visibility var(--mg-dur-base)}
+.mg-scrim[data-open="true"]{opacity:1;visibility:visible}
+.mg-dialog{position:absolute;left:50%;top:50%;z-index:var(--mg-z-modal);width:min(286px,calc(100% - 48px));
+  transform:translate(-50%,-46%) scale(.96);opacity:0;visibility:hidden;border-radius:var(--mg-radius-xl);overflow:hidden;
+  background:var(--mg-glass-strong);-webkit-backdrop-filter:var(--mg-glass-blur);backdrop-filter:var(--mg-glass-blur);
+  box-shadow:inset 0 1px 0 var(--mg-glass-sheen),0 0 0 1px var(--mg-glass-edge),var(--mg-shadow-lg);
+  transition:transform var(--mg-dur-base) var(--mg-ease-out),opacity var(--mg-dur-base) var(--mg-ease-out),visibility var(--mg-dur-base)}
+.mg-dialog[data-open="true"]{transform:translate(-50%,-50%) scale(1);opacity:1;visibility:visible}
+.mg-dialog__body{padding:var(--mg-space-6) var(--mg-space-5) var(--mg-space-5);text-align:center}
+.mg-dialog__title{font-size:var(--mg-fs-lg);font-weight:var(--mg-fw-bold);letter-spacing:var(--mg-ls-title)}
+.mg-dialog__text{margin-top:7px;font-size:var(--mg-fs-sm);line-height:var(--mg-lh-base);color:var(--mg-text-2)}
+.mg-dialog__actions{display:flex;border-top:1px solid var(--mg-line)}
+.mg-dialog__actions button{flex:1;min-height:50px;border:0;background:none;font:inherit;font-size:var(--mg-fs-lg);
+  font-weight:var(--mg-fw-semi);color:var(--mg-brand-500);cursor:pointer}
+.mg-dialog__actions button+button{border-left:1px solid var(--mg-line)}
+.mg-dialog__actions button:active{background:var(--mg-surface-sunk)}
+.mg-dialog__actions .mg-is-destructive{color:var(--mg-danger-600)}
+.mg-sheet{position:absolute;left:50%;bottom:0;z-index:var(--mg-z-modal);width:100%;transform:translate(-50%,102%);
+  border-radius:var(--mg-radius-2xl) var(--mg-radius-2xl) 0 0;background:var(--mg-glass-strong);
+  -webkit-backdrop-filter:var(--mg-glass-blur);backdrop-filter:var(--mg-glass-blur);
+  box-shadow:inset 0 1px 0 var(--mg-glass-sheen),0 -8px 40px rgba(24,28,60,.18);
+  transition:transform var(--mg-dur-slow) var(--mg-ease-out);padding-bottom:env(safe-area-inset-bottom,0px);
+  max-height:min(86%,640px);overflow-y:auto;overscroll-behavior:contain}
+.mg-sheet[data-open="true"]{transform:translate(-50%,0)}
+.mg-sheet__head{position:relative;padding:var(--mg-space-2) var(--mg-gutter) var(--mg-space-3);text-align:center;border-bottom:1px solid var(--mg-line)}
+.mg-sheet__grab{width:38px;height:5px;margin:4px auto 10px;border-radius:3px;background:var(--mg-ink-300)}
+.mg-sheet__title{font-size:var(--mg-fs-lg);font-weight:var(--mg-fw-bold);letter-spacing:var(--mg-ls-title)}
+.mg-sheet__done{position:absolute;right:var(--mg-gutter);top:20px;border:0;background:none;font:inherit;
+  font-size:var(--mg-fs-lg);font-weight:var(--mg-fw-semi);color:var(--mg-brand-500);cursor:pointer}
+.mg-search{display:flex;align-items:center;gap:var(--mg-space-2);height:40px;margin:var(--mg-space-3) var(--mg-gutter);
+  padding:0 var(--mg-space-3);border-radius:var(--mg-radius-sm);background:var(--mg-surface-sunk);box-shadow:inset 0 0 0 1px var(--mg-line)}
+.mg-search svg{flex:none;width:16px;height:16px;color:var(--mg-ink-400)}
+.mg-search input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:var(--mg-fs-md);color:var(--mg-text)}
+.mg-search input::placeholder{color:var(--mg-text-3)}
+.mg-toast{position:absolute;left:50%;bottom:104px;z-index:var(--mg-z-toast);transform:translate(-50%,10px);
+  padding:11px 20px;border-radius:var(--mg-radius-full);font-size:var(--mg-fs-sm);font-weight:var(--mg-fw-semi);color:#fff;
+  background:rgba(20,22,31,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:var(--mg-shadow-md);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity var(--mg-dur-base) var(--mg-ease-out),transform var(--mg-dur-base) var(--mg-ease-out),visibility var(--mg-dur-base)}
+.mg-toast[data-open="true"]{opacity:1;transform:translate(-50%,0);visibility:visible}
+
+@keyframes mg-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.mg-rise{animation:mg-rise var(--mg-dur-slow) var(--mg-ease-out) both}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* 打印/静态导出时动画不推进，内容会停在 opacity:0 —— 必须兜底 */
+@media print{
+  .mg-rise{animation:none!important;opacity:1!important;transform:none!important}
+  .mg-mist{display:none!important}
+  .mg-glass,.mg-hero,.mg-tabbar,.mg-dialog,.mg-sheet{background:#FFF!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .shell__body{display:block}
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .mg-glass,.mg-hero,.mg-tabbar,.mg-dialog,.mg-sheet{background:#FDFDFF}}
+
+/* ═══════════════════════════════════════════════════════════════
+   预览页外壳（非主题的一部分）
+   ═══════════════════════════════════════════════════════════════ */
+.shell{max-width:1240px;margin:0 auto;padding:40px 24px 72px}
+.shell__head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 24px;margin-bottom:32px}
+.shell__eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;letter-spacing:.055em;
+  color:var(--mg-brand-700);background:var(--mg-brand-50);padding:6px 12px;border-radius:999px}
+.shell__eyebrow::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--mg-brand-500)}
+.shell__title{margin:14px 0 0;font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.15;color:var(--mg-ink-900)}
+.shell__desc{margin:10px 0 0;max-width:56ch;font-size:15px;color:var(--mg-ink-600)}
+.shell__body{display:grid;grid-template-columns:436px minmax(0,1fr);gap:40px;align-items:start}
+@media (max-width:1020px){.shell__body{grid-template-columns:1fr;gap:32px}}
+
+/* 设备模拟 */
+.device{position:sticky;top:40px}
+@media (max-width:1020px){.device{position:static}}
+.device__cap{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;padding:0 4px}
+.device__name{font-size:13px;font-weight:600;letter-spacing:.055em;color:var(--mg-ink-500)}
+.device__hint{font-size:12px;color:var(--mg-ink-500)}
+.phone{width:100%;height:min(852px,86vh);min-height:600px;padding:11px;border-radius:46px;
+  background:linear-gradient(160deg,#2A2E3D 0%,#14161F 55%,#20242F 100%);
+  box-shadow:0 40px 80px -28px rgba(24,28,60,.45),0 2px 6px rgba(24,28,60,.20),inset 0 1px 0 rgba(255,255,255,.16)}
+.phone__screen{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;isolation:isolate;background:var(--mg-bg)}
+.phone__scroll{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:92px}
+.phone__scroll::-webkit-scrollbar{width:0}
+/* 抽屉/弹窗在设备内定位，而非视口 */
+.phone .mg-tabbar{position:absolute;left:0;right:0;bottom:0;z-index:var(--mg-z-tabbar)}
+
+/* 规范区 */
+.spec{display:grid;gap:20px;min-width:0}
+.panel{background:#FFF;border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(24,28,60,.05),0 0 0 1px rgba(24,28,60,.045)}
+.panel__h{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--mg-ink-900);margin-bottom:4px}
+.panel__n{display:grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--mg-brand-50);
+  color:var(--mg-brand-700);font-size:11px;font-weight:700;flex:none}
+.panel__p{margin:8px 0 0;font-size:13.5px;line-height:1.65;color:var(--mg-ink-600)}
+.panel__p b{color:var(--mg-ink-900);font-weight:600}
+.panel__body{margin-top:18px}
+
+/* 色板 */
+.sw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.sw{border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px rgba(24,28,60,.07)}
+.sw__c{height:52px;display:flex;align-items:flex-end;padding:6px 9px;font-size:10.5px;font-weight:700;color:#fff}
+.sw__m{padding:7px 9px;background:#FFF}
+.sw__n{font-size:11.5px;font-weight:600;color:var(--mg-ink-900)}
+.sw__v{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.5px;color:var(--mg-ink-500);margin-top:2px}
+
+/* 规格表 */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.055em;color:var(--mg-ink-500);
+  padding:0 12px 8px 0;border-bottom:1px solid var(--mg-line)}
+.tbl td{padding:11px 12px 11px 0;border-bottom:1px solid var(--mg-line);vertical-align:middle;color:var(--mg-ink-700)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--mg-ink-900)}
+.tbl .ok{display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums;font-weight:600;color:var(--mg-success-500)}
+.tbl .ok::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.tbl .no{display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums;font-weight:600;color:var(--mg-danger-600)}
+.tbl .no::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+/* 字阶 */
+.type-row{display:flex;align-items:baseline;gap:16px;padding:13px 0;border-bottom:1px solid var(--mg-line)}
+.type-row:last-child{border-bottom:0}
+.type-row__meta{flex:none;width:132px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11.5px;color:var(--mg-ink-500);line-height:1.5}
+.type-row__demo{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mg-ink-900)}
+
+/* 间距 / 圆角 */
+.bars{display:grid;gap:9px}
+.bar{display:flex;align-items:center;gap:12px}
+.bar__lbl{flex:none;width:60px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;color:var(--mg-ink-500)}
+.bar__fill{height:14px;border-radius:4px;background:linear-gradient(90deg,var(--mg-brand-400),var(--mg-brand-500))}
+.radius-grid{display:flex;flex-wrap:wrap;gap:14px}
+.radius-grid div{width:82px;text-align:center}
+.radius-grid i{display:block;height:66px;background:var(--mg-brand-50);box-shadow:inset 0 0 0 1.5px var(--mg-brand-300)}
+.radius-grid span{display:block;margin-top:7px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.5px;color:var(--mg-ink-500)}
+
+/* 代码块 */
+.code{position:relative;margin-top:16px}
+.code pre{margin:0;padding:16px 18px;border-radius:12px;background:#14161F;color:#D5DAEA;overflow:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.75;
+  max-height:320px;font-variant-ligatures:none}
+.code pre .c{color:#7C86A8}
+.code pre .k{color:#9BB2FF}
+.code pre .v{color:#8FE0C0}
+.code__copy{position:absolute;top:10px;right:10px;padding:6px 12px;border:0;border-radius:8px;
+  background:rgba(255,255,255,.12);color:#E6EAF7;font:inherit;font-size:11.5px;font-weight:600;cursor:pointer}
+.code__copy:active{background:rgba(255,255,255,.2)}
+
+/* 对比度条 */
+.cc{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.cc span{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;font-size:11.5px;font-weight:600;
+  background:var(--mg-ink-50);color:var(--mg-ink-700)}
+.cc em{font-style:normal;font-variant-numeric:tabular-nums;color:var(--mg-success-500)}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="shell__head">
+    <div>
+      <span class="shell__eyebrow">主题 v4 · 晨雾玻璃</span>
+      <h1 class="shell__title">超市经营账 · 全新主题样式</h1>
+      <p class="shell__desc">
+        以「晨雾玻璃」为语言重构：浮层用玻璃建立层次，内容层保持实心以保证扫读锐利。
+        配色、字号、间距全部收纳为设计令牌，可直接接入生产。
+      </p>
+    </div>
+  </header>
+
+  <div class="shell__body">
+
+    <!-- ══════════ 设备预览 ══════════ -->
+    <div class="device">
+      <div class="device__cap">
+        <span class="device__name">设备预览 · 400 × 852</span>
+        <span class="device__hint">组件可直接点击</span>
+      </div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="mg-mist"></div>
+
+          <div class="phone__scroll" id="scroll">
+            <div class="mg-canvas">
+
+              <!-- Hero -->
+              <div class="mg-hero mg-rise">
+                <div class="mg-hero__top">
+                  <div class="mg-hero__date">今天 · 9月14日 周一</div>
+                  <div class="mg-hero__status">已对账</div>
+                </div>
+                <div class="mg-hero__label">今日营业额</div>
+                <div class="mg-hero__amount"><span class="mg-currency">¥</span>9,867.50</div>
+                <div class="mg-hero__chips">
+                  <span class="mg-chip mg-chip--warn">在途 ¥3,118.20</span>
+                  <span class="mg-chip mg-chip--success">已到账 ¥6,749.30</span>
+                </div>
+              </div>
+
+              <!-- 指标 -->
+              <div class="mg-metrics mg-rise" style="animation-delay:.05s">
+                <div class="mg-metric">
+                  <div class="mg-metric__k">现金头寸</div>
+                  <div class="mg-metric__v"><span class="mg-currency">¥</span>4,238.20</div>
+                </div>
+                <div class="mg-metric">
+                  <div class="mg-metric__k">未付货款</div>
+                  <div class="mg-metric__v mg-amt-danger"><span class="mg-currency">¥</span>38,412.00</div>
+                  <div style="margin-top:6px"><span class="mg-badge mg-badge--danger">12 家未结</span></div>
+                </div>
+              </div>
+
+              <!-- 货款往来 -->
+              <div class="mg-section">货款往来</div>
+              <div class="mg-group mg-rise" style="animation-delay:.1s">
+                <div class="mg-row" data-toast="进入：康师傅方便面">
+                  <div class="mg-tile">康</div>
+                  <div class="mg-row__grow">
+                    <div class="mg-row__title">康师傅方便面</div>
+                    <div class="mg-row__sub">3 笔未付 · 最近 9月12日</div>
+                  </div>
+                  <div class="mg-row__value mg-amt-danger">¥8,640.00</div>
+                  <span class="mg-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+                </div>
+                <div class="mg-row" data-toast="进入：蒙牛乳业（经销）">
+                  <div class="mg-tile">蒙</div>
+                  <div class="mg-row__grow">
+                    <div class="mg-row__title">蒙牛乳业（经销）</div>
+                    <div class="mg-row__sub">月结 10 日 · T+1 在途</div>
+                  </div>
+                  <div class="mg-row__value mg-amt-warn">¥5,206.40</div>
+                  <span class="mg-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+                </div>
+                <div class="mg-row" data-toast="进入：今麦郎饮品">
+                  <div class="mg-tile mg-tile--neutral">今</div>
+                  <div class="mg-row__grow">
+                    <div class="mg-row__title">今麦郎饮品</div>
+                    <div class="mg-row__sub">9月13日 已核销</div>
+                  </div>
+                  <div class="mg-row__value mg-amt-muted">¥0.00</div>
+                  <span class="mg-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+                </div>
+              </div>
+
+              <!-- 今日记账 -->
+              <div class="mg-section">今日记账</div>
+              <div class="mg-seg mg-rise" role="tablist" id="seg">
+                <button class="mg-seg__item" role="tab" aria-selected="true">每日汇总</button>
+                <button class="mg-seg__item" role="tab" aria-selected="false">支出</button>
+                <button class="mg-seg__item" role="tab" aria-selected="false">进货</button>
+              </div>
+              <div class="mg-group mg-rise" style="margin-top:10px;animation-delay:.05s">
+                <div class="mg-field">
+                  <label class="mg-field__label" for="f1">现金</label>
+                  <input class="mg-field__input" id="f1" inputmode="decimal" value="3,944.50">
+                </div>
+                <div class="mg-field">
+                  <label class="mg-field__label" for="f2">微信</label>
+                  <input class="mg-field__input" id="f2" inputmode="decimal" value="2,102.30">
+                </div>
+                <div class="mg-field">
+                  <label class="mg-field__label" for="f3">POS</label>
+                  <input class="mg-field__input" id="f3" inputmode="decimal" placeholder="0.00">
+                </div>
+                <div class="mg-row mg-row--flush" data-sheet>
+                  <div class="mg-row__grow"><div class="mg-row__title" style="font-weight:500">供应商</div></div>
+                  <div style="font-size:17px;color:var(--mg-text-2)">康师傅方便面</div>
+                  <span class="mg-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+                </div>
+              </div>
+
+              <!-- 偏好设置 -->
+              <div class="mg-section">偏好设置</div>
+              <div class="mg-group mg-rise" style="animation-delay:.05s">
+                <div class="mg-row" style="cursor:default">
+                  <div class="mg-row__grow"><div class="mg-row__title" style="font-weight:500">现金对账提醒</div></div>
+                  <button class="mg-switch" role="switch" aria-checked="true" aria-label="现金对账提醒"></button>
+                </div>
+                <div class="mg-row" style="cursor:default">
+                  <div class="mg-row__grow"><div class="mg-row__title" style="font-weight:500">自动生成手续费记录</div></div>
+                  <button class="mg-switch" role="switch" aria-checked="false" aria-label="自动生成手续费记录"></button>
+                </div>
+                <div class="mg-row" style="cursor:default">
+                  <div class="mg-row__grow"><div class="mg-row__title" style="font-weight:500">大额支出二次确认</div></div>
+                  <button class="mg-switch" role="switch" aria-checked="true" aria-label="大额支出二次确认"></button>
+                </div>
+              </div>
+
+              <!-- 操作 -->
+              <div class="mg-section">操作</div>
+              <div class="mg-group mg-rise" style="padding:16px;display:grid;gap:10px;animation-delay:.05s">
+                <button class="mg-btn mg-btn--primary" data-toast="已保存今日汇总">保存今日汇总</button>
+                <button class="mg-btn mg-btn--secondary" data-sheet>选择供应商</button>
+                <button class="mg-btn mg-btn--danger" data-dialog>删除这笔支出</button>
+              </div>
+
+              <div style="height:8px"></div>
+            </div>
+          </div>
+
+          <!-- 底部导航 -->
+          <nav class="mg-tabbar" id="tabbar">
+            <button class="mg-tab" aria-selected="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>
+              今日
+            </button>
+            <button class="mg-tab" aria-selected="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              记账
+            </button>
+            <button class="mg-tab" aria-selected="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>
+              货款
+            </button>
+            <button class="mg-tab" aria-selected="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+              报表
+            </button>
+            <button class="mg-tab" aria-selected="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.8-3.2-2.2.9a7.4 7.4 0 0 0-2.6-1.5L14.2 3H9.8L9.4 5.3a7.4 7.4 0 0 0-2.6 1.5l-2.2-.9-1.8 3.2 1.8 1.4a7.6 7.6 0 0 0 0 3L2.8 15l1.8 3.2 2.2-.9a7.4 7.4 0 0 0 2.6 1.5l.4 2.3h4.4l.4-2.3a7.4 7.4 0 0 0 2.6-1.5l2.2.9 1.8-3.2z"/></svg>
+              设置
+            </button>
+          </nav>
+
+          <!-- 浮层 -->
+          <div class="mg-scrim" id="scrim"></div>
+
+          <div class="mg-dialog" id="dialog" role="alertdialog" aria-modal="true">
+            <div class="mg-dialog__body">
+              <div class="mg-dialog__title">删除这笔支出？</div>
+              <div class="mg-dialog__text">康师傅方便面 · ¥864.00 · 9月12日<br>删除后可在审计日志中追溯。</div>
+            </div>
+            <div class="mg-dialog__actions">
+              <button data-close>取消</button>
+              <button class="mg-is-destructive" data-close data-toast="已删除该笔支出">删除</button>
+            </div>
+          </div>
+
+          <div class="mg-sheet" id="sheet" role="dialog" aria-modal="true">
+            <div class="mg-sheet__head">
+              <div class="mg-sheet__grab"></div>
+              <div class="mg-sheet__title">选择供应商</div>
+              <button class="mg-sheet__done" data-close>完成</button>
+            </div>
+            <div class="mg-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input placeholder="搜索名称 / 电话 / 拼音首字母">
+            </div>
+            <div class="mg-section" style="margin-top:6px">最近使用</div>
+            <div class="mg-row" data-close data-toast="已选：康师傅方便面">
+              <div class="mg-tile">康</div>
+              <div class="mg-row__grow"><div class="mg-row__title">康师傅方便面</div><div class="mg-row__sub">未付 ¥8,640.00</div></div>
+              <span class="mg-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+            </div>
+            <div class="mg-row" data-close data-toast="已选：蒙牛乳业（经销）">
+              <div class="mg-tile">蒙</div>
+              <div class="mg-row__grow"><div class="mg-row__title">蒙牛乳业（经销）</div><div class="mg-row__sub">月结 10 日</div></div>
+              <span class="mg-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+            </div>
+            <div class="mg-row" data-close data-toast="已选：海天味业">
+              <div class="mg-tile">海</div>
+              <div class="mg-row__grow"><div class="mg-row__title">海天味业</div><div class="mg-row__sub">上次 9月11日</div></div>
+              <span class="mg-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>
+            </div>
+          </div>
+
+          <div class="mg-toast" id="toast" role="status" aria-live="polite">已保存</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ 设计规范 ══════════ -->
+    <main class="spec">
+
+      <section class="panel">
+        <div class="panel__h"><span class="panel__n">01</span>设计上下文</div>
+        <p class="panel__p">
+          <b>使用者</b>：小店店主，单手拿手机，常在收银台或仓库边走边记。<b>环境光不定</b>——室外强光、货架阴影、深夜关店后的暖灯。<br>
+          <b>核心任务</b>：三秒内确认今天收了多少钱、还欠哪几家、这家欠多少。<br>
+          <b>因此本案的取舍</b>：玻璃用于表达「什么浮在最上层」，绝不用于信息主体。<b>凡是承载数字的表面，一律实心白底</b>；只有导航栏、主卡、弹层允许半透明。
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel__h"><span class="panel__n">02</span>色彩系统</div>
+        <p class="panel__p">
+          以靛蓝 <span class="mono">#5262DD</span> 为主色，明度降低、饱和收敛，使其在白底与玻璃上都能稳定通过 4.5:1。
+          所有中性色带 <b>极低色度的靛蓝色相</b>（chroma ≈ 0.01），避免死灰，与主色形成潜意识呼应。
+        </p>
+        <div class="panel__body">
+          <div class="sw-grid">
+            <div class="sw"><div class="sw__c" style="background:#5262DD">主色</div><div class="sw__m"><div class="sw__n">Brand 500</div><div class="sw__v">#5262DD</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#4148C5">按下</div><div class="sw__m"><div class="sw__n">Brand 600</div><div class="sw__v">#4148C5</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#363BA0">深字</div><div class="sw__m"><div class="sw__n">Brand 700</div><div class="sw__v">#363BA0</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#F0F2FE;color:#363BA0">弱底</div><div class="sw__m"><div class="sw__n">Brand 50</div><div class="sw__v">#F0F2FE</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#CE3439">未付</div><div class="sw__m"><div class="sw__n">Danger 500</div><div class="sw__v">#CE3439</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#B92B31">未付字</div><div class="sw__m"><div class="sw__n">Danger 600</div><div class="sw__v">#B92B31</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#1E7A4E">已付</div><div class="sw__m"><div class="sw__n">Success 500</div><div class="sw__v">#1E7A4E</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#DD8A00">装饰</div><div class="sw__m"><div class="sw__n">Warn 500</div><div class="sw__v">#DD8A00</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#9E6200">在途字</div><div class="sw__m"><div class="sw__n">Warn 600</div><div class="sw__v">#9E6200</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#14161F">正文</div><div class="sw__m"><div class="sw__n">Ink 900</div><div class="sw__v">#14161F</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#525770">次要</div><div class="sw__m"><div class="sw__n">Ink 600</div><div class="sw__v">#525770</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#636980">三级</div><div class="sw__m"><div class="sw__n">Ink 500</div><div class="sw__v">#636980</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#8E94A8">图标</div><div class="sw__m"><div class="sw__n">Ink 400</div><div class="sw__v">#8E94A8</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#E4E7F0;color:#525770">分割</div><div class="sw__m"><div class="sw__n">Line</div><div class="sw__v">#E4E7F0</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#F7F8FC;color:#525770">页面</div><div class="sw__m"><div class="sw__n">BG</div><div class="sw__v">#F7F8FC</div></div></div>
+            <div class="sw"><div class="sw__c" style="background:#F5F6FA;color:#525770">凹槽</div><div class="sw__m"><div class="sw__n">Sunk</div><div class="sw__v">#F5F6FA</div></div></div>
+          </div>
+
+          <div class="panel__p" style="margin-top:22px">
+            语义色有两条纪律：<b>-500 只做填充</b>（配白字），<b>-600 只做文字</b>（配 -50 浅底）。混用即破功——
+            例如琥珀 <span class="mono">#DD8A00</span> 上放白字只有 2.72:1，换 <span class="mono">#9E6200</span> 才达标。
+          </div>
+          <div class="cc">
+            <span>正文 / 白底 <em>17.5:1</em></span>
+            <span>次要 / 最亮玻璃 <em>6.5:1</em></span>
+            <span>三级 / 最亮玻璃 <em>5.0:1</em></span>
+            <span>主按钮白字 <em>5.1:1</em></span>
+            <span>危险按钮白字 <em>5.0:1</em></span>
+            <span>图标 / 白底 <em>3.0:1</em></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__h"><span class="panel__n">03</span>玻璃配方</div>
+        <p class="panel__p">
+          玻璃感最容易做坏的地方是「半透明方块 + 圆角 + 阴影」的三件套。<b>真正让一块玻璃成立的是棱边</b>——
+          顶部一道内高光模拟光源，底部一道极细暗边模拟厚度，外部再落一层带蓝调的柔影。
+        </p>
+        <div class="panel__body">
+          <table class="tbl">
+            <tr><th style="width:150px">层</th><th>作用</th></tr>
+            <tr><td class="mono">inset 0 1px 0</td><td>棱边顶部高光，玻璃的「受光面」</td></tr>
+            <tr><td class="mono">inset 0 0 0 1px</td><td>内描边，让边缘在任意背景上都不糊</td></tr>
+            <tr><td class="mono">0 0 0 1px</td><td>底部外暗边，交代玻璃的厚度</td></tr>
+            <tr><td class="mono">外部柔影</td><td>用 rgba(24,28,60) 而非纯黑，阴影才像「光被挡」</td></tr>
+          </table>
+          <div class="panel__p" style="margin-top:16px">
+            另外加了两处细节：背景光斑全部压到 <b>0.26–0.40</b> 不透明度并模糊 44px，保证玻璃叠上去后最亮处仍有 5:1；
+            页面铺一层 <b>2.8% 的噪点</b>，让磨砂有物理颗粒感，这是它和数字渐变的分水岭。
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__h"><span class="panel__n">04</span>字体系统</div>
+        <p class="panel__p">
+          中文直接使用系统字体——加载零成本、各平台字形最正确。层级靠<b>字号 + 字重 + 字距</b>三维拉开，而非另找字体。
+          采用固定 rem 尺度而非流体字号：数据密集型界面需要空间可预测。
+        </p>
+        <div class="panel__body">
+          <div class="type-row">
+            <div class="type-row__meta">--mg-fs-3xl · 40<br>bold · -.028em</div>
+            <div class="type-row__demo" style="font-family:var(--mg-font-num);font-size:40px;font-weight:700;letter-spacing:-.028em;line-height:1.12">9,867.50</div>
+          </div>
+          <div class="type-row">
+            <div class="type-row__meta">--mg-fs-xl · 21<br>bold · -.018em</div>
+            <div class="type-row__demo" style="font-family:var(--mg-font-num);font-size:21px;font-weight:700;letter-spacing:-.018em">38,412.00</div>
+          </div>
+          <div class="type-row">
+            <div class="type-row__meta">--mg-fs-lg · 17<br>semibold</div>
+            <div class="type-row__demo" style="font-size:17px;font-weight:600;letter-spacing:-.011em">康师傅方便面</div>
+          </div>
+          <div class="type-row">
+            <div class="type-row__meta">--mg-fs-md · 15<br>regular</div>
+            <div class="type-row__demo" style="font-size:15px">搜索名称 / 电话 / 拼音首字母</div>
+          </div>
+          <div class="type-row">
+            <div class="type-row__meta">--mg-fs-sm · 13<br>regular</div>
+            <div class="type-row__demo" style="font-size:13px;color:var(--mg-ink-600)">3 笔未付 · 最近 9月12日</div>
+          </div>
+          <div class="type-row">
+            <div class="type-row__meta">--mg-fs-xs · 12<br>semibold · +.055em</div>
+            <div class="type-row__demo" style="font-size:12px;font-weight:600;letter-spacing:.055em;color:var(--mg-ink-500)">货款往来</div>
+          </div>
+          <div class="type-row">
+            <div class="type-row__meta">--mg-fs-micro · 11<br>semibold · +.02em</div>
+            <div class="type-row__demo"><span class="mg-badge mg-badge--danger">12 家未结</span></div>
+          </div>
+          <div class="panel__p">
+            所有金额统一 <span class="mono">tabular-nums</span>：数字等宽才能在列表里纵向对齐，
+            店主扫一眼就能比出谁欠得多。小标签则反向放宽字距（+.055em），在浅色小字上换回辨识度。
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__h"><span class="panel__n">05</span>间距与圆角</div>
+        <p class="panel__p">
+          以 <b>4pt</b> 为基准而非 8pt——需要 12px 这类中间值时不必凑合。用 <span class="mono">gap</span> 表达同级关系，
+          避免 margin 塌陷带来的清理代码。语义间距（--mg-gutter / --mg-stack-card）描述关系而非数值。
+        </p>
+        <div class="panel__body">
+          <div class="bars">
+            <div class="bar"><span class="bar__lbl">4</span><span class="bar__fill" style="width:4px"></span></div>
+            <div class="bar"><span class="bar__lbl">8</span><span class="bar__fill" style="width:8px"></span></div>
+            <div class="bar"><span class="bar__lbl">12</span><span class="bar__fill" style="width:12px"></span></div>
+            <div class="bar"><span class="bar__lbl">16</span><span class="bar__fill" style="width:16px"></span></div>
+            <div class="bar"><span class="bar__lbl">20</span><span class="bar__fill" style="width:20px"></span></div>
+            <div class="bar"><span class="bar__lbl">24</span><span class="bar__fill" style="width:24px"></span></div>
+            <div class="bar"><span class="bar__lbl">32</span><span class="bar__fill" style="width:32px"></span></div>
+            <div class="bar"><span class="bar__lbl">40</span><span class="bar__fill" style="width:40px"></span></div>
+            <div class="bar"><span class="bar__lbl">48</span><span class="bar__fill" style="width:48px"></span></div>
+          </div>
+
+          <div class="panel__p" style="margin-top:22px">
+            圆角随面积递增——面积越大，光在边缘走的路越长：<b>8 → 12 → 14 → 22 → 28px</b>。
+          </div>
+          <div class="radius-grid" style="margin-top:12px">
+            <div><i style="border-radius:8px"></i><span>8 · 标签</span></div>
+            <div><i style="border-radius:12px"></i><span>12 · 方块</span></div>
+            <div><i style="border-radius:14px"></i><span>14 · 按钮</span></div>
+            <div><i style="border-radius:22px"></i><span>22 · 卡片</span></div>
+            <div><i style="border-radius:28px"></i><span>28 · 主卡</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__h"><span class="panel__n">06</span>无障碍</div>
+        <p class="panel__p">玻璃主题最大的风险就是对比度漂移。以下几条是硬约束，不随视觉调整让步。</p>
+        <div class="panel__body">
+          <table class="tbl">
+            <tr><th style="width:180px">项</th><th style="width:110px">实测</th><th>说明</th></tr>
+            <tr><td>正文 / 白底</td><td><span class="ok">17.5:1</span></td><td>远超 AAA 的 7:1</td></tr>
+            <tr><td>次级文字 / 最亮玻璃</td><td><span class="ok">6.5:1</span></td><td>按最坏情况（光斑峰顶）校核</td></tr>
+            <tr><td>三级文字 / 最亮玻璃</td><td><span class="ok">5.0:1</span></td><td>placeholder 用同一色值</td></tr>
+            <tr><td>主按钮白字</td><td><span class="ok">5.1:1</span></td><td>渐变最亮端仍达标</td></tr>
+            <tr><td>触摸目标</td><td><span class="ok">≥ 46px</span></td><td>按钮 52、列表行 58、Tab 58、分段 46；开关视觉 30，可点区用伪元素扩至 46</td></tr>
+            <tr><td>键盘焦点</td><td><span class="ok">2px 实环</span></td><td>带 2px offset，不与玻璃混色</td></tr>
+            <tr><td>减弱动效</td><td><span class="ok">已适配</span></td><td>prefers-reduced-motion 全量降级</td></tr>
+            <tr><td>不支持模糊时</td><td><span class="ok">已降级</span></td><td>@supports 回退为实心 #FDFDFF</td></tr>
+          </table>
+          <div class="panel__p" style="margin-top:16px">
+            另外，<b>颜色从不单独承载信息</b>——未付金额除了红色，同时带「3 笔未付」文案与红色角标；
+            在途金额除琥珀色外还标注「T+1 在途」，红绿色觉障碍用户同样可读。
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__h"><span class="panel__n">07</span>设计令牌</div>
+        <p class="panel__p">
+          完整令牌已输出为同目录的 <span class="mono">design-tokens.css</span>，可直接引入。
+          下面是要改主题时唯一需要动的部分。
+        </p>
+        <div class="code">
+          <button class="code__copy" id="copyBtn">复制</button>
+          <pre id="tokens"><span class="c">/* 换主题只改这一层：语义令牌 */</span>
+:root {
+  <span class="c">/* 表面与玻璃 */</span>
+  --mg-bg:            <span class="v">#F7F8FC</span>;
+  --mg-surface:       <span class="v">#FFFFFF</span>;
+  --mg-glass:         <span class="v">rgba(255,255,255,.66)</span>;
+  --mg-glass-strong:  <span class="v">rgba(255,255,255,.78)</span>;
+  --mg-glass-blur:    <span class="v">saturate(180%) blur(22px)</span>;
+  --mg-glass-sheen:   <span class="v">rgba(255,255,255,.92)</span>;
+  --mg-glass-edge:    <span class="v">rgba(20,22,31,.07)</span>;
+
+  <span class="c">/* 文字 */</span>
+  --mg-text:          <span class="v">#14161F</span>;   <span class="c">/* 17.5:1 */</span>
+  --mg-text-2:        <span class="v">#525770</span>;   <span class="c">/* 6.5:1  */</span>
+  --mg-text-3:        <span class="v">#636980</span>;   <span class="c">/* 5.0:1  */</span>
+  --mg-text-onfill:   <span class="v">#FFFFFF</span>;
+
+  <span class="c">/* 品牌与语义 */</span>
+  --mg-accent:        <span class="v">#5262DD</span>;
+  --mg-accent-quiet:  <span class="v">#F0F2FE</span>;
+  --mg-danger:        <span class="v">#CE3439</span>;  --mg-danger-text:  <span class="v">#B92B31</span>;
+  --mg-success:       <span class="v">#1E7A4E</span>;  --mg-warn-text:    <span class="v">#9E6200</span>;
+
+  <span class="c">/* 线条 */</span>
+  --mg-line:          <span class="v">#E4E7F0</span>;
+  --mg-line-strong:   <span class="v">#D2D7E4</span>;
+}
+
+<span class="c">/* 用法示例 */</span>
+.floating-bar {
+  background: var(--mg-glass-strong);
+  backdrop-filter: var(--mg-glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--mg-glass-sheen),   <span class="c">/* 棱边高光 */</span>
+    0 0 0 1px var(--mg-glass-edge);        <span class="c">/* 棱边暗边 */</span>
+}</pre>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $  = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  var scrim  = $('#scrim');
+  var dialog = $('#dialog');
+  var sheet  = $('#sheet');
+  var toast  = $('#toast');
+  var toastTimer;
+
+  function open(el) { scrim.dataset.open = 'true'; el.dataset.open = 'true'; }
+  function closeAll() {
+    [scrim, dialog, sheet].forEach(function (el) { el.dataset.open = 'false'; });
+  }
+  function say(msg) {
+    toast.textContent = msg;
+    toast.dataset.open = 'true';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.dataset.open = 'false'; }, 1700);
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-toast],[data-dialog],[data-sheet],[data-close]');
+    if (!t) return;
+    if (t.hasAttribute('data-dialog')) { open(dialog); return; }
+    if (t.hasAttribute('data-sheet'))  { open(sheet);  return; }
+    var isClose = t.hasAttribute('data-close');
+    if (isClose) closeAll();
+    if (t.hasAttribute('data-toast')) say(t.getAttribute('data-toast'));
+  });
+
+  /* 分段控件 */
+  $$('#seg .mg-seg__item').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      $$('#seg .mg-seg__item').forEach(function (b) { b.setAttribute('aria-selected', 'false'); });
+      btn.setAttribute('aria-selected', 'true');
+    });
+  });
+
+  /* 底部标签栏 */
+  $$('#tabbar .mg-tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      $$('#tabbar .mg-tab').forEach(function (b) { b.setAttribute('aria-selected', 'false'); });
+      btn.setAttribute('aria-selected', 'true');
+      say('切换到「' + btn.textContent.trim() + '」');
+    });
+  });
+
+  /* 开关 */
+  $$('.mg-switch').forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+    });
+  });
+
+  /* 金额输入：聚焦全选，方便直接覆盖重录 */
+  $$('.mg-field__input').forEach(function (inp) {
+    inp.addEventListener('focus', function () { inp.select(); });
+  });
+
+  /* 复制令牌 */
+  $('#copyBtn').addEventListener('click', function () {
+    var text = $('#tokens').textContent;
+    var done = function () { $('#copyBtn').textContent = '已复制'; setTimeout(function () { $('#copyBtn').textContent = '复制'; }, 1400); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else { fallback(); }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (err) { $('#copyBtn').textContent = '请手动选'; }
+      document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+</body>
+</html>

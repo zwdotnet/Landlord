@@ -105,6 +105,7 @@ Page({
     finally { if (current()) this.setData({ opening: false }) }
   },
   changeLedger() { if (!this.data.busy && !this.data.opening) wx.reLaunch({ url: '/pages/landlord/home/index' }) },
+  goBack() { if (!this.data.busy && !this.data.opening) wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/landlord/home/index' }) }) },
   goHome() { if (!this.data.busy && !this.data.opening) wx.reLaunch({ url: '/pages/landlord/home/index' }) },
   logout() { if (!this.data.busy && !this.data.opening) logout() },
 })

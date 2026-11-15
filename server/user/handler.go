@@ -579,6 +579,8 @@ func RegisterRoutes(publicGroup *gin.RouterGroup, optionalAuthGroup *gin.RouterG
 	optionalAuthGroup.POST("/auth/logout", handleLogout(db, gatewayPrefix))
 
 	authGroup.GET("/auth/me", handleGetCurrentUser(db))
+	authGroup.GET("/auth/contact", handleContact(db))
+	authGroup.PUT("/auth/contact", handleContact(db))
 	authGroup.GET("/auth/wechat/bind", landlordWeChatBindingHandler(db, wechat, "status"))
 	authGroup.POST("/auth/wechat/bind", landlordWeChatBindingHandler(db, wechat, "bind"))
 	authGroup.DELETE("/auth/wechat/bind", landlordWeChatBindingHandler(db, wechat, "unbind"))

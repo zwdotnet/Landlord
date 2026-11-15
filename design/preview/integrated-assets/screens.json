@@ -1,0 +1,289 @@
+[
+  {
+    "file": "login-tenant.png",
+    "route": "pages/login/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "431014bf4bc95a60470266bac9af93452287585ecc00d7d743ffe48ea94983f4"
+  },
+  {
+    "file": "login-owner.png",
+    "route": "pages/login/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "8fe90d65ada8eb63cf0b0dc37bea1f0b5ba7e4af536e34ed48fcbd1621b79dd4"
+  },
+  {
+    "file": "owner-empty.png",
+    "route": "pages/landlord/home/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "9c240b376e797a03b4a57779618f2f76d19d0127bcd3076cf10b82dfc3d30141"
+  },
+  {
+    "file": "owner-home.png",
+    "route": "pages/landlord/home/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "3e46ae8323cda7d297403d94d224e912c62f05f6f592b22ddfa71f2051160e8f"
+  },
+  {
+    "file": "owner-more.png",
+    "route": "pages/landlord/home/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "e42680aea103f1229d9f9108702e5288845dff5f5a3085bbb03a3d7f600232bc"
+  },
+  {
+    "file": "owner-rooms.png",
+    "route": "pages/landlord/rooms/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "a93652257e50ff7e05dd58415a0c24c2fb023658bf7515c346e01c762c1e0be3"
+  },
+  {
+    "file": "owner-rooms-bottom.png",
+    "route": "pages/landlord/rooms/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "87b94f9838e5ca55720ba73f0565828e64d45d81b287b21f333e1fb525a6c1a4"
+  },
+  {
+    "file": "owner-rooms-page2.png",
+    "route": "pages/landlord/rooms/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "7bfecd385243d284c6d0c9d8e8092b521aec9909babc21802dd09b184987791c"
+  },
+  {
+    "file": "owner-bills.png",
+    "route": "pages/landlord/bills/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "51f26faf1c3a959d4731cdda9c9f5d877751f3a8c764461d8df906b047e1b06d"
+  },
+  {
+    "file": "owner-bills-bottom.png",
+    "route": "pages/landlord/bills/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "bfe8c1b77e1788b2d576fc66a64f5084b1b9aa5f19e6ac1194cb98b936a9feed"
+  },
+  {
+    "file": "owner-bill.png",
+    "route": "pages/landlord/bill/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "ba388c93f59140f822621a5ff72ce69e676d533f3b58f87860561e607f676364"
+  },
+  {
+    "file": "owner-bill-bottom.png",
+    "route": "pages/landlord/bill/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "9ef51db4f18dcb3fc47bb23cea1d20e2c966dfce7fab1786aed0695dd8f6f7e4"
+  },
+  {
+    "file": "owner-account.png",
+    "route": "pages/landlord/account/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "9b558fb3ed92f42d495345bc698bcabe3f2d14743d4675b7b7dbc090f8bc2c3b"
+  },
+  {
+    "file": "meters-rooms.png",
+    "route": "pages/landlord/meters/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "23a3542748a8d896d0bedc45ffc4efc1d412257c2976ee286b53288264aeb5aa"
+  },
+  {
+    "file": "meters.png",
+    "route": "pages/landlord/meters/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "eac6c8b148a3cf9dc2956bdd415cb6cbfb8fed5e09c7b790df4aef962b4bbbab"
+  },
+  {
+    "file": "meters-bottom.png",
+    "route": "pages/landlord/meters/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "70ea334237be256b44b83ffb0f2878fd19286b6d38c565b8b23a5dcf1225705f"
+  },
+  {
+    "file": "issue-rooms.png",
+    "route": "pages/landlord/issue/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "6661429800e4f6473aa42c691910d01e433d6ade97096cb494dd8f19126384ab"
+  },
+  {
+    "file": "issue-selection.png",
+    "route": "pages/landlord/issue/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "923a444ed440932759ba816a229f755348db98883ec91b9caa1f7c64be33fd78"
+  },
+  {
+    "file": "issue-preview.png",
+    "route": "pages/landlord/issue/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "039ac06fea56191673041204c297b3972be16d9fe8e29beff695452e194a79e7"
+  },
+  {
+    "file": "issue-bottom.png",
+    "route": "pages/landlord/issue/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "a3481d5279880872530aa90900d8e90f0fc0cc3dc46038ea3ce5927c8b1ec898"
+  },
+  {
+    "file": "payment-form.png",
+    "route": "pages/landlord/pay/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "6a05608274e3c12ce82f1391ad1029023187b762bcfdecac4aeb7d92f41385e9"
+  },
+  {
+    "file": "payment-review.png",
+    "route": "pages/landlord/pay/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "c4d5b98033abe0a5f827e6f3b53e7d805da823c982b3a468836962eec52fe26b"
+  },
+  {
+    "file": "payment-success.png",
+    "route": "pages/landlord/pay/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "53a9b1aaea414dad05da024a1e583dda1307208e236673f7692b1102d9b47d02"
+  },
+  {
+    "file": "payment-bottom.png",
+    "route": "pages/landlord/pay/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "53a9b1aaea414dad05da024a1e583dda1307208e236673f7692b1102d9b47d02"
+  },
+  {
+    "file": "owner-pending.png",
+    "route": "pages/landlord/pending/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "6fb799970b1527fb0f9dde579181f48015f4dd22ddfd0137d74fe96c757f5002"
+  },
+  {
+    "file": "tenant-pending.png",
+    "route": "pages/pending/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "044eb7bfc6092ad21622e09f4313a8459995b3826e53ca24f2524ef0f9a6074c"
+  },
+  {
+    "file": "contact.png",
+    "route": "pages/contact/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "cc82d35e1da5b183010636fa1eb3da59d672334ce1386b968d88ab3b22b48585"
+  },
+  {
+    "file": "contact-error.png",
+    "route": "pages/contact/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "bb87821485f1d7bac75e9b59717ec08dc9b710d6347f6bfce04da2b0433e750c"
+  },
+  {
+    "file": "contact-saved.png",
+    "route": "pages/contact/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "76f9db3812e0dce6dfa86b3593cc9d7c893e6d3d0227dcd485cd18febd70e6dd"
+  },
+  {
+    "file": "tenant-home.png",
+    "route": "pages/home/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "180254f5431c36bd469880cac0ec6eb395687d5d084088746f94d69f0a25f1ea"
+  },
+  {
+    "file": "tenant-more.png",
+    "route": "pages/home/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "f0b471a8255609ad3ed16db286844801be2fccaef92f7e81829992261b4f48c7"
+  },
+  {
+    "file": "tenant-bills.png",
+    "route": "pages/bills/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "0b57667a020d0908a1ae831dd01eb09962dd9d6dbe4e659f5a93b316bfadf8ca"
+  },
+  {
+    "file": "tenant-bill.png",
+    "route": "pages/bill/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "197ec35a1db454068fa3061a2be2e3b78561edf19c99140d4dfb620649109a4b"
+  },
+  {
+    "file": "tenant-bill-bottom.png",
+    "route": "pages/bill/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "00632c2284b4187b43bb70c58bcaa3a9648ec4320bec62731b0173d8aad49121"
+  },
+  {
+    "file": "tenant-contracts.png",
+    "route": "pages/contracts/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "08f3393cd03d2a5f95ff507502ec62affef02a3c2251701ad17fec2e3212ac8f"
+  },
+  {
+    "file": "tenant-profile.png",
+    "route": "pages/profile/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "3e8e3be8a780fc7ceb19c177b0334d0f5933517ae217a818881c1413306b8e04"
+  },
+  {
+    "file": "tenant-profile-bottom.png",
+    "route": "pages/profile/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "c0004191cd40833704b1f40c426bdb2ece7f106d55711317049459d9e196c350"
+  },
+  {
+    "file": "tenant-payments.png",
+    "route": "pages/payments/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "aa4a214f6387c45b6c2a0dba1ec13ce9fd7de767d697137aa02c789bfe2a1df1"
+  },
+  {
+    "file": "meters-readonly.png",
+    "route": "pages/landlord/meters/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "e7f09b5d62ddafa9214353c2b251ad51661a0615e5ef3960e107008e59f1ca73"
+  },
+  {
+    "file": "meters-readonly-bottom.png",
+    "route": "pages/landlord/meters/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "0f160b86ab81c872d33ea17b93092d2d4e5968002a733210ed2c6e26240f4e77"
+  },
+  {
+    "file": "issue-rooms-bottom.png",
+    "route": "pages/landlord/issue/index",
+    "width": 348,
+    "height": 752,
+    "sha256": "1f5319fd06672ecc33fcb900170e607f18a335f89225a45f45cb7f1e3c3a4e33"
+  }
+]

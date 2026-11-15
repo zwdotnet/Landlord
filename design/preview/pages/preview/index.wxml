@@ -1,0 +1,103 @@
+<view class="mist"></view>
+<t-navbar wx:if="{{kind !== 'login'}}" title="{{title}}" left-arrow="{{kind === 'meters' || kind === 'bill'}}" bind:left-click="back" fixed placeholder t-class="preview-navbar" />
+
+<!-- Each screen is a static proposal: no account, network or payment API. -->
+<view wx:if="{{kind === 'login'}}" class="screen login-screen">
+  <view class="brand-line"><view class="brand-mark"><t-icon name="home" size="27px" /></view><text>Landlord</text><text class="brand-divider"></text><text class="brand-caption">租务管理</text></view>
+  <view class="login-heading">把租务，<view>安排清楚。</view></view>
+  <view class="login-intro">从每一间房，到每一笔账。<view>你的租住与管理，都在这里。</view></view>
+  <view class="login-panel glass">
+    <view class="role-switch"><view class="role-item {{role === 'tenant' ? 'is-selected' : ''}}" data-role="tenant" bindtap="switchRole">我是租客</view><view class="role-item {{role === 'landlord' ? 'is-selected' : ''}}" data-role="landlord" bindtap="switchRole">我是房东</view></view>
+    <block wx:if="{{role === 'landlord'}}">
+      <view class="panel-title">欢迎回来</view><view class="support">登录已有的房东账号</view>
+      <view class="login-fields"><t-input label="账号" placeholder="输入账号" borderless clearable t-class="login-input" /><view class="field-rule"></view><t-input label="密码" placeholder="输入密码" type="password" borderless t-class="login-input" /></view>
+      <t-button theme="primary" size="large" block data-target="dashboard" bindtap="go">登录</t-button>
+      <view class="login-separator"><text></text><text>或使用已绑定的微信</text><text></text></view>
+      <t-button theme="light" size="large" block icon="logo-wechat-stroke" data-target="dashboard" bindtap="go">微信快捷登录</t-button>
+    </block>
+    <block wx:else>
+      <view class="panel-title">住得安心，账目清楚</view><view class="support tenant-intro">查看自己的租住资料、账单与合同。<view>首次登录后，填写入住手机号。</view></view>
+      <t-button theme="primary" size="large" block icon="logo-wechat-stroke" data-target="waiting" bindtap="go">微信登录</t-button>
+      <view class="login-help">首次使用需由房东确认租住关系</view>
+    </block>
+  </view>
+  <view class="login-footer"><t-icon name="lock-on" size="13px" /><text>仅向你展示本人或获授权的租务资料</text></view>
+</view>
+
+<view wx:elif="{{kind === 'dashboard'}}" class="screen with-tabs dashboard-screen">
+  <view class="greeting"><view><view class="support">下午好，陈先生</view><view class="page-heading">每一间，都有数。</view></view><view class="avatar">陈</view></view>
+  <view class="ledger-select"><t-icon name="home" size="17px" /><text>{{community}} · 我的台账</text><t-icon name="chevron-down" size="14px" /><view class="ledger-sync"><t-icon name="check-circle" size="13px" /><text>已更新</text></view></view>
+  <view class="overview glass">
+    <view class="spread"><text class="support">11 月待收账款</text><view class="quiet-chip">6 笔待收<t-icon name="chevron-right" size="12px" /></view></view>
+    <view class="hero-money"><text class="money-symbol">¥</text>12,840<text class="money-decimal">.00</text></view>
+    <view class="overview-bottom"><view><text class="muted">本月实收</text><view class="mini-money">¥28,680.00</view></view><view class="metric-divider"></view><view><text class="muted">在租 / 空置</text><view class="mini-money">12<text class="metric-unit">间 / 2 间</text></view></view></view>
+  </view>
+  <view class="quick-grid">
+    <view wx:for="{{shortcuts}}" wx:key="label" class="quick-item" data-target="{{item.target}}" data-sheet="{{item.sheet}}" bindtap="go"><view class="quick-icon"><t-icon name="{{item.icon}}" size="24px" /></view><view class="quick-label">{{item.label}}</view><view class="quick-note">{{item.note}}</view></view>
+  </view>
+  <view class="section-heading"><text>今天待办</text><view class="section-count">2</view><text class="section-aside">按优先级处理</text></view>
+  <view class="white-panel todo-list">
+    <view class="todo-row" data-target="meters" bindtap="go"><view class="row-icon brand-icon"><t-icon name="dashboard" size="21px" /></view><view class="row-copy"><view class="row-title">3 间房待抄表</view><view class="support">补齐读数，准备本月账单</view></view><t-icon name="chevron-right" size="17px" /></view>
+    <view class="inset-rule"></view>
+    <view class="todo-row" data-target="bill" bindtap="go"><view class="row-icon warn-icon"><t-icon name="time" size="21px" /></view><view class="row-copy"><view class="row-title">2 笔账单临近缴费日</view><view class="support">{{community}} 301、302</view></view><t-icon name="chevron-right" size="17px" /></view>
+  </view>
+</view>
+
+<view wx:elif="{{kind === 'meters'}}" class="screen with-action meters-screen">
+  <view class="spread page-top"><view><view class="page-heading">记录本月用量</view><view class="support">读数保存后，费用按规则计算</view></view><view class="month-chip">11 月<t-icon name="chevron-down" size="13px" /></view></view>
+  <view class="selected-room white-panel"><view class="room-icon"><t-icon name="home" size="26px" /></view><view class="row-copy"><view class="row-title">{{community}} · 3 栋 301</view><view class="support">{{residentName}} · 本期尚未出账</view></view><t-icon name="chevron-down" size="17px" /></view>
+  <view class="meter-list"><view wx:for="{{meters}}" wx:key="key" class="meter-card white-panel">
+    <view class="spread"><view class="meter-label"><view class="meter-icon {{item.tone}}">{{item.symbol}}</view><text>{{item.name}}读数</text></view><text class="unit">{{item.unit}}</text></view>
+    <view class="meter-field"><t-input type="digit" value="{{item.value}}" borderless align="left" t-class="meter-input" t-class-input="meter-number-input" /></view>
+    <view class="meter-comparison"><text>上期 {{item.last}}</text><view class="usage">本次用量 <text>{{item.used}}</text> {{item.unit}}</view></view>
+  </view></view>
+  <view class="white-panel note-field"><t-input label="备注" placeholder="换表、异常情况等（选填）" borderless /></view>
+  <view class="footnote"><t-icon name="info-circle" size="14px" /><text>修改读数不会改变已出具的账单。</text></view>
+  <view wx:if="{{meterSaved}}" class="saved-hint"><t-icon name="check-circle-filled" size="18px" />读数已保存 · 静态交互演示</view>
+</view>
+
+<view wx:elif="{{kind === 'bill'}}" class="screen with-action bill-screen">
+  <view class="bill-overview glass">
+    <view class="spread"><view class="quiet-chip">2026 年 11 月</view><view class="status-pill"><view></view>待缴费</view></view>
+    <view class="bill-amount-label">本期应缴</view><view class="hero-money"><text class="money-symbol">¥</text>2,368<text class="money-decimal">.50</text></view>
+    <view class="bill-place">{{community}} · 3 栋 301 <text>{{residentName}}</text></view>
+    <view class="bill-deadline"><t-icon name="calendar" size="14px" /><text>缴费日 11 月 20 日</text></view>
+  </view>
+  <view class="section-heading"><text>费用明细</text><text class="section-aside">2026.11.01 — 11.30</text></view>
+  <view class="white-panel fee-panel"><view wx:for="{{fees}}" wx:key="name" class="fee-row"><view><view class="row-title">{{item.name}}</view><view class="support">{{item.detail}}</view></view><view class="fee-value">¥{{item.value}}</view></view><view class="full-rule"></view><view class="fee-summary"><text>上期结转</text><text>¥0.00</text></view><view class="fee-summary total"><text>本期合计</text><text>¥2,368.50</text></view></view>
+  <view class="section-heading"><text>收款情况</text></view><view class="white-panel received-panel"><view class="spread"><text class="support">累计实收</text><text class="row-amount">¥0.00</text></view><view class="spread due-line"><text>尚待收款</text><text class="due-amount">¥2,368.50</text></view></view>
+  <view class="bill-document white-panel"><view class="row-icon brand-icon"><t-icon name="file-paste" size="21px" /></view><view class="row-copy"><view class="row-title">租金计算依据</view><view class="support">按整月计租 · 查看费用来源</view></view><t-icon name="chevron-right" size="17px" /></view>
+</view>
+
+<view wx:elif="{{kind === 'waiting'}}" class="screen waiting-screen">
+  <view class="waiting-symbol glass"><t-icon name="user-time" size="44px" /></view>
+  <view class="waiting-title">等房东确认一下</view><view class="waiting-description">入住登记已提交。将下方手机号告诉房东，<view>关联后就能查看租住资料和账单。</view></view>
+  <view class="contact-card glass"><view class="spread"><view class="support">你的登记手机号</view><view class="edit-link" bindtap="openPhone"><t-icon name="edit" size="14px" /><text>修改</text></view></view><view class="contact-number">{{phoneDisplay}}</view><view class="contact-note"><t-icon name="user" size="13px" /><text>此号码作为你的账号展示</text></view></view>
+  <view class="progress-list"><view class="progress-row"><view class="step-icon done"><t-icon name="check" size="13px" /></view><view><view class="step-title">入住登记已提交</view><view class="support">已记录你的联系手机号</view></view></view><view class="progress-line"></view><view class="progress-row"><view class="step-icon current">2</view><view><view class="step-title">等待房东关联</view><view class="support">房东核对后，关联你的租住档案</view></view></view><view class="progress-line"></view><view class="progress-row"><view class="step-icon">3</view><view><view class="step-title inactive">查看租住信息</view><view class="support">房屋、账单、合同，一处查看</view></view></view></view>
+  <view class="waiting-bottom"><t-button theme="primary" size="large" block icon="refresh" data-target="profile" bindtap="go">检查关联状态</t-button><view class="logout-text" data-target="login" bindtap="go">退出账号</view></view>
+</view>
+
+<view wx:elif="{{kind === 'profile'}}" class="screen with-tabs profile-screen">
+  <view class="profile-header"><view class="avatar profile-avatar">陈</view><view class="profile-name">{{residentName}}<view class="verified-label"><t-icon name="check-circle-filled" size="12px" />已关联</view></view><view class="profile-account">手机账号 · {{phoneDisplay}}</view></view>
+  <view class="tenant-home-card glass"><view class="room-icon"><t-icon name="home" size="25px" /></view><view class="row-copy"><view class="row-title">{{community}} · 3 栋 301</view><view class="support">租约至 2027.06.30</view></view><view class="tenant-status">在租</view></view>
+  <view class="section-heading"><text>账号与联系</text></view>
+  <view class="white-panel contact-cell" bindtap="openPhone"><view class="row-icon brand-icon"><t-icon name="mobile" size="21px" /></view><view class="row-copy"><view class="row-title">联系手机号</view><view class="support">{{phoneDisplay}}</view></view><view class="edit-link">修改<t-icon name="chevron-right" size="13px" /></view></view>
+  <view class="section-heading"><text>我的租住</text></view>
+  <view class="white-panel profile-menu"><t-cell title="缴费记录" left-icon="wallet" arrow borderless data-target="bill" bind:tap="go" /><view class="inset-rule"></view><t-cell title="合同与收据" left-icon="file-paste" arrow borderless /><view class="inset-rule"></view><t-cell title="租住资料" left-icon="user-circle" arrow borderless /></view>
+  <view class="profile-privacy"><t-icon name="lock-on" size="14px" /><text>你的资料仅向本人和管理房东开放</text></view>
+  <view class="white-panel logout-cell" data-target="login" bindtap="go">退出登录</view>
+</view>
+
+<view wx:if="{{kind === 'meters'}}" class="bottom-action"><t-button theme="primary" size="large" block bind:tap="saveMeters">保存本期读数</t-button></view>
+<view wx:if="{{kind === 'bill'}}" class="bottom-action bill-action"><view class="bill-action-sum"><text>待收</text><view>¥2,368.50</view></view><view class="bill-action-button"><t-button theme="primary" size="large" block bind:tap="openPayment">登记实收</t-button></view></view>
+
+<view wx:if="{{kind === 'dashboard'}}" class="bottom-tabs glass"><view class="tab active" data-target="dashboard" bindtap="go"><t-icon name="view-module" size="23px" /><text>工作台</text></view><view class="tab" data-target="meters" bindtap="go"><t-icon name="home" size="23px" /><text>房源</text></view><view class="tab" data-target="bill" bindtap="go"><t-icon name="file" size="23px" /><text>账单</text></view><view class="tab" data-target="profile" bindtap="go"><t-icon name="user" size="23px" /><text>我的</text></view></view>
+<view wx:if="{{kind === 'profile'}}" class="bottom-tabs glass"><view class="tab" data-target="dashboard" bindtap="go"><t-icon name="home" size="23px" /><text>租住</text></view><view class="tab" data-target="bill" bindtap="go"><t-icon name="file" size="23px" /><text>账单</text></view><view class="tab"><t-icon name="file-paste" size="23px" /><text>合同</text></view><view class="tab active"><t-icon name="user" size="23px" /><text>我的</text></view></view>
+
+<t-popup visible="{{sheet === 'phone'}}" placement="bottom" bind:visible-change="sheetChange" close-on-overlay-click>
+  <view class="edit-sheet"><view class="sheet-handle"></view><view class="spread"><view class="sheet-title">修改联系手机号</view><view class="sheet-close" bindtap="closeSheet"><t-icon name="close" size="21px" /></view></view><view class="support sheet-intro">号码填错了，可以在这里更正。</view><view class="phone-edit-field"><t-input label="手机号" type="number" value="{{newPhone}}" maxlength="11" clearable borderless bind:change="inputPhone" /></view><view wx:if="{{phoneError}}" class="field-error">{{phoneError}}</view><view class="edit-explanation"><t-icon name="info-circle" size="15px" /><text>修改后供房东联系与核对，不会自动改变你的租住关系。</text></view><t-button theme="primary" size="large" block bind:tap="savePhone">保存手机号</t-button></view>
+</t-popup>
+<t-popup visible="{{sheet === 'payment'}}" placement="bottom" bind:visible-change="sheetChange" close-on-overlay-click>
+  <view class="edit-sheet payment-sheet"><view class="sheet-handle"></view><view class="spread"><view class="sheet-title">登记线下实收</view><view class="sheet-close" bindtap="closeSheet"><t-icon name="close" size="21px" /></view></view><view class="support sheet-intro">{{community}} · 3 栋 301 · 11 月账单</view><view class="payment-amount-label">本次已收到</view><view class="payment-amount-field"><text>¥</text><t-input type="digit" value="2368.50" borderless t-class-input="payment-number-input" /></view><view class="remaining"><text>账单待收</text><text>¥2,368.50</text></view><view class="payment-note"><t-input label="备注" placeholder="收款方式等（选填）" borderless /></view><view class="edit-explanation"><t-icon name="info-circle" size="15px" /><text>确认已收到款项后再登记，将保留原始流水并生成本笔收据。</text></view><t-button theme="primary" size="large" block bind:tap="previewSuccess">确认登记 · ¥2,368.50</t-button></view>
+</t-popup>
+<t-popup visible="{{sheet === 'success'}}" placement="center" bind:visible-change="sheetChange" close-on-overlay-click><view class="success-dialog"><t-icon name="check-circle-filled" color="#1E7A4E" size="46px" /><view class="sheet-title">收款已登记</view><view class="support">静态交互演示，未写入任何业务。</view><t-button theme="primary" block bind:tap="closeSheet">完成</t-button></view></t-popup>

@@ -1,1 +1,7 @@
-{"navigationBarTitleText":"我的合同"}
+{
+  "navigationBarTitleText": "我的合同",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "app-nav": "/components/app-nav/index"
+  }
+}

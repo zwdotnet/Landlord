@@ -1,1 +1,4 @@
-{"navigationBarTitleText":"线下实收"}
+{
+  "navigationBarTitleText": "线下实收",
+  "navigationStyle": "custom"
+}

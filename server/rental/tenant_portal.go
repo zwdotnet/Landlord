@@ -260,11 +260,18 @@ func setupPortalRoutes(api *gin.RouterGroup, db *gorm.DB) {
 func handlePortalStatus(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetUint("userID")
+		var account database.User
+		if err := db.Select("id", "phone").First(&account, userID).Error; err != nil {
+			response.ErrorInternal(c, "读取账号资料失败")
+			return
+		}
 		out := gin.H{
-			"role":     user.RoleTenant,
-			"bound":    false,
-			"status":   userStatus(db, userID),
-			"username": c.GetString("username"),
+			"role":       user.RoleTenant,
+			"bound":      false,
+			"status":     userStatus(db, userID),
+			"username":   c.GetString("username"),
+			"phone":      account.Phone,
+			"account_id": account.ID,
 		}
 		if t, ok := portalTenant(db, userID); ok {
 			out["bound"] = true

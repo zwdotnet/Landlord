@@ -154,6 +154,7 @@ export interface TenantAccount {
 export interface TenantAccountCandidate {
   id: number
   username: string
+  display_name?: string
   // 刻意没有 phone：接口跨台账（租户账号在被关联前不属于任何台账），
   // 返回手机号等于给人「捞号」的花名册。房东靠租户告知的用户名完成关联。
 }

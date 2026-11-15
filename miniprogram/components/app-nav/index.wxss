@@ -1,0 +1,6 @@
+.tab { min-height: 100rpx; }
+.more-sheet { background: #fff; }
+.more-intro { margin: 0 0 24rpx; }
+.more-option { display: flex; align-items: center; gap: 24rpx; min-height: 104rpx; padding: 18rpx 24rpx; border-radius: 20rpx; margin: 6rpx 0; color: var(--mg-text); font-size: 28rpx; }
+.more-option text { flex: 1; }
+.more-option.highlighted { background: var(--mg-brand-50); color: var(--mg-accent); }

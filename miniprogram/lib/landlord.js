@@ -81,6 +81,7 @@ function landlordPage(options) {
       else this.refresh()
     },
     goHome() { wx.reLaunch({ url: '/pages/landlord/home/index' }) },
+    goBack() { wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/landlord/home/index' }) }) },
     goAccount() { wx.navigateTo({ url: '/pages/landlord/account/index' }) },
     goRooms() { wx.navigateTo({ url: '/pages/landlord/rooms/index' }) },
     goMeters() { wx.navigateTo({ url: '/pages/landlord/meters/index' }) },

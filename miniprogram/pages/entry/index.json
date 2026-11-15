@@ -1,1 +1,5 @@
-{"navigationBarTitleText":"租务","enablePullDownRefresh":false}
+{
+  "navigationBarTitleText": "租务",
+  "enablePullDownRefresh": false,
+  "navigationStyle": "custom"
+}

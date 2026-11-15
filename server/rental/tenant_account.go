@@ -15,6 +15,7 @@
 package rental
 
 import (
+	"regexp"
 	"strings"
 
 	"smallgo/server/audit"
@@ -64,6 +65,8 @@ func handleTenantAccountGet(db *gorm.DB) gin.HandlerFunc {
 // 账号枚举防护沿用邀请搜人的口径（2026-10-11 审计）：要求至少 2 个字，
 // 只回前 10 条。另外**必须过滤掉已绑定的账号**——否则房东会在候选里看到
 // 别人的租户账号，选中后才报错，体验与安全都不好。
+var tenantAccountPhone = regexp.MustCompile(`^1[3-9][0-9]{9}$`)
+
 func handleTenantAccountCandidates(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		q := strings.TrimSpace(c.Query("keyword"))
@@ -72,8 +75,9 @@ func handleTenantAccountCandidates(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		type row struct {
-			ID       uint   `json:"id"`
-			Username string `json:"username"`
+			ID          uint   `json:"id"`
+			Username    string `json:"username"`
+			DisplayName string `json:"display_name,omitempty"`
 		}
 		rows := make([]row, 0, 10)
 		// 未绑定的判据：tenants.account_user_id 里没有这个 id。
@@ -85,15 +89,28 @@ func handleTenantAccountCandidates(db *gorm.DB) gin.HandlerFunc {
 		// 租户把用户名告诉房东即可完成关联；要靠手机号确认身份，走免登录登记链接
 		// 那条路（那条链接本身带提交通道）。status 保留 1 与 2：**待关联**的租户
 		// 注册后正是 status=2，过滤掉他就没法关联了；被驳回停用的 status=0 已排除。
-		if err := db.Table("users").
+		query := db.Table("users").
 			Select("id, username").
 			Where("role = ? AND status IN ?", user.RoleTenant,
 				[]int{UserStatusActive, UserStatusPending}).
-			Where("id NOT IN (SELECT account_user_id FROM tenants WHERE account_user_id > 0)").
-			Where("username LIKE ?", "%"+q+"%").
-			Order("id ASC").Limit(10).Scan(&rows).Error; err != nil {
+			Where("id NOT IN (SELECT account_user_id FROM tenants WHERE account_user_id > 0)")
+		// Only an entire phone supplied by the tenant can match phone data. A prefix
+		// or username search still reveals no phone. Duplicate numbers remain separate
+		// accounts and require explicit selection/confirmation of the account id.
+		exactPhone := tenantAccountPhone.MatchString(q)
+		if exactPhone {
+			query = query.Where("phone = ?", q)
+		} else {
+			query = query.Where("username LIKE ?", "%"+q+"%")
+		}
+		if err := query.Order("id ASC").Limit(10).Scan(&rows).Error; err != nil {
 			response.ErrorInternal(c, "查询账号失败")
 			return
+		}
+		if exactPhone {
+			for i := range rows {
+				rows[i].DisplayName = q
+			}
 		}
 		response.Success(c, rows)
 	}

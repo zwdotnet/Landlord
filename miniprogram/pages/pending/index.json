@@ -1,1 +1,4 @@
-{"navigationBarTitleText":"等待关联"}
+{
+  "navigationBarTitleText": "等待关联",
+  "navigationStyle": "custom"
+}

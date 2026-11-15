@@ -56,6 +56,8 @@ function tenantPage(options) {
       } finally { if (this.sequence === seq) this.setData({ opening: false }) }
     },
     logout,
+    goBack() { wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/home/index' }) }) },
+    goContact() { wx.navigateTo({ url: '/pages/contact/index' }) },
     goPayments() { wx.navigateTo({ url: '/pages/payments/index' }) },
     goBill(e) { const id = e.currentTarget.dataset.id; if (/^[1-9]\d*$/.test(String(id))) wx.navigateTo({ url: '/pages/bill/index?id=' + id }) },
     goBills() { wx.switchTab({ url: '/pages/bills/index' }) },

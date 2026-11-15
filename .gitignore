@@ -92,3 +92,6 @@ miniprogram/project.config.json
 miniprogram/config.local.js
 __pycache__/
 
+
+miniprogram/node_modules/
+miniprogram/miniprogram_npm/

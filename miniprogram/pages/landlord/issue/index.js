@@ -114,6 +114,7 @@ Page({
     finally { if (current()) this.setData({ busy: false }) }
   },
   goBill() { if (!this.data.busy && this.data.exists && this.data.bill && this.data.bill.id) wx.navigateTo({ url: '/pages/landlord/bill/index?id=' + this.data.bill.id }) },
+  goBack() { if (!this.data.busy && !this.data.opening) wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/landlord/home/index' }) }) },
   goHome() { if (!this.data.busy) wx.reLaunch({ url: '/pages/landlord/home/index' }) },
   logout() { if (!this.data.busy) logout() },
 })

@@ -1,4 +1,1 @@
-<template name="landlord-scope">
-  <view class="row"><view class="kicker">房东 · {{username}}</view><button class="quiet small" bindtap="goHome" disabled="{{loading || busy}}">工作台</button></view>
-  <picker wx:if="{{ledgers.length}}" range="{{ledgers}}" range-key="name" value="{{ledgerIndex}}" bindchange="changeLedger" disabled="{{loading || busy}}"><view class="surface row"><view class="grow"><view class="meta">当前台账</view><view class="list-title">{{ledgerName}}</view></view><text class="arrow">⌄</text></view></picker>
-</template>
+<template name="landlord-scope"><picker wx:if="{{ledgers.length}}" range="{{ledgers}}" range-key="name" value="{{ledgerIndex}}" bindchange="changeLedger" disabled="{{loading || busy}}"><view class="ledger-picker spread"><t-icon name="layers" size="19px"/><view class="row-copy"><view class="support">当前台账</view><view class="row-title">{{ledgerName}}</view></view><t-icon name="chevron-down" size="17px"/></view></picker></template>

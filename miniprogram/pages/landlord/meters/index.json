@@ -1,1 +1,4 @@
-{"navigationBarTitleText":"抄表"}
+{
+  "navigationBarTitleText": "抄表",
+  "navigationStyle": "custom"
+}

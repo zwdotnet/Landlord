@@ -1,0 +1,895 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   超市经营账 · 设计系统 v4
+   主题：晨雾玻璃 / Morning Mist Glass
+   ─────────────────────────────────────────────────────────────────────
+   仅亮色 · 移动优先 · WCAG AA · 零依赖
+   引入：<link rel="stylesheet" href="design-tokens.css">
+
+   设计约束来源：店主单手操作、环境光不定、记账时需要快速扫读金额。
+   因此所有玻璃效果都服务于「层次」，不服务于「炫技」——文字对比度优先。
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 1. 品牌靛蓝 ─────────────────────────────────────────────────────
+     在旧版 #3B5BDB 基础上降低饱和、加深主干，使其在玻璃与白底上
+     都能稳定通过 4.5:1。色相 266° 贯穿全局中性色，形成潜意识统一。 */
+  --mg-brand-50:  #F0F2FE;
+  --mg-brand-100: #E2E6FC;
+  --mg-brand-200: #C6CDF8;
+  --mg-brand-300: #A2ACF2;
+  --mg-brand-400: #7583E8;
+  --mg-brand-500: #5262DD;   /* 主色 · 白底对比 5.06:1 */
+  --mg-brand-600: #4148C5;   /* 按下态 */
+  --mg-brand-700: #363BA0;   /* 深压态 / 深色文字 */
+
+  /* ── 2. 语义色 ───────────────────────────────────────────────────────
+     与业务语义绑定：未付=红、已付=绿、在途=琥珀。
+     -500 用于填充（按钮底），-600 用于文字（浅底上），照此使用即达标。 */
+  --mg-danger-50:  #FEF2F2;
+  --mg-danger-100: #FBE0E1;
+  --mg-danger-500: #CE3439;   /* 填充 · 白字 5.01:1 */
+  --mg-danger-600: #B92B31;   /* 文字 · 浅底 5.5:1 */
+  --mg-danger-700: #9C2329;
+
+  --mg-success-50:  #EDFAF3;
+  --mg-success-100: #D2F2E2;
+  --mg-success-500: #1E7A4E;   /* 文字与填充兼用 5.30:1 */
+  --mg-success-600: #186340;
+
+  --mg-warn-50:  #FDF4E3;
+  --mg-warn-100: #FAE7C4;
+  --mg-warn-500: #DD8A00;   /* 仅装饰 / 图标，白字不达标，勿作填充 */
+  --mg-warn-600: #9E6200;   /* 文字 · 白底 5.43:1 */
+
+  /* ── 3. 中性色 · 带靛蓝色相的暖冷中间调 ─────────────────────────────
+     chroma 极低（≈0.01）但可感知，避免死灰，与品牌色形成潜意识呼应。 */
+  --mg-ink-900: #14161F;   /* 主文本 */
+  --mg-ink-800: #252833;
+  --mg-ink-700: #3A3E4D;
+  --mg-ink-600: #525770;   /* 次级文本 · 玻璃上 6.48:1 */
+  --mg-ink-500: #636980;   /* 三级文本 / placeholder · 玻璃上 5.00:1 */
+  --mg-ink-400: #8E94A8;   /* 仅图标 / 装饰 · 3.02:1 */
+  --mg-ink-300: #B4B9C8;
+  --mg-ink-200: #D6D9E2;
+  --mg-ink-100: #E9EBF1;
+  --mg-ink-50:  #F5F6FA;
+
+  /* ── 4. 表面与玻璃配方 ───────────────────────────────────────────────
+     玻璃是本主题的语言，但只用于「浮在内容之上」的层：
+     导航、Hero、弹层、Tab 栏。普通列表卡用实心白，保证密集扫读时的锐利度。 */
+  --mg-bg:            #F7F8FC;
+  --mg-surface:       #FFFFFF;
+  --mg-surface-sunk:  #F5F6FA;
+
+  --mg-glass:         rgba(255, 255, 255, .66);
+  --mg-glass-strong:  rgba(255, 255, 255, .78);
+  --mg-glass-blur:    saturate(180%) blur(22px);
+  --mg-glass-sheen:   rgba(255, 255, 255, .92);  /* 棱边顶部高光 */
+  --mg-glass-edge:    rgba(20, 22, 31, .07);     /* 棱边底部暗边 */
+
+  --mg-line:        #E4E7F0;   /* 实色分隔线，不用 rgba */
+  --mg-line-strong: #D2D7E4;
+
+  /* 语义别名 —— 日常开发只用这一层 */
+  --mg-bg-page:      var(--mg-bg);
+  --mg-text:         var(--mg-ink-900);
+  --mg-text-2:       var(--mg-ink-600);
+  --mg-text-3:       var(--mg-ink-500);
+  --mg-text-onfill:  #FFFFFF;
+  --mg-accent:       var(--mg-brand-500);
+  --mg-accent-quiet: var(--mg-brand-50);
+
+  /* ── 5. 排版 ─────────────────────────────────────────────────────────
+     中文优先使用系统字体（加载零成本，且在各平台字形最正确）；
+     界面层级靠字号 + 字重 + 字距三维拉开，而不是靠字体本身。
+     固定 rem 尺度，不做流体字号 —— 数据密集型 UI 需要空间可预测。 */
+  --mg-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
+             "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+             "Noto Sans SC", system-ui, sans-serif;
+  --mg-font-num: "SF Pro Display", -apple-system, "Segoe UI Variable Display",
+                 "Segoe UI", system-ui, sans-serif;
+
+  --mg-fs-micro: 11px;   /* 角标 */
+  --mg-fs-xs:    12px;   /* 分组标题 / 标签胶囊 */
+  --mg-fs-sm:    13px;   /* 辅助说明 */
+  --mg-fs-md:    15px;   /* 次要正文 */
+  --mg-fs-lg:    17px;   /* 列表主标题 / 输入值 */
+  --mg-fs-xl:    21px;   /* 指标数字 */
+  --mg-fs-2xl:   26px;   /* 次级强调数字 */
+  --mg-fs-3xl:   40px;   /* Hero 金额 */
+
+  --mg-fw-regular: 400;
+  --mg-fw-medium:  500;
+  --mg-fw-semi:    600;
+  --mg-fw-bold:    700;
+
+  --mg-lh-tight: 1.12;   /* 大数字 */
+  --mg-lh-snug:  1.35;   /* 标题 */
+  --mg-lh-base:  1.55;   /* 正文 */
+
+  --mg-ls-hero:  -0.028em;  /* 大字号收紧，避免松散 */
+  --mg-ls-title: -0.011em;
+  --mg-ls-body:   0;
+  --mg-ls-label:  0.055em;  /* 小标签放开，提升辨识 */
+
+  /* ── 6. 间距 · 4pt 基准 ──────────────────────────────────────────────
+     用 4pt 而非 8pt：需要 12px 这类中间值时不必凑合。 */
+  --mg-space-1:  4px;
+  --mg-space-2:  8px;
+  --mg-space-3:  12px;
+  --mg-space-4:  16px;
+  --mg-space-5:  20px;
+  --mg-space-6:  24px;
+  --mg-space-8:  32px;
+  --mg-space-10: 40px;
+  --mg-space-12: 48px;
+
+  /* 语义间距 —— 描述关系，而非数值 */
+  --mg-gutter:     18px;   /* 页面左右留白 */
+  --mg-stack-card: 12px;   /* 卡片之间 */
+  --mg-row-pad-y:  14px;   /* 行内纵向呼吸 */
+  --mg-row-inset:  70px;   /* 列表内嵌分隔线的左起点 */
+
+  /* ── 7. 圆角 ─────────────────────────────────────────────────────────
+     玻璃的厚度靠圆角体现：面积越大，圆角越大，光在边缘走的路越长。 */
+  --mg-radius-xs:   8px;
+  --mg-radius-sm:   12px;
+  --mg-radius-md:   14px;
+  --mg-radius-lg:   18px;
+  --mg-radius-xl:   22px;
+  --mg-radius-2xl:  28px;
+  --mg-radius-full: 999px;
+
+  /* ── 8. 阴影 · 柔和多层，带靛蓝色偏 ──────────────────────────────────
+     刻意避免灰黑阴影：玻璃的阴影应该像光被挡住，而不是像脏。 */
+  --mg-shadow-xs: 0 1px 2px rgba(24, 28, 60, .04);
+  --mg-shadow-sm: 0 2px 8px -2px rgba(24, 28, 60, .07), 0 1px 2px rgba(24, 28, 60, .04);
+  --mg-shadow-md: 0 10px 26px -8px rgba(24, 28, 60, .13), 0 2px 6px -2px rgba(24, 28, 60, .05);
+  --mg-shadow-lg: 0 24px 56px -16px rgba(24, 28, 60, .20), 0 6px 16px -6px rgba(24, 28, 60, .08);
+  --mg-shadow-brand: 0 10px 22px -8px rgba(82, 98, 221, .42);
+  --mg-shadow-danger: 0 10px 22px -8px rgba(206, 52, 57, .36);
+
+  /* ── 9. 层叠 · 语义化 z-index ────────────────────────────────────── */
+  --mg-z-sticky: 40;
+  --mg-z-tabbar: 60;
+  --mg-z-scrim:  70;
+  --mg-z-modal:  80;   /* 底部抽屉 */
+  --mg-z-dialog-scrim: 84;  /* 确认框的遮罩：要压住抽屉 */
+  --mg-z-dialog: 86;   /* 居中确认框：可能从抽屉里弹出，必须永远在最上面 */
+  --mg-z-toast:  90;
+
+  /* ── 10. 动效 ────────────────────────────────────────────────────────
+     只用减速曲线（ease-out 家族），不用回弹 —— 记账工具需要"稳"。 */
+  --mg-ease-out:   cubic-bezier(.22, 1, .36, 1);
+  --mg-ease-inout: cubic-bezier(.65, 0, .35, 1);
+  --mg-dur-fast: 140ms;
+  --mg-dur-base: 240ms;
+  --mg-dur-slow: 380ms;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   基础层
+   ═══════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--mg-font);
+  font-size: var(--mg-fs-md);
+  line-height: var(--mg-lh-base);
+  color: var(--mg-text);
+  background: var(--mg-bg-page);
+  font-kerning: normal;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 焦点环：键盘用户必须看得见 */
+:where(button, a, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--mg-brand-500);
+  outline-offset: 2px;
+  border-radius: var(--mg-radius-xs);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   背景层 —— 晨雾
+   光斑是氛围，不是主角：全部压到 0.30~0.42 不透明度并重度模糊，
+   确保玻璃叠上去之后，最亮处的次级文字仍有 5:1 以上对比。
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-mist {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--mg-bg);
+}
+.mg-mist::before {
+  content: "";
+  position: absolute;
+  inset: -15%;
+  background:
+    radial-gradient(58% 34% at 10% 4%,  rgba(120, 138, 255, .40), transparent 70%),
+    radial-gradient(46% 30% at 94% 12%, rgba(168, 140, 250, .30), transparent 72%),
+    radial-gradient(64% 30% at 50% 96%, rgba(90, 196, 178, .26), transparent 74%);
+  filter: blur(44px);
+}
+/* 颗粒纹理：让磨砂有物理质感，消解数字渐变的塑料感 */
+.mg-mist::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.mg-canvas { position: relative; z-index: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   玻璃基类
+   三段式棱边 = 顶部高光 + 底部暗边 + 外部柔影。
+   这三层是「一块玻璃」和「一个半透明方块」的全部区别。
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-glass {
+  background: var(--mg-glass);
+  -webkit-backdrop-filter: var(--mg-glass-blur);
+  backdrop-filter: var(--mg-glass-blur);
+  border-radius: var(--mg-radius-xl);
+  box-shadow:
+    inset 0 1px 0 var(--mg-glass-sheen),
+    inset 0 0 0 1px rgba(255, 255, 255, .45),
+    0 0 0 1px var(--mg-glass-edge),
+    var(--mg-shadow-md);
+}
+.mg-glass--strong { background: var(--mg-glass-strong); }
+
+/* 实心卡：用于信息密度高的列表，扫读时边缘更锐利 */
+.mg-card {
+  background: var(--mg-surface);
+  border-radius: var(--mg-radius-xl);
+  box-shadow: var(--mg-shadow-sm);
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Hero —— 液态玻璃主卡
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-hero {
+  position: relative;
+  margin: var(--mg-space-2) var(--mg-gutter) var(--mg-stack-card);
+  padding: var(--mg-space-6) var(--mg-space-5) var(--mg-space-5);
+  border-radius: var(--mg-radius-2xl);
+  overflow: hidden;
+  background: var(--mg-glass-strong);
+  -webkit-backdrop-filter: var(--mg-glass-blur);
+  backdrop-filter: var(--mg-glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--mg-glass-sheen),
+    inset 0 0 0 1px rgba(255, 255, 255, .5),
+    0 0 0 1px var(--mg-glass-edge),
+    var(--mg-shadow-lg);
+}
+/* 内嵌光晕：像有光源在玻璃下面 */
+.mg-hero::before {
+  content: "";
+  position: absolute;
+  top: -60%; left: -25%;
+  width: 92%; height: 150%;
+  background: radial-gradient(closest-side, rgba(82, 98, 221, .22), transparent);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.mg-hero__top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--mg-space-5);
+}
+.mg-hero__date {
+  font-size: var(--mg-fs-sm);
+  font-weight: var(--mg-fw-medium);
+  color: var(--mg-text-2);
+}
+/* 状态胶囊 —— 表示"今天已对账"，用弱底 + 深字 */
+.mg-hero__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: var(--mg-radius-full);
+  font-size: var(--mg-fs-xs);
+  font-weight: var(--mg-fw-semi);
+  color: var(--mg-brand-700);
+  background: var(--mg-brand-50);
+  box-shadow: inset 0 0 0 1px rgba(82, 98, 221, .16);
+}
+
+.mg-hero__label {
+  position: relative;
+  font-size: var(--mg-fs-sm);
+  font-weight: var(--mg-fw-medium);
+  color: var(--mg-text-2);
+  margin-bottom: 6px;
+}
+.mg-hero__amount {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--mg-font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--mg-fs-3xl);
+  font-weight: var(--mg-fw-bold);
+  line-height: var(--mg-lh-tight);
+  letter-spacing: var(--mg-ls-hero);
+  color: var(--mg-text);
+}
+.mg-hero__amount .mg-currency {
+  font-size: var(--mg-fs-lg);
+  font-weight: var(--mg-fw-medium);
+  color: var(--mg-text-2);
+  letter-spacing: 0;
+}
+
+.mg-hero__chips {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mg-space-2);
+  margin-top: var(--mg-space-4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   指标条
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-metrics {
+  display: flex;
+  margin: 0 var(--mg-gutter) var(--mg-stack-card);
+  border-radius: var(--mg-radius-xl);
+  overflow: hidden;
+  background: var(--mg-surface);
+  box-shadow: var(--mg-shadow-sm);
+}
+.mg-metric { flex: 1; padding: var(--mg-space-4) var(--mg-space-4) var(--mg-space-4); min-width: 0; }
+.mg-metric + .mg-metric { border-left: 1px solid var(--mg-line); }
+.mg-metric__k {
+  font-size: var(--mg-fs-xs);
+  font-weight: var(--mg-fw-medium);
+  color: var(--mg-text-2);
+  letter-spacing: var(--mg-ls-label);
+}
+.mg-metric__v {
+  margin-top: 5px;
+  font-family: var(--mg-font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--mg-fs-xl);
+  font-weight: var(--mg-fw-bold);
+  letter-spacing: -0.018em;
+  color: var(--mg-text);
+}
+.mg-metric__v .mg-currency { font-size: var(--mg-fs-sm); font-weight: var(--mg-fw-medium); color: var(--mg-text-2); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   分组与列表行
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-section {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: var(--mg-space-6) var(--mg-gutter) var(--mg-space-2);
+  font-size: var(--mg-fs-xs);
+  font-weight: var(--mg-fw-semi);
+  color: var(--mg-text-3);
+  letter-spacing: var(--mg-ls-label);
+}
+/* 分组标题前的品牌色圆点：低成本的识别符号 */
+.mg-section::before {
+  content: "";
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--mg-brand-500);
+  opacity: .55;
+  flex: none;
+}
+.mg-section--plain::before { display: none; }
+
+.mg-group {
+  margin: 0 var(--mg-gutter) var(--mg-stack-card);
+  border-radius: var(--mg-radius-xl);
+  overflow: hidden;
+  background: var(--mg-surface);
+  box-shadow: var(--mg-shadow-sm);
+}
+
+.mg-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--mg-space-3);
+  min-height: 58px;
+  padding: var(--mg-row-pad-y) var(--mg-gutter);
+  cursor: pointer;
+  transition: background-color var(--mg-dur-fast) linear;
+}
+.mg-row:active { background: var(--mg-surface-sunk); }
+/* 内嵌分隔线：不抵到左边缘，让图标列成为连续的视觉通道 */
+.mg-row:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: var(--mg-row-inset);
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--mg-line);
+}
+.mg-row--flush:not(:last-child)::after { left: var(--mg-gutter); }
+
+.mg-row__grow { flex: 1; min-width: 0; }
+.mg-row__title {
+  font-size: var(--mg-fs-lg);
+  font-weight: var(--mg-fw-semi);
+  letter-spacing: var(--mg-ls-title);
+  color: var(--mg-text);
+}
+.mg-row__sub {
+  margin-top: 3px;
+  font-size: var(--mg-fs-sm);
+  color: var(--mg-text-2);
+}
+.mg-row__value {
+  flex: none;
+  font-family: var(--mg-font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--mg-fs-lg);
+  font-weight: var(--mg-fw-semi);
+  letter-spacing: -0.016em;
+  text-align: right;
+  color: var(--mg-text);
+}
+
+/* 首字母方块 —— 比图标更轻，且天然携带数据（供应商名） */
+.mg-tile {
+  flex: none;
+  width: 42px; height: 42px;
+  border-radius: var(--mg-radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: var(--mg-fs-md);
+  font-weight: var(--mg-fw-semi);
+  color: var(--mg-brand-700);
+  background: var(--mg-brand-50);
+  box-shadow: inset 0 0 0 1px rgba(82, 98, 221, .10);
+}
+.mg-tile--neutral { color: var(--mg-ink-600); background: var(--mg-ink-50); box-shadow: inset 0 0 0 1px var(--mg-line); }
+
+.mg-chevron {
+  flex: none;
+  width: 18px; height: 18px;
+  color: var(--mg-ink-400);      /* 图标 3:1 即可，但不用于文字 */
+}
+.mg-chevron svg { display: block; width: 100%; height: 100%; }
+
+/* 金额语义色 —— 与旧版一致：红=未付，绿=已付，琥珀=在途 */
+.mg-amt-danger  { color: var(--mg-danger-600); }
+.mg-amt-success { color: var(--mg-success-500); }
+.mg-amt-warn    { color: var(--mg-warn-600); }
+.mg-amt-muted   { color: var(--mg-ink-500); font-weight: var(--mg-fw-medium); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   胶囊 / 角标
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: var(--mg-radius-full);
+  font-size: var(--mg-fs-xs);
+  font-weight: var(--mg-fw-semi);
+  letter-spacing: 0.01em;
+}
+.mg-chip--brand   { background: var(--mg-brand-50);   color: var(--mg-brand-700); }
+.mg-chip--warn    { background: var(--mg-warn-50);    color: var(--mg-warn-600); }
+.mg-chip--success { background: var(--mg-success-50); color: var(--mg-success-500); }
+.mg-chip--danger  { background: var(--mg-danger-50);  color: var(--mg-danger-600); }
+
+/* 角标用于列表内行内状态，比 chip 更小更安静 */
+.mg-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--mg-radius-full);
+  font-size: var(--mg-fs-micro);
+  font-weight: var(--mg-fw-semi);
+  letter-spacing: 0.02em;
+}
+.mg-badge--danger  { background: var(--mg-danger-50);  color: var(--mg-danger-600); }
+.mg-badge--warn    { background: var(--mg-warn-50);    color: var(--mg-warn-600); }
+.mg-badge--success { background: var(--mg-success-50); color: var(--mg-success-500); }
+.mg-badge--brand   { background: var(--mg-brand-50);   color: var(--mg-brand-700); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   分段控件
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-seg {
+  display: flex;
+  gap: 2px;
+  margin: 0 var(--mg-gutter) 2px;
+  padding: 3px;
+  border-radius: var(--mg-radius-md);
+  background: var(--mg-surface-sunk);
+  box-shadow: inset 0 0 0 1px var(--mg-line);
+}
+.mg-seg__item {
+  flex: 1;
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 11px;
+  background: none;
+  font: inherit;
+  font-size: var(--mg-fs-sm);
+  font-weight: var(--mg-fw-semi);
+  color: var(--mg-text-2);
+  cursor: pointer;
+  transition: color var(--mg-dur-fast), background-color var(--mg-dur-fast), box-shadow var(--mg-dur-fast);
+}
+.mg-seg__item[aria-selected="true"] {
+  color: var(--mg-text);
+  background: var(--mg-surface);
+  box-shadow: var(--mg-shadow-xs), 0 0 0 1px rgba(20, 22, 31, .05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   表单
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--mg-space-3);
+  min-height: 58px;
+  padding: var(--mg-row-pad-y) var(--mg-gutter);
+}
+.mg-field:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: var(--mg-gutter);
+  right: 0; bottom: 0;
+  height: 1px;
+  background: var(--mg-line);
+}
+.mg-field__label {
+  flex: none;
+  font-size: var(--mg-fs-lg);
+  color: var(--mg-text);
+}
+.mg-field__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font-family: var(--mg-font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--mg-fs-lg);
+  font-weight: var(--mg-fw-semi);
+  letter-spacing: -0.016em;
+  text-align: right;
+  color: var(--mg-text);
+}
+/* placeholder 也必须满足 4.5:1 —— 用字重降级换取视觉轻柔，而非降对比 */
+.mg-field__input::placeholder {
+  color: var(--mg-text-3);
+  font-weight: var(--mg-fw-regular);
+}
+.mg-field:focus-within { background: var(--mg-brand-50); }
+.mg-field:focus-within .mg-field__label { color: var(--mg-brand-700); font-weight: var(--mg-fw-medium); }
+
+/* 开关 */
+.mg-switch {
+  flex: none;
+  position: relative;
+  width: 50px; height: 30px;
+  border: 0;
+  padding: 0;
+  border-radius: var(--mg-radius-full);
+  background: var(--mg-ink-300);
+  cursor: pointer;
+  transition: background-color var(--mg-dur-base) var(--mg-ease-out);
+}
+/* 视觉尺寸 50×30，但把可点区域扩到 66×46 —— 拇指容错靠这里，不靠放大控件 */
+.mg-switch::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+.mg-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(24, 28, 60, .22);
+  transition: transform var(--mg-dur-base) var(--mg-ease-out);
+}
+.mg-switch[aria-checked="true"] { background: var(--mg-success-500); }
+.mg-switch[aria-checked="true"]::after { transform: translateX(20px); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   按钮
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mg-space-2);
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--mg-space-5);
+  border: 0;
+  border-radius: var(--mg-radius-md);
+  font-family: inherit;
+  font-size: var(--mg-fs-lg);
+  font-weight: var(--mg-fw-semi);
+  letter-spacing: var(--mg-ls-title);
+  cursor: pointer;
+  transition: transform var(--mg-dur-fast) var(--mg-ease-out),
+              box-shadow var(--mg-dur-base) var(--mg-ease-out),
+              background-color var(--mg-dur-fast) linear;
+}
+.mg-btn:active { transform: scale(.975); }
+.mg-btn:disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
+
+/* 主按钮：同色相深浅渐变（不是彩虹渐变），保证最亮端仍 5:1 */
+.mg-btn--primary {
+  color: var(--mg-text-onfill);
+  background: linear-gradient(135deg, #5262DD 0%, #4148C5 100%);
+  box-shadow: var(--mg-shadow-brand), inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+.mg-btn--primary:active { box-shadow: var(--mg-shadow-xs), inset 0 1px 0 rgba(255, 255, 255, .18); }
+
+.mg-btn--danger {
+  color: var(--mg-text-onfill);
+  background: linear-gradient(135deg, #CE3439 0%, #B92B31 100%);
+  box-shadow: var(--mg-shadow-danger), inset 0 1px 0 rgba(255, 255, 255, .20);
+}
+
+.mg-btn--secondary {
+  color: var(--mg-text);
+  background: var(--mg-surface);
+  box-shadow: inset 0 0 0 1px var(--mg-line-strong), var(--mg-shadow-xs);
+}
+.mg-btn--secondary:active { background: var(--mg-surface-sunk); }
+
+.mg-btn--text {
+  min-height: 46px;
+  color: var(--mg-brand-500);
+  background: none;
+  font-weight: var(--mg-fw-semi);
+}
+.mg-btn--text:active { background: var(--mg-brand-50); }
+
+.mg-btn--sm { min-height: 40px; font-size: var(--mg-fs-md); border-radius: var(--mg-radius-sm); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   底部标签栏
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-tabbar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: var(--mg-z-tabbar);
+  display: flex;
+  width: 100%;
+  max-width: 430px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--mg-glass-strong);
+  -webkit-backdrop-filter: var(--mg-glass-blur);
+  backdrop-filter: var(--mg-glass-blur);
+  box-shadow: inset 0 1px 0 var(--mg-glass-sheen), 0 -1px 0 var(--mg-glass-edge);
+}
+.mg-tab {
+  flex: 1;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--mg-fs-micro);
+  font-weight: var(--mg-fw-semi);
+  color: var(--mg-ink-500);
+  cursor: pointer;
+  transition: color var(--mg-dur-fast);
+}
+.mg-tab[aria-selected="true"] { color: var(--mg-brand-500); }
+.mg-tab svg { width: 23px; height: 23px; display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   遮罩 / 对话框 / 底部抽屉 / 轻提示
+   ═══════════════════════════════════════════════════════════════════════ */
+.mg-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--mg-z-scrim);
+  background: rgba(18, 20, 34, .38);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--mg-dur-base) var(--mg-ease-out), visibility var(--mg-dur-base);
+}
+.mg-scrim[data-open="true"] { opacity: 1; visibility: visible; }
+/* 确认框从抽屉里弹出时，遮罩要抬到抽屉之上，把抽屉一起压暗 */
+.mg-scrim[data-top="true"] { z-index: var(--mg-z-dialog-scrim); }
+
+.mg-dialog {
+  position: fixed;
+  left: 50%; top: 50%;
+  z-index: var(--mg-z-dialog);
+  width: min(286px, calc(100vw - 48px));
+  transform: translate(-50%, -46%) scale(.96);
+  opacity: 0;
+  visibility: hidden;
+  border-radius: var(--mg-radius-xl);
+  overflow: hidden;
+  background: var(--mg-glass-strong);
+  -webkit-backdrop-filter: var(--mg-glass-blur);
+  backdrop-filter: var(--mg-glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--mg-glass-sheen),
+    0 0 0 1px var(--mg-glass-edge),
+    var(--mg-shadow-lg);
+  transition: transform var(--mg-dur-base) var(--mg-ease-out),
+              opacity var(--mg-dur-base) var(--mg-ease-out),
+              visibility var(--mg-dur-base);
+}
+.mg-dialog[data-open="true"] { transform: translate(-50%, -50%) scale(1); opacity: 1; visibility: visible; }
+.mg-dialog__body { padding: var(--mg-space-6) var(--mg-space-5) var(--mg-space-5); text-align: center; }
+.mg-dialog__title { font-size: var(--mg-fs-lg); font-weight: var(--mg-fw-bold); letter-spacing: var(--mg-ls-title); }
+.mg-dialog__text { margin-top: 7px; font-size: var(--mg-fs-sm); line-height: var(--mg-lh-base); color: var(--mg-text-2); }
+.mg-dialog__actions { display: flex; border-top: 1px solid var(--mg-line); }
+.mg-dialog__actions button {
+  flex: 1;
+  min-height: 50px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--mg-fs-lg);
+  font-weight: var(--mg-fw-semi);
+  color: var(--mg-brand-500);
+  cursor: pointer;
+}
+.mg-dialog__actions button + button { border-left: 1px solid var(--mg-line); }
+.mg-dialog__actions button:active { background: var(--mg-surface-sunk); }
+.mg-dialog__actions .mg-is-destructive { color: var(--mg-danger-600); font-weight: var(--mg-fw-bold); }
+
+.mg-sheet {
+  position: fixed;
+  left: 50%; bottom: 0;
+  z-index: var(--mg-z-modal);
+  width: 100%;
+  max-width: 430px;
+  transform: translate(-50%, 102%);
+  border-radius: var(--mg-radius-2xl) var(--mg-radius-2xl) 0 0;
+  background: var(--mg-glass-strong);
+  -webkit-backdrop-filter: var(--mg-glass-blur);
+  backdrop-filter: var(--mg-glass-blur);
+  box-shadow: inset 0 1px 0 var(--mg-glass-sheen), 0 -8px 40px rgba(24, 28, 60, .18);
+  transition: transform var(--mg-dur-slow) var(--mg-ease-out);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* 长列表保护：供应商可能有几十家，抽屉自身滚动而不是顶破屏幕 */
+  max-height: min(86%, 640px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.mg-sheet[data-open="true"] { transform: translate(-50%, 0); }
+.mg-sheet__head {
+  position: relative;
+  padding: var(--mg-space-2) var(--mg-gutter) var(--mg-space-3);
+  text-align: center;
+  border-bottom: 1px solid var(--mg-line);
+}
+.mg-sheet__grab {
+  width: 38px; height: 5px;
+  margin: 4px auto 10px;
+  border-radius: 3px;
+  background: var(--mg-ink-300);
+}
+.mg-sheet__title { font-size: var(--mg-fs-lg); font-weight: var(--mg-fw-bold); letter-spacing: var(--mg-ls-title); }
+.mg-sheet__done {
+  position: absolute;
+  right: var(--mg-gutter); top: 20px;
+  border: 0; background: none;
+  font: inherit;
+  font-size: var(--mg-fs-lg);
+  font-weight: var(--mg-fw-semi);
+  color: var(--mg-brand-500);
+  cursor: pointer;
+}
+.mg-search {
+  display: flex;
+  align-items: center;
+  gap: var(--mg-space-2);
+  height: 40px;
+  margin: var(--mg-space-3) var(--mg-gutter);
+  padding: 0 var(--mg-space-3);
+  border-radius: var(--mg-radius-sm);
+  background: var(--mg-surface-sunk);
+  box-shadow: inset 0 0 0 1px var(--mg-line);
+}
+.mg-search svg { flex: none; width: 16px; height: 16px; color: var(--mg-ink-400); }
+.mg-search input {
+  flex: 1; min-width: 0;
+  border: 0; outline: 0; background: none;
+  font: inherit;
+  font-size: var(--mg-fs-md);
+  color: var(--mg-text);
+}
+.mg-search input::placeholder { color: var(--mg-text-3); }
+
+.mg-toast {
+  position: fixed;
+  left: 50%; bottom: 108px;
+  z-index: var(--mg-z-toast);
+  transform: translate(-50%, 10px);
+  padding: 11px 20px;
+  border-radius: var(--mg-radius-full);
+  font-size: var(--mg-fs-sm);
+  font-weight: var(--mg-fw-semi);
+  color: #fff;
+  background: rgba(20, 22, 31, .88);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--mg-shadow-md);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--mg-dur-base) var(--mg-ease-out),
+              transform var(--mg-dur-base) var(--mg-ease-out),
+              visibility var(--mg-dur-base);
+}
+.mg-toast[data-open="true"] { opacity: 1; transform: translate(-50%, 0); visibility: visible; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   进场动效 · 一次性，不循环
+   ═══════════════════════════════════════════════════════════════════════ */
+@keyframes mg-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.mg-rise { animation: mg-rise var(--mg-dur-slow) var(--mg-ease-out) both; }
+
+/* 尊重系统减弱动效设置 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* 打印 / 导出静态图时动画不会推进，内容会停在 opacity:0 —— 必须兜底 */
+@media print {
+  .mg-rise { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .mg-mist { display: none !important; }
+  .mg-glass, .mg-hero, .mg-tabbar, .mg-dialog, .mg-sheet {
+    background: #FFF !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* 不支持 backdrop-filter 时退化为实心表面，而不是变成透明的糊状物 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mg-glass, .mg-hero, .mg-tabbar, .mg-dialog, .mg-sheet { background: #FDFDFF; }
+}

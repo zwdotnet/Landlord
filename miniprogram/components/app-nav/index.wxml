@@ -1,0 +1,16 @@
+<view class="bottom-tabs glass" role="tablist">
+  <view wx:for="{{items}}" wx:key="key" class="tab {{current === item.key ? 'active' : ''}}" role="tab" aria-selected="{{current === item.key}}" aria-label="{{item.title}}" data-key="{{item.key}}" bindtap="select"><t-icon name="{{item.icon}}" size="23px"/><text>{{item.title}}</text></view>
+  <view class="tab {{more ? 'active' : ''}}" role="button" aria-label="更多" bindtap="openMore"><t-icon name="ellipsis" size="23px"/><text>更多</text></view>
+</view>
+<t-popup visible="{{more}}" placement="bottom" bind:visible-change="visibleChange" close-on-overlay-click>
+  <view class="edit-sheet more-sheet"><view class="sheet-handle"/><view class="spread"><view class="sheet-title">更多</view><view class="sheet-close" role="button" aria-label="关闭更多" bindtap="close"><t-icon name="close" size="20px"/></view></view><view class="support more-intro">{{role === 'landlord' ? '抄表、出账与账号管理。' : '缴费记录与账号设置。'}}</view>
+    <block wx:if="{{role === 'landlord'}}">
+      <view wx:if="{{meters}}" class="more-option highlighted" data-key="meters" bindtap="action"><t-icon name="edit" size="21px"/><text>抄表录入</text><t-icon name="chevron-right" size="16px"/></view>
+      <view wx:if="{{issue}}" class="more-option" data-key="issue" bindtap="action"><t-icon name="file-add" size="21px"/><text>预览与出账</text><t-icon name="chevron-right" size="16px"/></view>
+      <view wx:if="{{pending}}" class="more-option" data-key="resume" bindtap="action"><t-icon name="wallet" size="21px"/><text>继续核对实收</text><t-icon name="chevron-right" size="16px"/></view>
+      <view class="more-option" data-key="binding" bindtap="action"><t-icon name="logo-wechat-stroke" size="21px"/><text>微信绑定</text><t-icon name="chevron-right" size="16px"/></view>
+    </block>
+    <block wx:else><view class="more-option highlighted" data-key="payments" bindtap="action"><t-icon name="wallet" size="21px"/><text>缴费记录与收据</text><t-icon name="chevron-right" size="16px"/></view><view class="more-option" data-key="contact" bindtap="action"><t-icon name="mobile" size="21px"/><text>修改手机号</text><t-icon name="chevron-right" size="16px"/></view></block>
+    <view class="more-option" data-key="logout" bindtap="action"><t-icon name="logout" size="21px"/><text>退出账号</text><t-icon name="chevron-right" size="16px"/></view>
+  </view>
+</t-popup>

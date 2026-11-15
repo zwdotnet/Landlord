@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Landlord · 小程序设计预览</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%235262DD'/%3E%3Ctext x='20' y='28' text-anchor='middle' font-family='sans-serif' font-size='26' fill='white'%3EL%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="../design-tokens.css">
+  <link rel="stylesheet" href="review.css">
+</head>
+<body>
+  <div class="rv-mist" aria-hidden="true"></div>
+  <header class="rv-header">
+    <a class="rv-wordmark" href="#top"><span class="rv-brand">L</span><strong>Landlord</strong><span class="rv-header-rule"></span><span>小程序设计预览</span></a>
+    <a class="rv-reference" href="https://tdesign.tencent.com/miniprogram/getting-started-en" target="_blank" rel="noreferrer">TDesign 小程序组件 <span aria-hidden="true">↗</span></a>
+  </header>
+  <main id="top"><p class="rv-toolbar">这是已确认的静态方案原件。<a href="integrated.html">查看已接入系统的实际页面截图 →</a></p>
+    <section class="rv-intro">
+      <div><p class="rv-eyebrow">晨雾玻璃 · Morning Mist Glass</p><h1>先把六个主要页面，<br class="rv-mobile-break">做好看、看清楚。</h1><p class="rv-intro-copy">按你提供的设计令牌，重新梳理租务信息与操作层级。以下均为真实 TDesign 小程序组件的静态截图，使用合成资料。</p></div>
+      <div class="rv-palette" aria-label="采用的设计令牌"><span style="--swatch:#5262DD"><i></i>靛蓝主色</span><span style="--swatch:#FFFFFF"><i></i>实心列表</span><span style="--swatch:#F0F2FE"><i></i>轻透层次</span></div>
+    </section>
+    <div class="rv-toolbar"><p id="view-note">点开任一页面，查看大图和弹层方案</p><div class="rv-view-switch" aria-label="预览视图"><button type="button" class="is-active" data-view="grid" aria-pressed="true">六页总览</button><button type="button" data-view="single" aria-pressed="false">逐页查看</button></div></div>
+    <nav class="rv-screen-nav" aria-label="页面选择" hidden></nav>
+    <section id="screens" class="rv-grid" aria-label="六个主要页面"></section>
+    <section class="rv-design-notes" aria-label="本版设计重点"><div><h2>让信息有主次</h2><p>每屏只保留一个主要金额或操作。普通列表使用实心白底，玻璃效果集中在重点信息、导航和弹层。</p></div><div><h2>手机号看得见，也改得了</h2><p>待关联页直接展示手机号；“我的”保留修改入口。用手机号作为账号展示，不再把内部微信字符串摆给租客。</p></div><div><h2>先确认设计，再替换业务页面</h2><p>本次只提交静态方案供评审。现有业务小程序和生产服务均未替换；预览中的按钮不写入真实业务。</p></div></section>
+    <footer class="rv-footer"><span>来源：design/design-tokens.css · TDesign Mini Program 1.18.0</span><span>固定样例资料 · 仅用于视觉评审</span></footer>
+  </main>
+  <dialog class="rv-dialog" aria-labelledby="dialog-title">
+    <div class="rv-dialog-bar"><div><span class="rv-dialog-role"></span><h2 id="dialog-title"></h2></div><button class="rv-close" type="button" aria-label="关闭大图">×</button></div>
+    <div class="rv-dialog-content"><button class="rv-arrow rv-previous" type="button" aria-label="上一个页面">‹</button><div class="rv-dialog-phone"><img alt="" class="rv-large-image"></div><button class="rv-arrow rv-next" type="button" aria-label="下一个页面">›</button></div>
+    <div class="rv-variants" aria-label="页面状态"></div><p class="rv-dialog-caption"></p>
+  </dialog>
+  <script src="review.js"></script>
+</body>
+</html>

@@ -1,1 +1,7 @@
-{"navigationBarTitleText":"账单查询"}
+{
+  "navigationBarTitleText": "账单查询",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "app-nav": "/components/app-nav/index"
+  }
+}

@@ -1,0 +1,158 @@
+/* Generated from ../design-tokens.css; keep the source tokens unchanged. */
+page {
+  /* ── 1. 品牌靛蓝 ─────────────────────────────────────────────────────
+     在旧版 #3B5BDB 基础上降低饱和、加深主干，使其在玻璃与白底上
+     都能稳定通过 4.5:1。色相 266° 贯穿全局中性色，形成潜意识统一。 */
+  --mg-brand-50:  #F0F2FE;
+  --mg-brand-100: #E2E6FC;
+  --mg-brand-200: #C6CDF8;
+  --mg-brand-300: #A2ACF2;
+  --mg-brand-400: #7583E8;
+  --mg-brand-500: #5262DD;   /* 主色 · 白底对比 5.06:1 */
+  --mg-brand-600: #4148C5;   /* 按下态 */
+  --mg-brand-700: #363BA0;   /* 深压态 / 深色文字 */
+
+  /* ── 2. 语义色 ───────────────────────────────────────────────────────
+     与业务语义绑定：未付=红、已付=绿、在途=琥珀。
+     -500 用于填充（按钮底），-600 用于文字（浅底上），照此使用即达标。 */
+  --mg-danger-50:  #FEF2F2;
+  --mg-danger-100: #FBE0E1;
+  --mg-danger-500: #CE3439;   /* 填充 · 白字 5.01:1 */
+  --mg-danger-600: #B92B31;   /* 文字 · 浅底 5.5:1 */
+  --mg-danger-700: #9C2329;
+
+  --mg-success-50:  #EDFAF3;
+  --mg-success-100: #D2F2E2;
+  --mg-success-500: #1E7A4E;   /* 文字与填充兼用 5.30:1 */
+  --mg-success-600: #186340;
+
+  --mg-warn-50:  #FDF4E3;
+  --mg-warn-100: #FAE7C4;
+  --mg-warn-500: #DD8A00;   /* 仅装饰 / 图标，白字不达标，勿作填充 */
+  --mg-warn-600: #9E6200;   /* 文字 · 白底 5.43:1 */
+
+  /* ── 3. 中性色 · 带靛蓝色相的暖冷中间调 ─────────────────────────────
+     chroma 极低（≈0.01）但可感知，避免死灰，与品牌色形成潜意识呼应。 */
+  --mg-ink-900: #14161F;   /* 主文本 */
+  --mg-ink-800: #252833;
+  --mg-ink-700: #3A3E4D;
+  --mg-ink-600: #525770;   /* 次级文本 · 玻璃上 6.48:1 */
+  --mg-ink-500: #636980;   /* 三级文本 / placeholder · 玻璃上 5.00:1 */
+  --mg-ink-400: #8E94A8;   /* 仅图标 / 装饰 · 3.02:1 */
+  --mg-ink-300: #B4B9C8;
+  --mg-ink-200: #D6D9E2;
+  --mg-ink-100: #E9EBF1;
+  --mg-ink-50:  #F5F6FA;
+
+  /* ── 4. 表面与玻璃配方 ───────────────────────────────────────────────
+     玻璃是本主题的语言，但只用于「浮在内容之上」的层：
+     导航、Hero、弹层、Tab 栏。普通列表卡用实心白，保证密集扫读时的锐利度。 */
+  --mg-bg:            #F7F8FC;
+  --mg-surface:       #FFFFFF;
+  --mg-surface-sunk:  #F5F6FA;
+
+  --mg-glass:         rgba(255, 255, 255, .66);
+  --mg-glass-strong:  rgba(255, 255, 255, .78);
+  --mg-glass-blur:    saturate(180%) blur(44rpx);
+  --mg-glass-sheen:   rgba(255, 255, 255, .92);  /* 棱边顶部高光 */
+  --mg-glass-edge:    rgba(20, 22, 31, .07);     /* 棱边底部暗边 */
+
+  --mg-line:        #E4E7F0;   /* 实色分隔线，不用 rgba */
+  --mg-line-strong: #D2D7E4;
+
+  /* 语义别名 —— 日常开发只用这一层 */
+  --mg-bg-page:      var(--mg-bg);
+  --mg-text:         var(--mg-ink-900);
+  --mg-text-2:       var(--mg-ink-600);
+  --mg-text-3:       var(--mg-ink-500);
+  --mg-text-onfill:  #FFFFFF;
+  --mg-accent:       var(--mg-brand-500);
+  --mg-accent-quiet: var(--mg-brand-50);
+
+  /* ── 5. 排版 ─────────────────────────────────────────────────────────
+     中文优先使用系统字体（加载零成本，且在各平台字形最正确）；
+     界面层级靠字号 + 字重 + 字距三维拉开，而不是靠字体本身。
+     固定 rem 尺度，不做流体字号 —— 数据密集型 UI 需要空间可预测。 */
+  --mg-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
+             "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+             "Noto Sans SC", system-ui, sans-serif;
+  --mg-font-num: "SF Pro Display", -apple-system, "Segoe UI Variable Display",
+                 "Segoe UI", system-ui, sans-serif;
+
+  --mg-fs-micro: 22rpx;   /* 角标 */
+  --mg-fs-xs:    24rpx;   /* 分组标题 / 标签胶囊 */
+  --mg-fs-sm:    26rpx;   /* 辅助说明 */
+  --mg-fs-md:    30rpx;   /* 次要正文 */
+  --mg-fs-lg:    34rpx;   /* 列表主标题 / 输入值 */
+  --mg-fs-xl:    42rpx;   /* 指标数字 */
+  --mg-fs-2xl:   52rpx;   /* 次级强调数字 */
+  --mg-fs-3xl:   80rpx;   /* Hero 金额 */
+
+  --mg-fw-regular: 400;
+  --mg-fw-medium:  500;
+  --mg-fw-semi:    600;
+  --mg-fw-bold:    700;
+
+  --mg-lh-tight: 1.12;   /* 大数字 */
+  --mg-lh-snug:  1.35;   /* 标题 */
+  --mg-lh-base:  1.55;   /* 正文 */
+
+  --mg-ls-hero:  -0.028em;  /* 大字号收紧，避免松散 */
+  --mg-ls-title: -0.011em;
+  --mg-ls-body:   0;
+  --mg-ls-label:  0.055em;  /* 小标签放开，提升辨识 */
+
+  /* ── 6. 间距 · 4pt 基准 ──────────────────────────────────────────────
+     用 4pt 而非 8pt：需要 24rpx 这类中间值时不必凑合。 */
+  --mg-space-1:  8rpx;
+  --mg-space-2:  16rpx;
+  --mg-space-3:  24rpx;
+  --mg-space-4:  32rpx;
+  --mg-space-5:  40rpx;
+  --mg-space-6:  48rpx;
+  --mg-space-8:  64rpx;
+  --mg-space-10: 80rpx;
+  --mg-space-12: 96rpx;
+
+  /* 语义间距 —— 描述关系，而非数值 */
+  --mg-gutter:     36rpx;   /* 页面左右留白 */
+  --mg-stack-card: 24rpx;   /* 卡片之间 */
+  --mg-row-pad-y:  28rpx;   /* 行内纵向呼吸 */
+  --mg-row-inset:  140rpx;   /* 列表内嵌分隔线的左起点 */
+
+  /* ── 7. 圆角 ─────────────────────────────────────────────────────────
+     玻璃的厚度靠圆角体现：面积越大，圆角越大，光在边缘走的路越长。 */
+  --mg-radius-xs:   16rpx;
+  --mg-radius-sm:   24rpx;
+  --mg-radius-md:   28rpx;
+  --mg-radius-lg:   36rpx;
+  --mg-radius-xl:   44rpx;
+  --mg-radius-2xl:  56rpx;
+  --mg-radius-full: 1998rpx;
+
+  /* ── 8. 阴影 · 柔和多层，带靛蓝色偏 ──────────────────────────────────
+     刻意避免灰黑阴影：玻璃的阴影应该像光被挡住，而不是像脏。 */
+  --mg-shadow-xs: 0 2rpx 4rpx rgba(24, 28, 60, .04);
+  --mg-shadow-sm: 0 4rpx 16rpx -2px rgba(24, 28, 60, .07), 0 2rpx 4rpx rgba(24, 28, 60, .04);
+  --mg-shadow-md: 0 20rpx 52rpx -8px rgba(24, 28, 60, .13), 0 4rpx 12rpx -2px rgba(24, 28, 60, .05);
+  --mg-shadow-lg: 0 48rpx 112rpx -16px rgba(24, 28, 60, .20), 0 12rpx 32rpx -6px rgba(24, 28, 60, .08);
+  --mg-shadow-brand: 0 20rpx 44rpx -8px rgba(82, 98, 221, .42);
+  --mg-shadow-danger: 0 20rpx 44rpx -8px rgba(206, 52, 57, .36);
+
+  /* ── 9. 层叠 · 语义化 z-index ────────────────────────────────────── */
+  --mg-z-sticky: 40;
+  --mg-z-tabbar: 60;
+  --mg-z-scrim:  70;
+  --mg-z-modal:  80;   /* 底部抽屉 */
+  --mg-z-dialog-scrim: 84;  /* 确认框的遮罩：要压住抽屉 */
+  --mg-z-dialog: 86;   /* 居中确认框：可能从抽屉里弹出，必须永远在最上面 */
+  --mg-z-toast:  90;
+
+  /* ── 10. 动效 ────────────────────────────────────────────────────────
+     只用减速曲线（ease-out 家族），不用回弹 —— 记账工具需要"稳"。 */
+  --mg-ease-out:   cubic-bezier(.22, 1, .36, 1);
+  --mg-ease-inout: cubic-bezier(.65, 0, .35, 1);
+  --mg-dur-fast: 140ms;
+  --mg-dur-base: 240ms;
+  --mg-dur-slow: 380ms;
+}

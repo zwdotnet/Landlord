@@ -16,7 +16,7 @@
             <span class="text-muted-foreground text-xs">当前关联账号</span>
             <span class="badge bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">已关联</span>
           </div>
-          <div class="text-sm font-semibold text-foreground truncate">{{ account.username }}</div>
+          <div class="text-sm font-semibold text-foreground truncate">{{ account.phone || account.username }}</div>
           <div v-if="account.phone" class="text-[11px] text-muted-foreground">联系手机号 {{ account.phone }}</div>
           <p class="text-[11px] leading-5 text-muted-foreground pt-1">
             解除关联后该账号会回到「等待房东关联」状态（账号不删除），可再关联到别的租户。
@@ -26,12 +26,12 @@
         <!-- 未关联：搜索候选账号 -->
         <template v-else>
           <div>
-            <label class="block text-xs font-semibold text-muted-foreground mb-1.5">搜索租客账号（用户名至少 2 个字）</label>
+            <label class="block text-xs font-semibold text-muted-foreground mb-1.5">搜索租客账号（完整手机号或用户名）</label>
             <div class="flex items-center gap-2">
               <input
                 v-model="keyword"
                 class="input-field flex-1"
-                placeholder="输入租客提供的账号名"
+                placeholder="输入租客提供的完整手机号或用户名"
                 @keyup.enter="search"
               />
               <button class="btn-ghost !py-2 shrink-0" :disabled="searching" @click="search">
@@ -57,10 +57,10 @@
               @click="selectedId = c.id"
             >
               <div class="flex items-center justify-between gap-3">
-                <span class="text-xs font-semibold text-foreground truncate">{{ c.username }}</span>
+                <span class="text-xs font-semibold text-foreground truncate">{{ c.display_name || c.username }}</span>
                 <span v-if="selectedId === c.id" class="text-[11px] font-semibold text-brand-600 dark:text-brand-300 shrink-0">已选中</span>
               </div>
-              <div class="mt-0.5 text-[11px] text-muted-foreground">让租户把用户名发给你，核对无误再关联</div>
+              <div class="mt-0.5 text-[11px] text-muted-foreground">账号 #{{ c.id }} · 请核对租客提供的账号编号再关联</div>
             </button>
           </div>
         </template>
@@ -161,6 +161,8 @@ async function search() {
     return
   }
   searching.value = true
+  selectedId.value = null
+  candidates.value = []
   try {
     const res = await searchTenantAccountCandidates(q)
     if (res.data?.code === 0) {

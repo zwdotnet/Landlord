@@ -1,18 +1,14 @@
-<import src="../../../templates/landlord.wxml" />
-<view class="page">
-  <template is="landlord-scope" data="{{username, ledgers, ledgerIndex, ledgerName, loading}}" />
-  <view class="title gap">房东工作台</view><view class="subtitle">查看房源与账单，掌握当前台账的租务。</view>
-  <view wx:if="{{loading}}" class="loading">正在读取台账…</view><view wx:elif="{{error}}" class="error">{{error}}<button bindtap="refresh">重试</button></view>
-  <block wx:else>
-    <button wx:if="{{hasPendingPayment}}" class="surface" bindtap="resumePayment">有一笔实收待核对 · 继续处理</button>
-    <view wx:if="{{!hasLedger}}" class="surface empty">暂无可用台账，请在 Web 开通或联系台账管理者。</view>
-    <view wx:elif="{{!canRooms && !canBills && !canMeters}}" class="surface empty">当前台账暂未授予房源、抄表或账单查看权限。</view>
-    <button wx:if="{{canMeters}}" class="surface link-row" bindtap="goMeters">抄表<text class="arrow">›</text></button>
-    <button wx:if="{{canIssue}}" class="surface link-row" bindtap="goIssue">预览与出账<text class="arrow">›</text></button>
-    <button wx:if="{{canRooms}}" class="surface link-row" bindtap="goRooms">房源查询<text class="arrow">›</text></button>
-    <button wx:if="{{canBills}}" class="surface link-row" bindtap="goBills">账单查询<text class="arrow">›</text></button>
-    <view class="hint">小程序可抄表、预览与确认出账；房源编辑、条款调整及收款请使用 Web。</view>
-  </block>
-  <button class="gap" bindtap="goAccount">微信绑定</button>
-  <button class="quiet gap" bindtap="logout">退出登录 / 切换账号</button>
-</view>
+<view class="mist"/><t-navbar placeholder="{{true}}" id="app-header" title="工作台" left-arrow="{{false}}" delta="{{0}}" bind:go-back="goBack" />
+
+<import src="../../../templates/landlord.wxml"/><view class="screen with-tabs">
+ <view class="greeting"><view><view class="support">{{username ? username + '，你好' : '你好'}}</view><view class="page-heading">租务工作台</view></view><view class="avatar"><t-icon name="home" size="24px"/></view></view>
+ <template is="landlord-scope" data="{{username, ledgers, ledgerIndex, ledgerName, loading}}"/>
+ <view wx:if="{{loading}}" class="loading">正在读取台账…</view><view wx:elif="{{error}}" class="error">{{error}}<t-button bind:tap="refresh" class="action-refresh">重试</t-button></view>
+ <block wx:else><view wx:if="{{!hasLedger}}" class="empty">暂无可用台账，请联系台账管理者。</view><view wx:elif="{{!canRooms && !canBills && !canMeters}}" class="empty">当前台账尚未授予业务查看权限。</view>
+ <view wx:else class="overview glass"><view class="spread"><text class="support">当前台账</text><view class="quiet-chip"><t-icon name="lock-on" size="12px"/>授权管理</view></view><view class="page-heading gap">{{ledgerName}}</view><view class="overview-stats"><view wx:if="{{canRooms}}"><view class="support">房源</view><view class="mini-money">{{roomTotal}}<text class="metric-unit">间</text></view></view><view wx:if="{{canBills}}"><view class="support">账单</view><view class="mini-money">{{billTotal}}<text class="metric-unit">张</text></view></view></view></view>
+ <view class="quick-grid"><view wx:if="{{canMeters}}" class="quick-item" bindtap="goMeters"><view class="quick-icon"><t-icon name="edit" size="25px"/></view><view class="quick-label">抄表录入</view><view class="quick-note">水电燃气</view></view><view wx:if="{{canIssue}}" class="quick-item" bindtap="goIssue"><view class="quick-icon"><t-icon name="file-add" size="25px"/></view><view class="quick-label">预览出账</view><view class="quick-note">核对费用</view></view><view wx:if="{{canRooms}}" class="quick-item" bindtap="goRooms"><view class="quick-icon"><t-icon name="home" size="25px"/></view><view class="quick-label">房源查询</view><view class="quick-note">租住情况</view></view><view wx:if="{{canBills}}" class="quick-item" bindtap="goBills"><view class="quick-icon"><t-icon name="wallet" size="25px"/></view><view class="quick-label">账单查询</view><view class="quick-note">实收与收据</view></view></view>
+ <block wx:if="{{hasPendingPayment}}"><view class="section-heading">待办</view><view class="white-panel todo-row" bindtap="resumePayment"><view class="row-icon warn-icon"><t-icon name="time" size="23px"/></view><view class="row-copy"><view class="row-title">有一笔实收待核对</view><view class="support">继续核对原请求，避免重复登记</view></view><t-icon name="chevron-right" size="18px"/></view></block>
+ <block wx:if="{{latest}}"><view class="section-heading">最近账单<view class="section-aside" bindtap="goBills">全部账单 ›</view></view><view class="white-panel recent-row" data-id="{{latest.id}}" bindtap="goBill"><view class="room-letter"><t-icon name="file" size="23px"/></view><view class="row-copy"><view class="row-title">{{latest.room_no}} · {{latest.period}}</view><view class="support">{{latest.tenant_name}}</view></view><view class="align-right"><view class="row-amount">¥{{latest.payableText}}</view><view class="status-warn">{{latest.statusText}}</view></view></view></block>
+ </block></view>
+
+<app-nav id="app-navigation" role="landlord" current="home" meters="{{canMeters}}" issue="{{canIssue}}" pending="{{hasPendingPayment}}" />

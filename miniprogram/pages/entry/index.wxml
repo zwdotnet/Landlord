@@ -1,1 +1,2 @@
-<view class="page"><view wx:if="{{error}}" class="error">{{error}}<button bindtap="refresh">重试</button></view><view wx:else class="loading">正在恢复登录…</view></view>
+<view class="mist"/><t-navbar placeholder="{{true}}" id="app-header" title="Landlord" left-arrow="{{false}}" delta="{{0}}" bind:go-back="goBack" />
+<view class="page"><view wx:if="{{error}}" class="error">{{error}}<t-button theme="light" size="large" block bind:tap="refresh" class="action-refresh">重试</t-button></view><view wx:else class="loading">正在恢复登录…</view></view>

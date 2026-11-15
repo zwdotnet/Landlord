@@ -48,6 +48,7 @@ Page({
   },
   inputKeyword(e) { if (!this.data.busy) { this.keyword = e.detail.value; this.setData({ keyword: this.keyword }) } },
   search() { if (!this.data.busy) { this.targetPage = 1; return this.refresh() } },
+  changeRoom() { if (!this.data.busy && !this.data.contextLoading) this.resetForm() },
   previousPage() { if (!this.data.busy) { this.targetPage = Math.max(1, this.data.page - 1); return this.refresh() } },
   nextPage() { if (!this.data.busy) { this.targetPage = Math.min(this.data.pages, this.data.page + 1); return this.refresh() } },
   chooseRoom(e) {
@@ -126,6 +127,7 @@ Page({
     finally { if (seq === this.sequence && op === this.operation) this.setData({ busy: false }) }
   },
   reloadContext() { if (!this.data.busy && this.data.room) return this.loadContext(this.data.room) },
+  goBack() { if (!this.data.busy && !this.data.opening) wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/landlord/home/index' }) }) },
   goHome() { if (!this.data.busy) wx.reLaunch({ url: '/pages/landlord/home/index' }) },
   logout,
 })

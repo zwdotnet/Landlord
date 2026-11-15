@@ -1,0 +1,9 @@
+{
+  "name": "landlord-design-preview",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static TDesign mini program prototypes for visual review; no business API",
+  "dependencies": {
+    "tdesign-miniprogram": "1.18.0"
+  }
+}

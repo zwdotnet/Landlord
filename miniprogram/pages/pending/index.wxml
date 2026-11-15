@@ -1,8 +1,7 @@
-<view class="page">
-  <view class="brand">Landlord · 租住</view>
-  <view class="hero"><view class="title">等房东关联一下</view><view class="subtitle">账号已就绪。请把你的账号告诉房东，由房东在租户管理中关联你的租住档案。</view></view>
-  <view wx:if="{{loading}}" class="loading">正在核对关联状态…</view>
-  <view wx:elif="{{error}}" class="error">{{error}}</view>
-  <view wx:else class="surface"><view class="meta">你的账号</view><view class="list-title gap" user-select>{{username}}</view><view class="hint">关联完成后，点击下方按钮进入。</view></view>
-  <view class="actions"><button class="primary" bindtap="refresh" loading="{{loading}}" disabled="{{loading}}">检查关联状态</button><button bindtap="logout">退出账号</button></view>
-</view>
+<view class="mist"/><t-navbar placeholder="{{true}}" id="app-header" title="入住登记" left-arrow="{{false}}" delta="{{0}}" bind:go-back="goBack" />
+
+<view class="screen waiting-screen"><view class="waiting-symbol glass"><t-icon name="user-time" size="44px"/></view><view class="waiting-title">等房东确认一下</view><view class="waiting-description">入住登记已提交。将下方手机号告诉房东，<view>关联后就能查看租住资料和账单。</view></view>
+ <view wx:if="{{loading}}" class="loading">正在核对关联状态…</view><view wx:if="{{error}}" class="error">{{error}}</view>
+ <view wx:if="{{!loading && phone !== null}}" class="contact-card glass"><view class="spread"><view class="support">你的登记手机号</view><view class="edit-link" bindtap="goContact"><t-icon name="edit" size="14px"/>修改</view></view><view class="contact-number" user-select>{{phone || '尚未填写'}}</view><view class="contact-note"><t-icon name="user" size="13px"/>租客账号 · #{{accountId}}</view></view>
+ <view class="progress-list"><view class="progress-row"><view class="step-icon done"><t-icon name="check" size="13px"/></view><view><view class="step-title">入住登记已提交</view><view class="support">已记录你的联系资料</view></view></view><view class="progress-line"/><view class="progress-row"><view class="step-icon current">2</view><view><view class="step-title">等待房东关联</view><view class="support">房东核对手机号和账号编号后关联档案</view></view></view><view class="progress-line"/><view class="progress-row"><view class="step-icon">3</view><view><view class="step-title inactive">查看租住信息</view><view class="support">房屋、账单、合同，一处查看</view></view></view></view>
+ <view class="waiting-bottom"><t-button theme="primary" size="large" block icon="refresh" bind:tap="refresh" loading="{{loading}}" disabled="{{loading}}" class="action-refresh">检查关联状态</t-button><view class="logout-text" bindtap="logout">退出账号</view></view></view>
