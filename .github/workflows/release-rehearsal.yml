@@ -1,0 +1,50 @@
+name: Isolated release rehearsal
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-rehearsal.yml
+      - tools/release-rehearsal.py
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: release-rehearsal-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rehearse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CANDIDATE_RUN_ID: '43784715179'
+      CANDIDATE_ARTIFACT: landlord-0.10.0-437b961d85da-43784715179-1
+      CANDIDATE_COMMIT: 437b961d85daa91677b817ef6e83e69b2fb3665f
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Download the verified existing candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$CANDIDATE_RUN_ID" --name "$CANDIDATE_ARTIFACT" --dir .runtime/rehearsal-artifact
+      - name: Exercise bounded concurrency and complete offline recovery
+        run: >-
+          python3 tools/release-rehearsal.py
+          --artifact-dir .runtime/rehearsal-artifact
+          --expected-commit "$CANDIDATE_COMMIT"
+          --expected-run-id "$CANDIDATE_RUN_ID"
+          --evidence .runtime/rehearsal-evidence
+      - name: Save sanitized results even on failure
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: release-rehearsal-${{ github.sha }}-${{ github.run_attempt }}
+          path: .runtime/rehearsal-evidence/
+          if-no-files-found: error
+          retention-days: 7
