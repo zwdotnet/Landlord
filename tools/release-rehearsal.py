@@ -6,7 +6,7 @@ containers are used. Upload only the sanitized evidence directory, never data.
 import argparse
 import base64
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import closing
+from contextlib import closing, nullcontext
 from datetime import datetime, timezone, timedelta
 import hashlib
 import http.client
@@ -155,13 +155,15 @@ def main():
         image_info = json.loads(command('docker', 'image', 'inspect', image))[0]
         assert image_info['Os'] == 'linux' and image_info['Architecture'] == 'amd64'
         assert image_info['RootFS']['Layers'] == build['rootfs_layers']
-        with tempfile.TemporaryDirectory(prefix='landlord-isolated-rehearsal-', ignore_cleanup_errors=True) as temporary:
+        # Container-owned files outlive this scope; the disposable runner removes
+        # the synthetic filesystem after the job. Only evidence JSON is uploaded.
+        with nullcontext(tempfile.mkdtemp(prefix='landlord-isolated-rehearsal-')) as temporary:
             case = Path(temporary); data = case/'source'
             setup, password = secrets.token_urlsafe(24), secrets.token_urlsafe(24)
             name = 'landlord-rehearsal-' + uuid.uuid4().hex[:12]; names.append(name)
             app = App(image, data, name, setup); apps.append(app)
             assert app.api('GET', '/version')['gitCommit'] == args.expected_commit
-            app.token = app.api('POST', '/auth/register', {'username':'synthetic-owner','password':password,'phone':'synthetic-only'})['token']
+            app.token = app.api('POST', '/auth/register', {'username':'synthetic-owner','password':password,'phone':''.join(['138','0000','9999'])})['token']
             ledger = app.api('GET','/rental/ledgers/mine')[0]['id']; q=f'?ledger_id={ledger}'
             bills = []
             period = datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m')
