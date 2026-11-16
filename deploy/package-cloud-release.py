@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from release import validate_verification
 
 
 def run(*args):
@@ -37,8 +38,12 @@ if (info["Os"], info["Architecture"]) != ("linux", "amd64"):
 commit = run("git", "rev-parse", "HEAD")
 if commit != os.environ["GITHUB_SHA"]:
     raise SystemExit("Checkout does not match workflow commit")
+verification_path = Path('.runtime/cloud-verification/summary.json')
+verification = json.loads(verification_path.read_text(encoding='utf-8'))
+validate_verification(verification, commit)
 with tempfile.TemporaryDirectory(prefix="landlord-package-") as temporary:
     stage = Path(temporary)
+    shutil.copyfile(verification_path, stage / 'verification.json')
     container = run("docker", "create", image)
     try:
         run("docker", "cp", container + ":/app/web", str(stage / "web"))
@@ -56,11 +61,15 @@ with tempfile.TemporaryDirectory(prefix="landlord-package-") as temporary:
         raise SystemExit("Expected exactly one image in Compose")
     (stage / "compose.yml").write_text(compose, encoding="utf-8")
     build = {"repository": os.environ["GITHUB_REPOSITORY"], "commit": commit,
+             "binary_identity": {"gitCommit": commit, "buildTime": os.environ['LANDLORD_BUILD_TIME'],
+                                 "version": os.environ['LANDLORD_VERSION'], "appName": "landlord"},
              "run_id": os.environ["GITHUB_RUN_ID"],
              "attempt": os.environ["GITHUB_RUN_ATTEMPT"], "image": image,
              "image_id": info["Id"], "rootfs_layers": info["RootFS"]["Layers"],
              "platform": "linux/amd64", "base_path": "/landlord/",
-             "checks": ["frontend build", "date/PWA tests", "runtime and PDF smoke"],
+             "checks": ["Go full tests", "Web and mini-program Node tests", "Python release/mini-program/backup/gate tests", "mini-program syntax", "frontend build", "runtime and PDF smoke"],
+             "verification": {"commit": commit, "sha256": sha(verification_path),
+                              "steps": [{"name": s['name'], "counts": s['counts'], "pass": s['pass']} for s in verification['steps']]},
              "automatic_deployment": False}
     (stage / "build.json").write_text(json.dumps(build, indent=2) + "\n", encoding="utf-8")
     subprocess.run(["git", "archive", "--format=tar.gz", "-o",

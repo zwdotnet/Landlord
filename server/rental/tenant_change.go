@@ -27,6 +27,7 @@ import (
 
 	"smallgo/server/audit"
 	"smallgo/server/response"
+	"smallgo/server/upload"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -93,8 +94,12 @@ func handlePortalChangeSubmit(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		form, err := c.MultipartForm()
+		form, cleanup, err := upload.ReadForm(c, upload.BusinessRequestLimit, 10, 20<<20)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, "提交内容格式有误")
 			return
 		}

@@ -2,6 +2,16 @@ name: Build Linux deployment
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/**
+      - deploy/**
+      - server/**
+      - web/**
+      - miniprogram/**
+      - scripts/**
+      - VERSION
+      - .dockerignore
   push:
     branches: [main]
     paths:
@@ -9,18 +19,56 @@ on:
       - deploy/**
       - server/**
       - web/**
+      - miniprogram/**
+      - scripts/**
       - VERSION
       - .dockerignore
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: cloud-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - name: Install Go and web dependencies
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 https://go.dev/dl/go1.26.5.linux-amd64.tar.gz -o "$RUNNER_TEMP/go.tar.gz"
+          curl --fail --location --retry 3 'https://go.dev/dl/?mode=json&include=all' -o "$RUNNER_TEMP/go-releases.json"
+          python3 -c 'import json,hashlib,os,pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"]); files=[f for r in json.loads((p/"go-releases.json").read_text()) for f in r["files"] if f["filename"]=="go1.26.5.linux-amd64.tar.gz"]; assert len(files)==1; assert hashlib.sha256((p/"go.tar.gz").read_bytes()).hexdigest()==files[0]["sha256"]'
+          mkdir "$RUNNER_TEMP/landlord-go"
+          tar -xzf "$RUNNER_TEMP/go.tar.gz" -C "$RUNNER_TEMP/landlord-go"
+          echo "$RUNNER_TEMP/landlord-go/go/bin" >> "$GITHUB_PATH"
+          npm --prefix web ci --no-audit --no-fund
+      - name: Run full verification
+        env:
+          CGO_ENABLED: '1'
+          GOTOOLCHAIN: local
+        run: python3 scripts/verify.py --evidence .runtime/cloud-verification
+      - name: Save verification evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: verification-${{ github.sha }}-${{ github.run_attempt }}
+          path: .runtime/cloud-verification/
+          if-no-files-found: error
+          retention-days: 7
   build:
+    needs: verify
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -45,6 +93,7 @@ jobs:
           echo "version=$landlord_version" >> "$GITHUB_OUTPUT"
           echo "name=$landlord_name" >> "$GITHUB_OUTPUT"
           echo "image=landlord:${landlord_name#landlord-}" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
       - name: Build production frontend and check date/PWA behavior
         working-directory: web
@@ -73,7 +122,10 @@ jobs:
           load: true
           push: false
           tags: ${{ steps.release.outputs.image }}
-          build-args: APP_VERSION=${{ steps.release.outputs.version }}
+          build-args: |
+            APP_VERSION=${{ steps.release.outputs.version }}
+            GIT_COMMIT=${{ github.sha }}
+            BUILD_TIME=${{ steps.release.outputs.build_time }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -85,11 +137,19 @@ jobs:
         env:
           LANDLORD_IMAGE: ${{ steps.release.outputs.image }}
           LANDLORD_VERSION: ${{ steps.release.outputs.version }}
+          LANDLORD_BUILD_TIME: ${{ steps.release.outputs.build_time }}
         run: python3 deploy/smoke-cloud-image.py
+
+      - name: Download matching verification receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --name "verification-${GITHUB_SHA}-${GITHUB_RUN_ATTEMPT}" --dir .runtime/cloud-verification
 
       - name: Package image and matching release files
         env:
           LANDLORD_IMAGE: ${{ steps.release.outputs.image }}
+          LANDLORD_VERSION: ${{ steps.release.outputs.version }}
+          LANDLORD_BUILD_TIME: ${{ steps.release.outputs.build_time }}
         run: python3 deploy/package-cloud-release.py dist/cloud
 
       - name: Save deployment artifact

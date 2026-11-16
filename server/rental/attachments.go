@@ -14,7 +14,6 @@ package rental
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,6 +23,7 @@ import (
 	"smallgo/server/config"
 	"smallgo/server/database"
 	"smallgo/server/response"
+	"smallgo/server/upload"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -217,8 +217,12 @@ func handleAttachmentUpload(db *gorm.DB) gin.HandlerFunc {
 		if !requireLedgerWrite(db, c, tenant.LedgerID, ModuleTenants, PermEdit) {
 			return
 		}
-		form, err := c.MultipartForm()
+		form, cleanup, err := upload.ReadForm(c, upload.BusinessRequestLimit, 10, 20<<20)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, "请选择要上传的图片或 PDF")
 			return
 		}
@@ -249,62 +253,36 @@ func handleAttachmentUpload(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		created := make([]TenantAttachment, 0, len(files))
-		for _, fh := range files {
-			if fh.Size <= 0 || fh.Size > attachmentMaxFileSize {
-				response.ErrorBadRequest(c, fmt.Sprintf("%s：文件为空或超过 20MB", fh.Filename))
-				return
-			}
-			src, err := fh.Open()
-			if err != nil {
-				response.ErrorInternal(c, "读取上传文件失败")
-				return
-			}
-			header := make([]byte, 512)
-			n, readErr := src.Read(header)
-			src.Close()
-			if readErr != nil && n == 0 {
-				response.ErrorBadRequest(c, fmt.Sprintf("%s：读取文件内容失败", fh.Filename))
-				return
-			}
-			mimeType := http.DetectContentType(header[:n])
-			ext, allowed := attachmentAllowedTypes[mimeType]
-			if !allowed {
-				response.ErrorBadRequest(c, fmt.Sprintf("%s：仅支持图片（拍照/截图）或 PDF 文件", fh.Filename))
-				return
-			}
-
-			now := time.Now()
-			rel := attachmentLedgerRel(tenant.LedgerID, now, uuid.New().String()+ext)
-			abs := attachmentAbsPath(rel)
-			if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-				response.ErrorInternal(c, "创建存储目录失败")
-				return
-			}
-			if err := c.SaveUploadedFile(fh, abs); err != nil {
-				response.ErrorInternal(c, "保存附件失败")
-				return
-			}
-
-			row := TenantAttachment{
-				UserID:   currentUserID(c),
-				LedgerID: tenant.LedgerID,
-				TenantID: tenant.ID,
-				FileName: strings.TrimSpace(fh.Filename),
-				FilePath: rel,
-				FileSize: fh.Size,
-				MimeType: mimeType,
-				Label:    label,
-			}
+		pending, err := checkUploadFiles(files, attachmentAllowedTypes, attachmentMaxFileSize)
+		if err != nil {
+			response.ErrorBadRequest(c, err.Error())
+			return
+		}
+		created := make([]TenantAttachment, len(pending))
+		batch := make([]storedUpload, 0, len(pending))
+		for i, p := range pending {
+			rel := attachmentLedgerRel(tenant.LedgerID, time.Now(), uuid.New().String()+p.ext)
+			row := &created[i]
+			*row = TenantAttachment{UserID: currentUserID(c), LedgerID: tenant.LedgerID,
+				TenantID: tenant.ID, FileName: strings.TrimSpace(p.file.Filename),
+				FilePath: rel, FileSize: p.file.Size, MimeType: p.mime, Label: label}
 			if row.FileName == "" {
-				row.FileName = "附件" + ext
+				row.FileName = "附件" + p.ext
 			}
-			if err := db.Create(&row).Error; err != nil {
-				_ = os.Remove(abs)
-				response.ErrorInternal(c, "保存附件记录失败")
-				return
+			batch = append(batch, storedUpload{p.file, attachmentAbsPath(rel), row})
+		}
+		if err := saveUploadBatch(c, db, batch, func(tx *gorm.DB) error {
+			var count int64
+			if err := tx.Model(&TenantAttachment{}).Where("tenant_id = ? AND org_id = ?", tenant.ID, tenant.LedgerID).Count(&count).Error; err != nil {
+				return err
 			}
-			created = append(created, row)
+			if int(count)+len(batch) > attachmentMaxFiles {
+				return fmt.Errorf("文件数量超过限制")
+			}
+			return nil
+		}); err != nil {
+			response.ErrorInternal(c, "整批上传失败，未保存本批文件")
+			return
 		}
 		response.Success(c, gin.H{"uploaded": len(created), "items": created})
 	}

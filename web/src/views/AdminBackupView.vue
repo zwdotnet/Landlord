@@ -14,7 +14,8 @@
               <code class="px-1.5 py-0.5 rounded bg-muted text-xs">{{ backupDir || 'backups/' }}</code> 下。
               自动备份默认每天 03:00 执行，保留最近 {{ keepCount }} 份；
               可在 <RouterLink to="/admin/configs" class="text-brand-500 dark:text-brand-300 hover:underline">系统配置</RouterLink> 中调整开关与数量。
-              换机或异地容灾时，可用「上传备份」把下载到本机的 .db 传回来。
+              .db 包含业务记录和服务端生成的归档 PDF，不包含上传合同、证件图片、房源或抄表照片。
+              「上传备份」只能恢复数据库；换机或灾备还需保存并恢复对应文件和部署配置，单独下载 .db 不构成完整备份。
             </p>
           </div>
         </div>

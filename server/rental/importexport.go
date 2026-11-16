@@ -16,6 +16,7 @@ import (
 
 	"smallgo/server/response"
 	"smallgo/server/sysconfig"
+	"smallgo/server/upload"
 	"smallgo/server/utils"
 
 	"github.com/gin-gonic/gin"
@@ -205,8 +206,12 @@ type importRowError struct {
 // 不影响其他行；房号不存在则自动建房，同房同月已有账单则更新。
 func handleImport(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fileHeader, err := c.FormFile("file")
+		fileHeader, cleanup, err := upload.ReadFile(c, "file", 9<<20, 8<<20)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, "请选择要导入的 CSV 文件")
 			return
 		}
@@ -695,8 +700,12 @@ func roomHeaderSlots(header []string) (roomSlots, bool) {
 // 逐行处理：错误行跳过并记录，不影响其他行。
 func handleRoomsImport(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fileHeader, err := c.FormFile("file")
+		fileHeader, cleanup, err := upload.ReadFile(c, "file", 9<<20, 8<<20)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, "请选择要导入的 CSV 文件")
 			return
 		}
@@ -932,8 +941,12 @@ func handleTenantTemplate(db *gorm.DB) gin.HandlerFunc {
 // 不影响其他行。房源必须已存在（请先用房源导入建档），不自动建房。
 func handleTenantsImport(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fileHeader, err := c.FormFile("file")
+		fileHeader, cleanup, err := upload.ReadFile(c, "file", 9<<20, 8<<20)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, "请选择要导入的 CSV 文件")
 			return
 		}

@@ -87,5 +87,48 @@ class ArtifactValidationTests(unittest.TestCase):
         proof.write_text(json.dumps({'commit': 'b' * 40, 'pass': True, 'old_version_startup_compatible': True}))
         with self.assertRaisesRegex(ValueError, 'match'): release.main(args + ['--migration-proof', str(proof)])
 
+    def test_new_receipt_must_match_and_have_full_success(self):
+        for failed in (False, True):
+            receipt={'commit':self.commit,'pass':not failed,'focused':False,'release_candidate':True,
+                     'steps':[{'name':name,'pass':True,'exit_code':0,'counts':{'pass':1,'tests':1,'fail':0}} for name in
+                              ['backend','node','deploy-python','mini-python','tools-python','mini-syntax','web-build']]}
+            raw=json.dumps(receipt).encode()
+            self.build['verification']={'sha256':hashlib.sha256(raw).hexdigest()}
+            self.files['build.json']=json.dumps(self.build).encode()
+            self.package({'verification.json':raw})
+            if failed:
+                with self.assertRaisesRegex(ValueError,'Verification'):self.verify()
+            else:self.verify()
+
+    def test_incomplete_or_duplicate_verification_steps_rejected(self):
+        import copy
+        valid={'commit':self.commit,'pass':True,'focused':False,'release_candidate':True,
+               'steps':[{'name':name,'pass':True,'exit_code':0,'counts':{'pass':1,'tests':1,'fail':0}} for name in
+                        ['backend','node','deploy-python','mini-python','tools-python','mini-syntax','web-build']]}
+        release.validate_verification(valid,self.commit)
+        for mutation in ('duplicate','zero','missing-counts','failed-exit','focused','not-candidate'):
+            receipt=copy.deepcopy(valid)
+            if mutation=='duplicate': receipt['steps'][0]=copy.deepcopy(receipt['steps'][1])
+            elif mutation=='zero': receipt['steps'][0]['counts']['pass']=0
+            elif mutation=='missing-counts': receipt['steps'][0]['counts']={}
+            elif mutation=='failed-exit': receipt['steps'][0]['exit_code']=7
+            elif mutation=='focused': receipt['focused']=True
+            else: receipt['release_candidate']=False
+            with self.subTest(mutation=mutation),self.assertRaisesRegex(ValueError,'Verification'):
+                release.validate_verification(receipt,self.commit)
+
+    def test_empty_or_partial_binary_identity_rejected(self):
+        for identity in ({},{'gitCommit':self.commit},{'gitCommit':self.commit,'buildTime':'now','version':'0.10.0','appName':'rental'}):
+            with self.assertRaisesRegex(ValueError,'binary identity'):
+                release.validate_binary_identity(identity,dict(self.build,binary_identity=identity))
+
+    def test_running_binary_identity_must_match_manifest(self):
+        identity={'gitCommit':self.commit,'buildTime':'2026-11-15T12:00:00Z','appName':'landlord','version':'0.10.0'}
+        self.build['binary_identity']=identity
+        release.validate_binary_identity(dict(identity,startedAt='runtime-only'),self.build)
+        for field,value in [('gitCommit','b'*40),('buildTime','unknown'),('version','0.9.0')]:
+            with self.assertRaisesRegex(ValueError,'binary identity'):
+                release.validate_binary_identity(dict(identity,**{field:value}),self.build)
+
 
 if __name__ == '__main__': unittest.main()

@@ -25,6 +25,33 @@ def sha(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def validate_binary_identity(actual, build):
+    expected = build.get('binary_identity')
+    if (not isinstance(expected, dict) or set(expected) != {'gitCommit', 'buildTime', 'version', 'appName'} or
+                     expected.get('gitCommit') != build['commit'] or
+                     expected.get('buildTime') in (None, '', 'unknown') or
+                     expected.get('version') in (None, '', 'unknown') or expected.get('appName') != 'landlord' or
+                     any(actual.get(key) != value for key, value in expected.items())):
+        raise ValueError('Running binary identity differs from artifact')
+
+
+def validate_verification(receipt, commit):
+    names = ['backend', 'node', 'deploy-python', 'mini-python', 'tools-python', 'mini-syntax', 'web-build']
+    steps = receipt.get('steps', [])
+    if (receipt.get('commit') != commit or receipt.get('pass') is not True
+            or receipt.get('focused') is not False or receipt.get('release_candidate') is not True
+            or not isinstance(steps, list) or [s.get('name') for s in steps] != names):
+        raise ValueError('Verification receipt differs or is incomplete')
+    for step in steps:
+        if step.get('pass') is not True or step.get('exit_code') != 0:
+            raise ValueError('Verification step failed')
+        if step['name'] not in ('mini-syntax', 'web-build'):
+            counts = step.get('counts', {})
+            key = 'pass' if step['name'] in ('backend', 'node') else 'tests'
+            if type(counts.get(key)) is not int or counts[key] <= 0 or counts.get('fail') != 0:
+                raise ValueError('Verification test counts are missing or failed')
+
+
 def validate_package(directory, commit, image, run_id):
     directory = Path(directory)
     if not re.fullmatch(r'[0-9a-f]{40}', commit) or not re.fullmatch(r'landlord:[A-Za-z0-9_.-]+', image):
@@ -43,6 +70,8 @@ def validate_package(directory, commit, image, run_id):
     build = json.loads((directory / 'build.json').read_text(encoding='utf-8'))
     if (build['commit'], build['image'], str(build['run_id']), build['platform'], build['base_path']) != (commit, image, str(run_id), 'linux/amd64', '/landlord/'):
         raise ValueError('Artifact provenance differs from requested release')
+    if 'binary_identity' in build:
+        validate_binary_identity(build['binary_identity'], build)
     with tarfile.open(directory / 'release.tar.gz') as archive:
         members = archive.getmembers()
         names = set()
@@ -50,11 +79,19 @@ def validate_package(directory, commit, image, run_id):
             path = PurePosixPath(member.name)
             if path.is_absolute() or '..' in path.parts or '\\' in member.name or member.name in names or not (member.isfile() or member.isdir()):
                 raise ValueError('Unsafe or duplicate archive member')
-            if not path.parts or path.parts[0] not in {'web', 'web-manifest.json', 'compose.yml', 'build.json', 'source.tar.gz'}:
+            if not path.parts or path.parts[0] not in {'web', 'web-manifest.json', 'compose.yml', 'build.json', 'source.tar.gz', 'verification.json'}:
                 raise ValueError('Unexpected release file')
             names.add(member.name)
         if json.load(archive.extractfile('build.json')) != build:
             raise ValueError('Inner provenance differs')
+        # Preserve validation of older rollback packages. New packages carrying
+        # verification metadata must supply the exact, successful full receipt.
+        if 'verification' in build:
+            raw = archive.extractfile('verification.json').read()
+            receipt = json.loads(raw)
+            if hashlib.sha256(raw).hexdigest() != build['verification']['sha256']:
+                raise ValueError('Verification receipt differs or failed')
+            validate_verification(receipt, commit)
         manifest = json.load(archive.extractfile('web-manifest.json'))
         web_files = {m.name for m in members if m.isfile() and m.name.startswith('web/')}
         if not manifest or set(manifest) != web_files:
@@ -151,6 +188,9 @@ def main(argv=None):
             up(release)
             current = inspect()
             if current['Image'] != candidate['Id'] or current['State']['OOMKilled']: raise ValueError('Unexpected running image/OOM')
+            if 'binary_identity' in build:
+                with urllib.request.urlopen('http://127.0.0.1:18930/api/version', timeout=5) as response:
+                    validate_binary_identity(json.load(response)['data'], build)
             for key in ('Memory', 'MemorySwap', 'NanoCpus', 'PidsLimit', 'ReadonlyRootfs', 'PortBindings'):
                 if current['HostConfig'][key] != before['HostConfig'][key]: raise ValueError('Changed runtime limit or binding: ' + key)
             with urllib.request.urlopen('http://127.0.0.1:18930/', timeout=10) as response:

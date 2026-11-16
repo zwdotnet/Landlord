@@ -1474,7 +1474,12 @@ async function uploadContractFiles(files: File[]) {
       contractError.value = res.data?.message || '上传失败'
     }
   } catch (err: any) {
-    contractError.value = err.response?.data?.message || '上传失败，请重试'
+    if (err.response) {
+      contractError.value = err.response.data?.message || '上传失败'
+    } else {
+      await loadContracts(t.id)
+      contractError.value = '上传结果未确认，已尝试刷新合同列表；请核对文件后再决定是否重试。'
+    }
   } finally {
     contractUploading.value = false
   }
@@ -1636,7 +1641,12 @@ async function uploadAttachmentFiles(files: File[]) {
       attachmentError.value = res.data?.message || '上传失败'
     }
   } catch (err: any) {
-    attachmentError.value = err.response?.data?.message || '上传失败，请重试'
+    if (err.response) {
+      attachmentError.value = err.response.data?.message || '上传失败'
+    } else {
+      await loadAttachments(t.id)
+      attachmentError.value = '上传结果未确认，已尝试刷新附件列表；请核对文件后再决定是否重试。'
+    }
   } finally {
     attachmentUploading.value = false
   }

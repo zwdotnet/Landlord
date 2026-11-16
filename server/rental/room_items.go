@@ -27,10 +27,7 @@ package rental
 
 import (
 	"fmt"
-	"mime/multipart"
-	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -39,6 +36,7 @@ import (
 	"smallgo/server/database"
 	"smallgo/server/logger"
 	"smallgo/server/response"
+	"smallgo/server/upload"
 	"smallgo/server/utils"
 
 	"github.com/gin-gonic/gin"
@@ -395,8 +393,12 @@ func handleRoomItemPhotoUpload(db *gorm.DB) gin.HandlerFunc {
 		if !requireLedgerWrite(db, c, item.LedgerID, ModuleRooms, PermEdit) {
 			return
 		}
-		form, err := c.MultipartForm()
+		form, cleanup, err := upload.ReadForm(c, upload.BusinessRequestLimit, 10, 20<<20)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, roomItemPhotoInputHint)
 			return
 		}
@@ -418,69 +420,36 @@ func handleRoomItemPhotoUpload(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		type pendingPhoto struct {
-			file *multipart.FileHeader
-			ext  string
-			mime string
+		pending, err := checkUploadFiles(files, imageAllowedTypes, roomItemMaxFileSize)
+		if err != nil {
+			response.ErrorBadRequest(c, err.Error())
+			return
 		}
-		pending := make([]pendingPhoto, 0, len(files))
-		for _, fh := range files {
-			if fh.Size <= 0 || fh.Size > roomItemMaxFileSize {
-				response.ErrorBadRequest(c, fmt.Sprintf("%s：文件为空或超过 20MB", fh.Filename))
-				return
-			}
-			src, err := fh.Open()
-			if err != nil {
-				response.ErrorInternal(c, "读取上传文件失败")
-				return
-			}
-			header := make([]byte, 512)
-			n, readErr := src.Read(header)
-			src.Close()
-			if readErr != nil && n == 0 {
-				response.ErrorBadRequest(c, fmt.Sprintf("%s：读取文件内容失败", fh.Filename))
-				return
-			}
-			mimeType := http.DetectContentType(header[:n])
-			ext, allowed := imageAllowedTypes[mimeType]
-			if !allowed {
-				response.ErrorBadRequest(c, fmt.Sprintf("%s：只支持物品照片（图片文件）", fh.Filename))
-				return
-			}
-			pending = append(pending, pendingPhoto{file: fh, ext: ext, mime: mimeType})
-		}
-
-		created := make([]RoomItemPhoto, 0, len(pending))
-		for _, p := range pending {
-			now := time.Now()
-			rel := attachmentLedgerRel(item.LedgerID, now, uuid.New().String()+p.ext)
-			abs := attachmentAbsPath(rel)
-			if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-				response.ErrorInternal(c, "创建存储目录失败")
-				return
-			}
-			if err := c.SaveUploadedFile(p.file, abs); err != nil {
-				response.ErrorInternal(c, "保存照片失败")
-				return
-			}
-			row := RoomItemPhoto{
-				UserID:     currentUserID(c),
-				LedgerID:   item.LedgerID,
-				RoomItemID: item.ID,
-				FileName:   strings.TrimSpace(p.file.Filename),
-				FilePath:   rel,
-				FileSize:   p.file.Size,
-				MimeType:   p.mime,
-			}
+		created := make([]RoomItemPhoto, len(pending))
+		batch := make([]storedUpload, 0, len(pending))
+		for i, p := range pending {
+			rel := attachmentLedgerRel(item.LedgerID, time.Now(), uuid.New().String()+p.ext)
+			row := &created[i]
+			*row = RoomItemPhoto{UserID: currentUserID(c), LedgerID: item.LedgerID,
+				RoomItemID: item.ID, FileName: strings.TrimSpace(p.file.Filename),
+				FilePath: rel, FileSize: p.file.Size, MimeType: p.mime}
 			if row.FileName == "" {
 				row.FileName = "物品照片" + p.ext
 			}
-			if err := db.Create(&row).Error; err != nil {
-				_ = os.Remove(abs)
-				response.ErrorInternal(c, "保存照片记录失败")
-				return
+			batch = append(batch, storedUpload{p.file, attachmentAbsPath(rel), row})
+		}
+		if err := saveUploadBatch(c, db, batch, func(tx *gorm.DB) error {
+			var count int64
+			if err := tx.Model(&RoomItemPhoto{}).Where("room_item_id = ? AND org_id = ?", item.ID, item.LedgerID).Count(&count).Error; err != nil {
+				return err
 			}
-			created = append(created, row)
+			if int(count)+len(batch) > roomItemPhotoMaxPerItem {
+				return fmt.Errorf("文件数量超过限制")
+			}
+			return nil
+		}); err != nil {
+			response.ErrorInternal(c, "整批上传失败，未保存本批文件")
+			return
 		}
 		response.Success(c, gin.H{"uploaded": len(created), "items": created})
 	}

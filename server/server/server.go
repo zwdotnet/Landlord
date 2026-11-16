@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -94,6 +96,20 @@ const snapshotMarkerFile = ".last_preupgrade_snapshot"
 
 // binaryFingerprint 当前二进制的身份指纹：版本 + 构建时间 + 提交号。
 func binaryFingerprint() string {
+	if version.GitCommit == "unknown" || version.BuildTime == "unknown" {
+		// Unstamped local builds must still distinguish different executables.
+		if executable, err := os.Executable(); err == nil {
+			if file, err := os.Open(executable); err == nil {
+				defer file.Close()
+				h := sha256.New()
+				if _, err := io.Copy(h, file); err == nil {
+					return fmt.Sprintf("%s|sha256:%x", version.Version, h.Sum(nil))
+				}
+			}
+		}
+		// Never skip a safety snapshot when build identity cannot be established.
+		return fmt.Sprintf("%s|unidentified:%d", version.Version, time.Now().UnixNano())
+	}
 	return strings.Join([]string{version.Version, version.BuildTime, version.GitCommit}, "|")
 }
 
@@ -157,9 +173,8 @@ func Start() {
 	// 快照沿用 backup.Create 的命名规则，因此它会**直接出现在备份管理页的
 	// 列表里**，用户可以下载、也可以一键回滚。
 	if snapshot, reason, err := preUpgradeSnapshot(db, cfg.DataDir, version.Version); err != nil {
-		// 快照失败**不能**阻止启动：挡住启动只会让用户彻底用不了应用，
-		// 那比没有快照更糟。这里只记日志，让人知道没兜底。
-		logger.Error("升级前自动快照失败（将继续启动）: %v", err)
+		logger.Error("升级前自动快照失败，停止启动，未执行迁移: %v", err)
+		os.Exit(1)
 	} else if snapshot != "" {
 		logger.Info("升级前自动快照 %s（%s）", snapshot, reason)
 	}
@@ -353,6 +368,9 @@ func listen(cfg config.Config) ([]listenerBinding, error) {
 // use it to exercise the API against an in-memory database.
 func NewRouter(cfg config.Config, db *gorm.DB, jwtSecret string) *gin.Engine {
 	r := gin.New()
+	if err := r.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		panic(fmt.Errorf("invalid trusted proxy configuration: %w", err))
+	}
 	r.Use(middleware.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORS(cfg.CORSOrigin))

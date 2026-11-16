@@ -33,6 +33,8 @@ docker buildx create --name "$landlord_builder" --driver docker-container \
 landlord_created=1
 docker buildx build --builder "$landlord_builder" --load --progress=plain \
   --build-arg "APP_VERSION=$(tr -d '\r\n' < VERSION)" \
+  --build-arg "GIT_COMMIT=$(git rev-parse HEAD)" \
+  --build-arg "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --build-arg "GOPROXY=${LANDLORD_GOPROXY:-https://proxy.golang.org,direct}" \
   --build-arg "DEBIAN_MIRROR=${LANDLORD_DEBIAN_MIRROR:-http://deb.debian.org/debian}" \
   --build-arg "DEBIAN_SECURITY_MIRROR=${LANDLORD_DEBIAN_SECURITY_MIRROR:-http://deb.debian.org/debian-security}" \

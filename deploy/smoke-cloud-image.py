@@ -35,6 +35,11 @@ try:
                 raise
             time.sleep(1)
     assert health["code"] == 0 and health["data"]["version"] == version, health
+    with opener.open("http://" + address + "/api/version", timeout=5) as response:
+        identity = json.load(response)['data']
+    assert identity['gitCommit'] == os.environ['GITHUB_SHA'], identity
+    assert identity['buildTime'] == os.environ['LANDLORD_BUILD_TIME'], identity
+    assert identity['appName'] == 'landlord', identity
     with opener.open("http://" + address + "/", timeout=5) as response:
         assert '/landlord/assets/' in response.read().decode(), "Wrong frontend base"
     engine = docker("exec", name, "/usr/bin/chromium-headless-shell", "--version")

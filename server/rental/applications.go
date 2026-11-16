@@ -36,6 +36,7 @@ import (
 	"smallgo/server/middleware"
 	"smallgo/server/response"
 	"smallgo/server/sysconfig"
+	"smallgo/server/upload"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -508,8 +509,12 @@ func handleApplyOCR(db *gorm.DB) gin.HandlerFunc {
 			response.ErrorBadRequest(c, "房东未开启 AI 识别，请手动填写")
 			return
 		}
-		file, err := c.FormFile("photo")
+		file, cleanup, err := upload.ReadFile(c, "photo", 11<<20, 10<<20)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, "请选择身份证照片")
 			return
 		}
@@ -546,8 +551,12 @@ func handleApplySubmit(db *gorm.DB) gin.HandlerFunc {
 		if !ok {
 			return
 		}
-		form, err := c.MultipartForm()
+		form, cleanup, err := upload.ReadForm(c, upload.BusinessRequestLimit, 10, 20<<20)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, "提交内容格式有误")
 			return
 		}

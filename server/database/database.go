@@ -1,7 +1,10 @@
 package database
 
 import (
+	"fmt"
 	"log"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -155,11 +158,15 @@ func InitDB(dbPath string) (*gorm.DB, error) {
 
 	// Embed pragmas in the DSN so every pooled connection inherits them,
 	// not only the connection that happened to run the PRAGMA exec below.
-	dsn := dbPath +
-		"?_pragma=journal_mode(WAL)" +
-		"&_pragma=busy_timeout(5000)" +
-		"&_pragma=synchronous(NORMAL)" +
-		"&_pragma=foreign_keys(ON)"
+	// These are mattn/go-sqlite3 options, not modernc's _pragma syntax.
+	separator := "?"
+	if strings.Contains(dbPath, "?") {
+		separator = "&"
+	}
+	dsn := dbPath + separator + url.Values{
+		"_journal_mode": {"WAL"}, "_busy_timeout": {"5000"},
+		"_synchronous": {"NORMAL"}, "_foreign_keys": {"on"},
+	}.Encode()
 
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: gormLog})
 	if err != nil {
@@ -175,6 +182,38 @@ func InitDB(dbPath string) (*gorm.DB, error) {
 	// SQLITE_BUSY under concurrent goroutines.
 	sqlDB.SetMaxOpenConns(1)
 	sqlDB.SetMaxIdleConns(1)
+	for _, check := range []struct {
+		name string
+		want string
+	}{
+		{"journal_mode", "wal"}, {"foreign_keys", "1"},
+		{"busy_timeout", "5000"}, {"synchronous", "1"},
+	} {
+		var got string
+		if err := db.Raw("PRAGMA " + check.name).Scan(&got).Error; err != nil {
+			sqlDB.Close()
+			return nil, fmt.Errorf("SQLite %s verification: %w", check.name, err)
+		}
+		if check.name == "journal_mode" && got == "memory" && (dbPath == ":memory:" || strings.Contains(dbPath, "mode=memory")) {
+			continue
+		}
+		if got != check.want {
+			sqlDB.Close()
+			return nil, fmt.Errorf("SQLite %s=%s, expected %s", check.name, got, check.want)
+		}
+	}
+	rows, err := sqlDB.Query("PRAGMA foreign_key_check")
+	if err != nil {
+		sqlDB.Close()
+		return nil, fmt.Errorf("SQLite foreign_key_check: %w", err)
+	}
+	violations := rows.Next()
+	checkErr := rows.Err()
+	rows.Close()
+	if violations || checkErr != nil {
+		sqlDB.Close()
+		return nil, fmt.Errorf("SQLite foreign_key_check failed; repair an isolated copy before migration (violations=%v, error=%v)", violations, checkErr)
+	}
 
 	return db, nil
 }

@@ -54,6 +54,7 @@ import (
 	"smallgo/server/config"
 	"smallgo/server/logger"
 	"smallgo/server/response"
+	"smallgo/server/upload"
 )
 
 // maxUploadBackupBytes 单个上传备份的大小上限（256MB）。正常备份远小于此，
@@ -80,8 +81,12 @@ func handleUploadBackup(db *gorm.DB) gin.HandlerFunc {
 		// 不会白读一遍磁盘。
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadBackupBytes)
 
-		fileHeader, err := c.FormFile("file")
+		fileHeader, cleanup, err := upload.ReadFile(c, "file", maxUploadBackupBytes, maxUploadBackupBytes)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			var tooLarge *http.MaxBytesError
 			if errors.As(err, &tooLarge) {
 				response.ErrorBadRequest(c, "备份文件过大，上限 256MB")

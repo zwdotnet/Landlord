@@ -14,16 +14,14 @@ package rental
 
 import (
 	"fmt"
-	"mime/multipart"
-	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"smallgo/server/database"
 	"smallgo/server/response"
+	"smallgo/server/upload"
 	"smallgo/server/utils"
 
 	"github.com/gin-gonic/gin"
@@ -108,8 +106,12 @@ func handleRoomPhotoUpload(db *gorm.DB) gin.HandlerFunc {
 		if !requireLedgerWrite(db, c, room.LedgerID, ModuleRooms, PermEdit) {
 			return
 		}
-		form, err := c.MultipartForm()
+		form, cleanup, err := upload.ReadForm(c, upload.BusinessRequestLimit, 10, 20<<20)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, roomPhotoInputHint)
 			return
 		}
@@ -133,74 +135,42 @@ func handleRoomPhotoUpload(db *gorm.DB) gin.HandlerFunc {
 
 		// 先整批校验（大小 + 内容嗅探），全过再落盘：与抄表照片同一口径，
 		// 避免「第 3 张不是图片」时前两张已经存进去的半成功状态。
-		type pendingPhoto struct {
-			file *multipart.FileHeader
-			ext  string
-			mime string
+		pending, err := checkUploadFiles(files, imageAllowedTypes, roomPhotoMaxFileSize)
+		if err != nil {
+			response.ErrorBadRequest(c, err.Error())
+			return
 		}
-		pending := make([]pendingPhoto, 0, len(files))
-		for _, fh := range files {
-			if fh.Size <= 0 || fh.Size > roomPhotoMaxFileSize {
-				response.ErrorBadRequest(c, fmt.Sprintf("%s：文件为空或超过 20MB", fh.Filename))
-				return
-			}
-			src, err := fh.Open()
-			if err != nil {
-				response.ErrorInternal(c, "读取上传文件失败")
-				return
-			}
-			header := make([]byte, 512)
-			n, readErr := src.Read(header)
-			src.Close()
-			if readErr != nil && n == 0 {
-				response.ErrorBadRequest(c, fmt.Sprintf("%s：读取文件内容失败", fh.Filename))
-				return
-			}
-			mimeType := http.DetectContentType(header[:n])
-			ext, allowed := imageAllowedTypes[mimeType]
-			if !allowed {
-				response.ErrorBadRequest(c, fmt.Sprintf("%s：只支持房间照片（图片文件）", fh.Filename))
-				return
-			}
-			pending = append(pending, pendingPhoto{file: fh, ext: ext, mime: mimeType})
-		}
-
-		created := make([]RoomPhoto, 0, len(pending))
-		for _, p := range pending {
-			now := time.Now()
-			rel := attachmentLedgerRel(room.LedgerID, now, uuid.New().String()+p.ext)
-			abs := attachmentAbsPath(rel)
-			if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-				response.ErrorInternal(c, "创建存储目录失败")
-				return
-			}
-			if err := c.SaveUploadedFile(p.file, abs); err != nil {
-				response.ErrorInternal(c, "保存照片失败")
-				return
-			}
-			row := RoomPhoto{
-				UserID:   currentUserID(c),
-				LedgerID: room.LedgerID,
-				RoomID:   room.ID,
-				FileName: strings.TrimSpace(p.file.Filename),
-				FilePath: rel,
-				FileSize: p.file.Size,
-				MimeType: p.mime,
-			}
+		created := make([]RoomPhoto, len(pending))
+		batch := make([]storedUpload, 0, len(pending))
+		for i, p := range pending {
+			rel := attachmentLedgerRel(room.LedgerID, time.Now(), uuid.New().String()+p.ext)
+			row := &created[i]
+			*row = RoomPhoto{UserID: currentUserID(c), LedgerID: room.LedgerID,
+				RoomID: room.ID, FileName: strings.TrimSpace(p.file.Filename),
+				FilePath: rel, FileSize: p.file.Size, MimeType: p.mime}
 			if row.FileName == "" {
 				row.FileName = "房间照片" + p.ext
 			}
-			if err := db.Create(&row).Error; err != nil {
-				_ = os.Remove(abs)
-				response.ErrorInternal(c, "保存照片记录失败")
-				return
+			batch = append(batch, storedUpload{p.file, attachmentAbsPath(rel), row})
+		}
+		if err := saveUploadBatch(c, db, batch, func(tx *gorm.DB) error {
+			var count int64
+			if err := tx.Model(&RoomPhoto{}).Where("room_id = ? AND org_id = ?", room.ID, room.LedgerID).Count(&count).Error; err != nil {
+				return err
 			}
-			created = append(created, row)
+			if int(count)+len(batch) > roomPhotoMaxPerRoom {
+				return fmt.Errorf("文件数量超过限制")
+			}
+			return nil
+		}); err != nil {
+			response.ErrorInternal(c, "整批上传失败，未保存本批文件")
+			return
 		}
 		response.Success(c, gin.H{"uploaded": len(created), "items": created})
 	}
 }
 
+// handleRoomPhotoFile 校验归属后读取房源照片。
 func handleRoomPhotoFile(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		item, ok := findUserRoomPhoto(db, c)

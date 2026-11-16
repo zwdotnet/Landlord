@@ -28,8 +28,12 @@ var allowedImageTypes = map[string]string{
 func HandleUpload(uploadDir string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadRequestSize)
-		file, err := c.FormFile("file")
+		file, cleanup, err := ReadFile(c, "file", maxUploadRequestSize, MaxUploadSize)
+		defer cleanup()
 		if err != nil {
+			if c.IsAborted() {
+				return
+			}
 			response.ErrorBadRequest(c, "请上传文件")
 			return
 		}

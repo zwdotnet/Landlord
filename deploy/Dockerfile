@@ -5,7 +5,9 @@ ARG GOPROXY=https://proxy.golang.org,direct
 RUN GOPROXY="$GOPROXY" go mod download
 COPY server/ ./
 ARG APP_VERSION=0.10.0
-RUN GOMEMLIMIT=384MiB GOGC=30 CGO_ENABLED=1 go build -p=1 -ldflags "-X smallgo/server/version.Version=$APP_VERSION -X smallgo/server/version.AppName=landlord" -o /landlord .
+ARG GIT_COMMIT
+ARG BUILD_TIME
+RUN test -n "$GIT_COMMIT" && test -n "$BUILD_TIME" && GOMEMLIMIT=384MiB GOGC=30 CGO_ENABLED=1 go build -p=1 -ldflags "-X smallgo/server/version.Version=$APP_VERSION -X smallgo/server/version.AppName=landlord -X smallgo/server/version.GitCommit=$GIT_COMMIT -X smallgo/server/version.BuildTime=$BUILD_TIME" -o /landlord .
 
 FROM debian:bookworm-slim
 COPY --from=backend /landlord /app/landlord

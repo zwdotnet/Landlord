@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -22,6 +23,7 @@ type Config struct {
 	AppName            string
 	RateLimit          int
 	CORSOrigin         string
+	TrustedProxies     []string
 	LogDir             string
 	LogRetentionDays   int
 	// LogConsole mirrors every log entry to stdout. Docker deployments and
@@ -39,6 +41,7 @@ type Config struct {
 var C Config
 
 func Parse() Config {
+	var trustedProxies string
 	flag.IntVar(&C.Port, "port", 8910, "服务监听端口（环境变量 PORT）")
 	flag.StringVar(&C.DataDir, "data-dir", "./data", "数据目录：数据库、上传文件、日志（环境变量 DATA_DIR）")
 	flag.StringVar(&C.WebDir, "web-dir", "./", "前端静态文件目录")
@@ -50,6 +53,7 @@ func Parse() Config {
 	flag.BoolVar(&C.ResetAdminPassword, "reset-admin-password", false, "将管理员密码重置为 admin123 后退出")
 	flag.IntVar(&C.RateLimit, "rate-limit", 20, "公开接口每分钟最大请求数，0 表示不限（环境变量 RATE_LIMIT）")
 	flag.StringVar(&C.CORSOrigin, "cors-origin", "*", "允许的 CORS 来源，* 表示全部（环境变量 CORS_ORIGIN）")
+	flag.StringVar(&trustedProxies, "trusted-proxies", "", "可信反向代理IP/CIDR，逗号分隔；默认不信任转发头（环境变量 TRUSTED_PROXIES）")
 	flag.IntVar(&C.LogRetentionDays, "log-retention-days", 30, "日志文件保留天数，0 表示永久保留（环境变量 LOG_RETENTION_DAYS）")
 	flag.BoolVar(&C.LogConsole, "log-console", false, "日志同时输出到终端（环境变量 LOG_CONSOLE）")
 	flag.BoolVar(&C.FnOSApp, "fnos-app", false, "以飞牛 fnOS 统一网关应用模式运行")
@@ -89,6 +93,15 @@ func Parse() Config {
 	}
 	if v := os.Getenv("CORS_ORIGIN"); v != "" {
 		C.CORSOrigin = v
+	}
+	if v, ok := os.LookupEnv("TRUSTED_PROXIES"); ok {
+		trustedProxies = v
+	}
+	C.TrustedProxies = nil
+	for _, proxy := range strings.Split(trustedProxies, ",") {
+		if proxy = strings.TrimSpace(proxy); proxy != "" {
+			C.TrustedProxies = append(C.TrustedProxies, proxy)
+		}
 	}
 	if v := os.Getenv("LOG_RETENTION_DAYS"); v != "" {
 		if i, err := strconv.Atoi(v); err == nil {
@@ -143,6 +156,8 @@ func PrintHelp() {
         公开接口每分钟最大请求数，0 表示不限（默认 20，环境变量 RATE_LIMIT）
   -cors-origin string
         允许的 CORS 来源，* 表示全部（默认 "*"，环境变量 CORS_ORIGIN）
+  -trusted-proxies string
+        可信反向代理 IP/CIDR（逗号分隔，默认空，不信任转发头；环境变量 TRUSTED_PROXIES）
   -log-retention-days int
         日志文件保留天数，0 表示永久保留（默认 30，环境变量 LOG_RETENTION_DAYS）
   -log-console
@@ -162,7 +177,7 @@ func PrintHelp() {
 
 环境变量:
   PORT、DATA_DIR、DB_PATH、ENV、RATE_LIMIT、CORS_ORIGIN、LOG_RETENTION_DAYS、
-  LOG_CONSOLE
+  LOG_CONSOLE、TRUSTED_PROXIES
   环境变量的优先级高于启动参数。
 
 示例:

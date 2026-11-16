@@ -25,6 +25,7 @@ import (
 	"smallgo/server/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -481,7 +482,7 @@ func handleFeeItemCreate(db *gorm.DB) gin.HandlerFunc {
 		item := FeeItem{
 			UserID:        currentUserID(c), // 录入人戳
 			LedgerID:      writeLedger,      // 归属本次写入的台账
-			Key:           "custom_" + strconv.FormatInt(time.Now().UnixNano(), 36),
+			Key:           "custom_" + uuid.NewString(),
 			Name:          name,
 			Kind:          feeKindFixed,
 			Cycle:         cycle,
