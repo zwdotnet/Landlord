@@ -140,3 +140,36 @@ ln -sfn /opt/landlord/releases/run-43263322293-17532776461d /opt/landlord/curren
 ```
 
 本轮未执行回退，不恢复旧数据库覆盖后续业务，不用down -v或回退Caddy/WX。证据在本机`.runtime/deploy-owner-20261114/raw/`，服务器`/opt/landlord/operations/owner-20261114/`和制品目录，新release内有published.json。凭据和短时签名下载位置仅在进程中使用，未落盘/入日志；没有后台监控。执行者SELF-ACCEPT，无独立/真机验收。发布收尾文档另行提交推送，应用源码revision保持623a21d。
+
+## 2026-11-16 审查修复版Web/API发布
+
+用户最新指令“部署”明确授权生产Web/API，替代前轮这部分“不部署”限制；微信后台、体验版/正式版上传仍未授权，也未执行。使用已验证候选437b961，不重复构建产品、不在VPS构建，不替换原19032预览。
+
+- 香港时间11:13:12发布，current为`/opt/landlord/releases/run-43784715179-437b961d85da`，镜像`landlord:0.10.0-437b961d85da-43784715179-1`；公网`/api/version`四项构建身份与云包精确一致。当前版本仍0.10.0，以完整revision、run和构建时间区分。
+- 复用[云43784715179](https://github.com/zwdotnet/Landlord/actions/runs/43784715179)及[隔离组合演练43789242881](https://github.com/zwdotnet/Landlord/actions/runs/43789242881)。350961751字节原ZIP SHA256 `2fb52d82fc1618a02a9ff60cbdf241287d2da00b8c9273e0f89655b8258e82b3`；GitHub元数据、包内三份SHA、回执、revision/RootFS及78份Web清单均核对。
+- VPS Docker29.1.3使用containerd存储，加载后image ID为OCI manifest摘要`sha256:ee5a96235c3f509713cd490ef323e05ed0f5285f688239def4fcbd108d41c198`，归档config摘要为云build.json记录的`sha256:c0768926c38192d6befba8c701c1905d37af4cd17a390868262aa46c004ad3c1`。已核对OCI index→manifest→config完整摘要链及层/revision；二者口径不同，不能直接判为加载错误。首次额外预演的简单ID相等断言失败发生于停写前，原失败保留，产品未改。
+
+### 真实资料保护及服务器内预演
+
+数据与配置只在原服务器受限目录处理，没有复制至本机/GitHub，也不对外开放测试服务。先停全部应用写入、创建并校验完整`/var/backups/landlord/full-pre-review-20261116-01.zip`，随后立即恢复原服务，停写到健康1.406s。归档包含一致性DB、完整文件及受限环境，SHA256 `95ddde6ee7bb5cdf794be5c53a719e6783c62943d382fa1c05ced59ae5a20785`；备份0.201s、恢复0.042s，仅为当次真实小体量观察，不作长期RTO。
+
+恢复至服务器全新目录后，38张业务表/结构及24份原非主库文件一致；依次以实际新旧Linux镜像、network=none、只读根/512MiB/1CPU/160pids运行并停止，再核对原业务/结构及原件。没有挂生产data或加载生产环境到测试容器，不发送登录/收款等业务请求；原样DB中的必要配置仍属受限副本，未当作已脱敏资料上传。既有自动计划/周期任务均0，外发通路由network=none封闭。测试容器已移除，受限备份/预演原件保留。
+
+### 首轮回退与发布工具修正
+
+首轮正式切换执行新启动后，`deploy/release.py`把`.last_preupgrade_snapshot`从旧版标记更新为新版身份的正常行为当作“Existing uploaded file changed”，触发自动应用回退623a21d。current未切、新旧库未互相覆盖，旧服务恢复healthy；首轮apply.log、冻结备份及失败暂存目录全部保留。
+
+修正只涉及发布工具：带完整binary_identity的包精确核对新标记为`version|buildTime|gitCommit`；缺失、错误、符号链接标记均拒绝，其余旧文件仍按SHA逐个保护。无身份元数据的历史回退包继续要求原标记保持。新增5项回归，连同原12项包/身份/回执测试，Windows和Linux各17项通过；不改产品二进制或候选制品。服务器实际使用修正工具SHA256 `091f3442fb639b8dde14cc1cb2e5678dfce78af849ad825dceb5a04d00561c4a`。
+
+二轮正式冻结备份为`/var/backups/landlord/pre-run-43784715179-20261116-031311`，含DB、全部文件、受限环境、旧Compose和Caddy。工具包验证1.60s、备份/切换/核对1.11s、工具总2.91s；这不包含下载100.24s、预演、首轮失败处理或文档收尾，不与旧33分钟估计作比例比较。
+
+### 最终核对、配置与回退入口
+
+- 容器healthy、未OOM，资源限额、只读根/前端及loopback18930保持。38张原业务表原字段/ID及结构一致，quick_check=ok，journal_mode由delete切至wal。声明外键仍0，foreign_key_check零异常不能证明未声明的业务关系全部正确。
+- 13份原非DB文件SHA、17份旧日志前缀保持；快照标记按新身份核对，必要的新备份/日志允许追加。未创建生产测试账号/微信身份或提交实收，用户会话记录保持。
+- bootstrap仅追加`TRUSTED_PROXIES=172.19.0.1/32`，其他原字节前缀及0600保持；原文件受限副本仅存服务器。11:15重新实测Caddy上游127.0.0.1:18930，应用对端::ffff:172.19.0.1；Caddy SHA保持。不同客户端分桶引用既有隔离TCP证据，本轮不在生产灌流量触发限流。
+- 3个其他容器ID/启动时间不变；原7个入口200，6个稳定内容指纹保持，邮件页动态内容仅核状态。公网48项检查通过、脚本异常0，Edge桌面与WebKit390×844登录页/截图人工查看正常，精确二进制身份另行通过；新增手机号接口匿名401，已不是旧版404。没有生产账号登录、真实微信code交换、物理手机/系统通知或打印验收。
+
+前版`/opt/landlord/releases/run-43592881908-623a21d30366`及镜像保留。需要回退时先核对后续业务和兼容性，只切该目录的应用/前端，健康及精确入口通过后更新current；不恢复冻结数据库覆盖后来业务，不用down -v，不回退Caddy或其他环境值。新的精确代理项对旧版不生效，但无需为应用回退改动其他配置。
+
+本机证据`.runtime/deploy-review-20261116-01/raw/`；服务器`/opt/landlord/operations/review-20261116-01/`和制品`/opt/landlord/artifacts/github-43784715179/`。首轮备份/日志和`failed-release-attempt01/`不覆盖；只读取脱敏的JSON元数据回执到本机。工具修正/文档以[skip ci]提交，复用上述已验产品，不重新构建镜像；工具补丁与线上产品437b961来源分开记录。SELF-ACCEPT，无独立验收，未安排后台监控。小程序备案/完整类目/域名、隐私联系/产品入口、稳定审核服务及实际手机仍待落实；完整定时/异地备份方案未启用。

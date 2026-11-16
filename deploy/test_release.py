@@ -131,4 +131,59 @@ class ArtifactValidationTests(unittest.TestCase):
                 release.validate_binary_identity(dict(identity,**{field:value}),self.build)
 
 
+class ExistingDataPreservationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.old, self.current = self.root / 'old', self.root / 'current'
+        for directory in (self.old, self.current):
+            (directory / 'attachments').mkdir(parents=True)
+            (directory / 'attachments/synthetic.pdf').write_bytes(b'%PDF-original')
+        (self.old / '.last_preupgrade_snapshot').write_text('0.10.0')
+        self.identity = {'version': '0.10.0', 'buildTime': '2026-11-16T01:13:30Z',
+                         'gitCommit': 'a' * 40, 'appName': 'landlord'}
+        self.build = {'commit': 'a' * 40, 'binary_identity': self.identity}
+        (self.current / '.last_preupgrade_snapshot').write_text('0.10.0|2026-11-16T01:13:30Z|' + 'a' * 40)
+
+    def verify(self):
+        release.verify_existing_data_files(self.old, self.current, self.build)
+
+    def test_stamped_upgrade_allows_only_exact_new_snapshot_marker(self):
+        self.verify()
+        self.assertEqual((self.current / 'attachments/synthetic.pdf').read_bytes(), b'%PDF-original')
+
+    def test_missing_old_or_wrong_new_marker_rejected(self):
+        marker = self.current / '.last_preupgrade_snapshot'
+        for value in ('0.10.0', '0.10.0|wrong|' + 'a' * 40, '0.10.0|2026-11-16T01:13:30Z|' + 'b' * 40):
+            marker.write_text(value)
+            with self.assertRaisesRegex(ValueError, 'snapshot marker'):
+                self.verify()
+        marker.unlink()
+        with self.assertRaisesRegex(ValueError, 'snapshot marker'):
+            self.verify()
+
+    def test_changed_or_missing_original_upload_still_rejected(self):
+        upload = self.current / 'attachments/synthetic.pdf'
+        upload.write_bytes(b'changed')
+        with self.assertRaisesRegex(ValueError, 'uploaded file changed'):
+            self.verify()
+        upload.unlink()
+        with self.assertRaisesRegex(ValueError, 'uploaded file changed'):
+            self.verify()
+
+    def test_unstamped_rollback_package_keeps_strict_marker_preservation(self):
+        self.build.pop('binary_identity')
+        with self.assertRaisesRegex(ValueError, 'uploaded file changed'):
+            self.verify()
+        (self.current / '.last_preupgrade_snapshot').write_text('0.10.0')
+        self.verify()
+
+    def test_other_metadata_file_changes_still_rejected(self):
+        (self.old / '.other-metadata').write_text('original')
+        (self.current / '.other-metadata').write_text('changed')
+        with self.assertRaisesRegex(ValueError, 'uploaded file changed'):
+            self.verify()
+
+
 if __name__ == '__main__': unittest.main()

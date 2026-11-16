@@ -52,6 +52,27 @@ def validate_verification(receipt, commit):
                 raise ValueError('Verification test counts are missing or failed')
 
 
+def verify_existing_data_files(backup_data, data_dir, build):
+    marker = Path('.last_preupgrade_snapshot')
+    stamped = 'binary_identity' in build
+    if stamped:
+        identity = build['binary_identity']
+        validate_binary_identity(identity, build)
+        expected = '|'.join(identity[key] for key in ('version', 'buildTime', 'gitCommit'))
+        current_marker = data_dir / marker
+        if (not current_marker.is_file() or current_marker.is_symlink()
+                or current_marker.read_text(encoding='utf-8').strip() != expected):
+            raise ValueError('Upgrade snapshot marker differs from verified binary identity')
+    for old_file in backup_data.rglob('*'):
+        if not old_file.is_file():
+            continue
+        relative = old_file.relative_to(backup_data)
+        if relative.parts[0] in ('db', 'logs') or (stamped and relative == marker):
+            continue
+        if not (data_dir / relative).is_file() or sha(old_file) != sha(data_dir / relative):
+            raise ValueError('Existing uploaded file changed')
+
+
 def validate_package(directory, commit, image, run_id):
     directory = Path(directory)
     if not re.fullmatch(r'[0-9a-f]{40}', commit) or not re.fullmatch(r'landlord:[A-Za-z0-9_.-]+', image):
@@ -210,11 +231,7 @@ def main(argv=None):
                             actual = [r for r in db.execute(select).fetchall() if r[index] in ids]
                         else: actual = db.execute(select).fetchall()
                         if sorted(rows, key=repr) != sorted(actual, key=repr): raise ValueError('Existing business values changed: ' + table)
-            for old_file in (backup / 'data').rglob('*'):
-                if not old_file.is_file(): continue
-                relative = old_file.relative_to(backup / 'data')
-                if relative.parts[0] in ('db', 'logs'): continue
-                if not (args.data_dir / relative).is_file() or sha(old_file) != sha(args.data_dir / relative): raise ValueError('Existing uploaded file changed')
+            verify_existing_data_files(backup / 'data', args.data_dir, build)
             if sha(args.env_file) != env_sha or sha(caddy) != caddy_sha: raise ValueError('Protected configuration drifted')
             temp = args.root_dir / 'current.next'; temp.symlink_to(release, target_is_directory=True); os.replace(temp, args.root_dir / 'current')
             switched = True
