@@ -43,6 +43,13 @@ def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def take_stopped_data(data):
+    # Only a stopped, newly-created synthetic directory is passed here. WAL
+    # readers can need writable sidecar metadata even with SQLite mode=ro.
+    command('sudo', 'chown', '-R', f'{os.getuid()}:{os.getgid()}', str(data))
+    command('sudo', 'chmod', '-R', 'u+rwX', str(data))
+
+
 def database_snapshot(data):
     with closing(sqlite3.connect((data/'db/rental.db').as_uri()+'?mode=ro', uri=True)) as db:
         assert db.execute('PRAGMA quick_check').fetchall() == [('ok',)]
@@ -248,7 +255,10 @@ def main():
             events=dict(line.split() for line in command('docker','exec',name,'cat','/sys/fs/cgroup/memory.events').splitlines())
             assert int(events['oom'])==0 and int(events['oom_kill'])==0
             assert not json.loads(command('docker','inspect',name))[0]['State']['OOMKilled']
-            app.stop();command('sudo','chmod','-R','a+rX',str(data));before=database_snapshot(data)
+            (evidence/'resource-samples.json').write_text(json.dumps(samples,indent=2))
+            result.update(stage='offline_recovery', bounded_concurrency_completed=True,
+                          memory_cgroup_kernel_peak_bytes=max(s['memory_kernel_peak_bytes'] for s in samples), oom_events=events)
+            app.stop();take_stopped_data(data);before=database_snapshot(data)
             temp_base=case/'maintenance-temp';temp_base.mkdir();archive=case/'complete.zip';dest=case/'recovered'
             temp_stop=threading.Event();temp_peak=[0]
             def temp_monitor():
@@ -273,7 +283,7 @@ def main():
             for path,expected in paths.items():
                 assert recovered.api('GET',path,raw=True)==expected
                 recovered.api('GET',path,raw=True,expected=401,auth=False)
-            recovered.stop();assert database_snapshot(dest/'data')==before
+            recovered.stop();take_stopped_data(dest/'data');assert database_snapshot(dest/'data')==before
             ordered=sorted(health_times)
             result={'pass':True,'observed_at':datetime.now(timezone.utc).isoformat(),'candidate_commit':args.expected_commit,
                     'candidate_run_id':args.expected_run_id,'rehearsal_commit':command('git','rev-parse','HEAD'),
