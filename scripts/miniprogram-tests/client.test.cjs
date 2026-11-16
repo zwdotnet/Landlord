@@ -4,6 +4,7 @@ const path = require('node:path')
 const root = path.resolve(__dirname, '../../miniprogram')
 function environment() {
   for (const key of Object.keys(require.cache)) if (key.startsWith(root + path.sep)) delete require.cache[key]
+  require('./test-config.cjs')(root)
   const storage = new Map(), requests = [], downloads = [], removed = [], opened = []
   global.wx = {
     env: { USER_DATA_PATH: '/test-user-files' },

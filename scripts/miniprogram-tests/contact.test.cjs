@@ -3,6 +3,7 @@ const root = path.resolve(__dirname, '../../miniprogram')
 const tick = () => new Promise(r => setImmediate(r))
 function env() {
   for (const k of Object.keys(require.cache)) if (k.startsWith(root + path.sep)) delete require.cache[k]
+  require('./test-config.cjs')(root)
   const requests=[], storage=new Map(); let page
   global.wx={getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,v),removeStorageSync:k=>storage.delete(k),request:o=>requests.push(o),reLaunch(){},switchTab(){},navigateTo(){}}
   global.getCurrentPages=()=>[page]

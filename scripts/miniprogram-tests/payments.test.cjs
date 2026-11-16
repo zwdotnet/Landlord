@@ -5,6 +5,7 @@ const detail = (paid = 0) => ({ bill: bill(paid), payments: [] })
 const payment = () => ({ id: 21, bill_id: 70, amount: 500, note: '线下转账', receipt_id: 51, paid_at: '2030-01-02T00:00:00Z' })
 function env(storage = new Map()) {
   for (const k of Object.keys(require.cache)) if (k.startsWith(root + path.sep)) delete require.cache[k]
+  require('./test-config.cjs')(root)
   const requests = [], destinations = [], downloads = [], removed = [], opened = []
   global.wx = { env: { USER_DATA_PATH: '/test-files' }, getStorageSync: k => storage.get(k), setStorageSync: (k, v) => storage.set(k, JSON.parse(JSON.stringify(v))), removeStorageSync: k => storage.delete(k), request: o => requests.push(o), downloadFile: o => downloads.push(o), reLaunch: o => destinations.push(o.url), navigateTo: o => destinations.push(o.url), switchTab: o => destinations.push(o.url), stopPullDownRefresh() {}, showToast() {}, getFileSystemManager: () => ({ unlinkSync: f => removed.push(f), accessSync() { throw Error('absent') }, readFile: o => o.success({ data: new TextEncoder().encode('%PDF-1.7\n').buffer }) }), openDocument: o => { opened.push(o); o.success({}) } }
   global.getCurrentPages = () => []
