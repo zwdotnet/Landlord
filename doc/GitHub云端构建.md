@@ -70,6 +70,16 @@ Docker构建现在必须传入`GIT_COMMIT`和UTC RFC3339 `BUILD_TIME`，两者�
 
 ## 2026-11-14 后续发布记录
 
+本节为历史生产发布记录；最新候选见下方11月16日补充。
+
 用户“好，接下来部署”授权源码623a21d，推送后触发[云构建43592881908](https://github.com/zwdotnet/Landlord/actions/runs/43592881908)，成功完成前端/日期/PWA、Linux镜像和只读中文PDF检查。制品`landlord-0.10.0-623a21d30366-43592881908-1`为345224737字节，原ZIP SHA256 `d24bbeca48b66caf0d71ee585c5b6445ce78d31e64d936e5f99eadfdc09dbe1d`；VPS直下核对后用相同release.py发布，未在VPS构建。
 
 current为`/opt/landlord/releases/run-43592881908-623a21d30366`，冻结备份`/var/backups/landlord/pre-run-43592881908-20261114-121157`；原1753277应用/镜像和业务保留。20:11:59发布回执、20:13服务器和20:14公网47项复核通过。本次补齐完整检查各组成项，PowerShell5对Python stderr误报及单独补验事实见报告§19，不把原脚本退出1改写为0。分段耗时、回退和当前边界见[部署记录末节](部署候选与Safari验收.md)及STATE.md；小程序客户端未上传发布。
+
+## 2026-11-16 云端验证候选（未部署生产）
+
+用户授权推送GitHub并运行构建验证，仍不部署生产。首轮c9472b4的Linux门禁暴露客户端单测依赖被忽略config.local.js，Go通过但Node失败，build被阻断；437b961改为每次缓存重置后注入合成配置，本机与干净副本Node104通过。没有读取/创建原本机配置，原失败证据保留。
+
+[云运行43784715179](https://github.com/zwdotnet/Landlord/actions/runs/43784715179)的verify/build成功，完整Linux Go489个顶层/572事件、Node104、Python12＋4＋12、小程序33份JS及Web构建通过；精确身份、只读容器和中文PDF冒烟通过。候选`landlord-0.10.0-437b961d85da-43784715179-1`共350961751字节，ZIP SHA256为`2fb52d82fc1618a02a9ff60cbdf241287d2da00b8c9273e0f89655b8258e82b3`，GitHub留存7天，以实际artifact过期时间为准。
+
+候选已下载并核对外层ZIP/包内SHA、78份前端文件、完整回执和二进制身份，运行release.py默认只读检查通过；没有加载镜像、执行--apply或创建发布目录。工作流没有自动部署路径，生产仍沿用原发布；最终文档提交不改变候选源代码。证据与残余检查见[审查报告§10](项目审查报告与改进建议-20261115.md)及STATE；本轮API只读确认main未启用必需状态检查，未更改仓库保护。

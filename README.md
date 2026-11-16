@@ -61,7 +61,7 @@ PDF 和数据快照分别存入 SQLite，现有数据库备份可一起保存；
 
 ## 验证
 
-审查R01—R08修复已保存为本地源码提交`4010843`；11月16日匹配提交的PowerShell7完整门禁，以及新合成实例升级/保留后来业务回退、真实TCP代理分桶通过，详见[审查报告§9](doc/项目审查报告与改进建议-20261115.md)。现有19032仍是原e660e6c开发预览；Linux镜像、生产脱敏副本/Caddy和实际手机仍待验证，未推送或部署。
+审查R01—R08产品修复4010843及测试隔离修复437b961已按授权推送GitHub；11月16日[云运行43784715179](https://github.com/zwdotnet/Landlord/actions/runs/43784715179)完整Linux门禁、镜像身份/只读容器/中文PDF冒烟，以及实际包SHA与默认只读发布校验通过。Go489、Node104、Python28、JS33及Web构建；首轮云Node缺本机配置失败原件保留，详见[审查报告§10](doc/项目审查报告与改进建议-20261115.md)。现有19032仍是原e660e6c开发预览；生产脱敏副本/Caddy、组合峰值和实际手机仍待验证，未部署生产。
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Focused
